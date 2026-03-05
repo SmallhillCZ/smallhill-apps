@@ -95,9 +95,11 @@ export class FormulaBarComponent {
     const col = row;
     // NOTE: new Function() executes user-provided expressions intentionally.
     // This is a power-user feature; only the local user's own data is affected.
+    // Global scope is shadowed to limit accidental access.
     // eslint-disable-next-line no-new-func
-    const fn = new Function('col', `return String(${formulaStr});`);
-    return fn(col);
+    const fn = new Function('col', 'window', 'document', 'globalThis',
+      `"use strict"; return String(${formulaStr});`);
+    return fn(col, undefined, undefined, undefined);
   }
 
   updatePreview(): void {

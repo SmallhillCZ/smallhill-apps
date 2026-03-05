@@ -1,5 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
+const MAX_HISTORY_SIZE = 100;
+
 @Injectable({ providedIn: 'root' })
 export class HistoryService<T> {
   private history: T[] = [];
@@ -11,6 +13,10 @@ export class HistoryService<T> {
   push(state: T): void {
     this.history = this.history.slice(0, this.currentIndex + 1);
     this.history.push(structuredClone(state));
+    // Cap history size to avoid excessive memory use with large datasets
+    if (this.history.length > MAX_HISTORY_SIZE) {
+      this.history.shift();
+    }
     this.currentIndex = this.history.length - 1;
     this.updateSignals();
   }

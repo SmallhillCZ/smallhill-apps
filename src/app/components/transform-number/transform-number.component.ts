@@ -15,6 +15,7 @@ export interface NumberTransformConfig {
   toDecimal: string;
   stripCurrency: boolean;
   addCurrency: string;
+  decimalPlaces: number | null;
 }
 
 @Component({
@@ -75,6 +76,22 @@ export interface NumberTransformConfig {
         </nz-form-control>
       </nz-form-item>
 
+      <nz-form-item>
+        <nz-form-label>Decimal places</nz-form-label>
+        <nz-form-control>
+          <div class="format-row">
+            <nz-select [(ngModel)]="config.decimalPlaces" style="width: 120px" (ngModelChange)="updatePreview()">
+              <nz-option [nzValue]="null" nzLabel="Keep original"></nz-option>
+              <nz-option [nzValue]="0" nzLabel="0"></nz-option>
+              <nz-option [nzValue]="1" nzLabel="1"></nz-option>
+              <nz-option [nzValue]="2" nzLabel="2"></nz-option>
+              <nz-option [nzValue]="3" nzLabel="3"></nz-option>
+              <nz-option [nzValue]="4" nzLabel="4"></nz-option>
+            </nz-select>
+          </div>
+        </nz-form-control>
+      </nz-form-item>
+
       @if (preview().length > 0) {
         <div class="preview-section">
           <strong>Preview:</strong>
@@ -115,6 +132,7 @@ export class TransformNumberComponent {
     toDecimal: ',',
     stripCurrency: false,
     addCurrency: '',
+    decimalPlaces: 2,
   };
 
   inputValues: string[] = [];
@@ -146,7 +164,9 @@ export class TransformNumberComponent {
     }
     const num = parseFloat(v);
     if (isNaN(num)) return value;
-    const parts = num.toFixed(2).split('.');
+    // Use configured decimal places, or preserve original decimal places
+    const dp = this.config.decimalPlaces !== null ? this.config.decimalPlaces : (v.split('.')[1]?.length ?? 0);
+    const parts = num.toFixed(dp).split('.');
     if (this.config.toThousands) {
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, this.config.toThousands);
     }
