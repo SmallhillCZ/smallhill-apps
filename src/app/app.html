@@ -1,0 +1,50 @@
+<div class="app-container" [class.dark-mode]="isDarkMode()">
+  <app-toolbar
+    [canUndo]="canUndo"
+    [canRedo]="canRedo"
+    [hasHeader]="hasHeader()"
+    [delimiter]="delimiter()"
+    [filename]="filename()"
+    [hasData]="hasData"
+    [darkMode]="isDarkMode()"
+    (openFile)="openFile()"
+    (saveFile)="saveFile($event)"
+    (undo)="undo()"
+    (redo)="redo()"
+    (hasHeaderChange)="hasHeader.set($event)"
+    (delimiterChange)="delimiter.set($event)"
+    (darkModeChange)="toggleDarkMode($event)"
+    (transformNumber)="openNumberTransform()"
+    (transformDate)="openDateTransform()"
+    (transformMarkup)="openMarkupTransform()"
+    (showFormula)="openFormula()"
+  ></app-toolbar>
+
+  <main class="main-content">
+    @if (!hasData) {
+      <div class="empty-state"
+           (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event)"
+           [class.drag-over]="isDragOver()">
+        <div class="empty-icon">📊</div>
+        <h2>CSV Editor</h2>
+        <p>Open a CSV file to get started, or drag and drop a file here.</p>
+        <button nz-button nzType="primary" nzSize="large" (click)="openFile()">
+          Open CSV File
+        </button>
+      </div>
+    } @else {
+      <app-grid
+        [data]="data()"
+        [hasHeader]="hasHeader()"
+        (dataChange)="onDataChange($event)"
+        (selectionChange)="onSelectionChange($event)"
+        (fileDrop)="loadFile($event)"
+      ></app-grid>
+    }
+  </main>
+
+  <!-- Hidden file input -->
+  <input #fileInput type="file" accept=".csv,.tsv,.txt" style="display:none" (change)="onFileSelected($event)" />
+</div>
