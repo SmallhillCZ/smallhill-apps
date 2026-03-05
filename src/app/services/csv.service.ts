@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { parse } from 'csv-parse/sync';
+import { parse } from 'csv-parse/browser/esm/sync';
 
 @Injectable({ providedIn: 'root' })
 export class CsvService {

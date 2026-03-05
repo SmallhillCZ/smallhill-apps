@@ -1,7 +1,8 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { en_US, provideNzI18n } from 'ng-zorro-antd/i18n';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 import {
   FolderOpenOutline, SaveOutline, UndoOutline, RedoOutline, SettingOutline,
   SortAscendingOutline, SortDescendingOutline, FilterOutline, NumberOutline,
@@ -20,5 +21,6 @@ export const appConfig: ApplicationConfig = {
       MenuOutline, MoonOutline, SunOutline
     ]),
     provideAnimationsAsync(),
+    importProvidersFrom(NzModalModule),
   ]
 };
