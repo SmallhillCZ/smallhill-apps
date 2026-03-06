@@ -1,0 +1,86 @@
+<div class="grid-container"
+     [class.drag-over]="isDragOver()"
+     tabindex="0"
+     (dragover)="onDragOver($event)"
+     (dragleave)="onDragLeave()"
+     (drop)="onDrop($event)">
+
+  <div class="grid-header">
+    <div class="row-number-header"></div>
+    @for (header of headers; track $index; let i = $index) {
+      <div class="col-header"
+           [style.width.px]="getColumnWidth(i)"
+           [class.sorted-asc]="sortConfig()?.col === i && sortConfig()?.dir === 'asc'"
+           [class.sorted-desc]="sortConfig()?.col === i && sortConfig()?.dir === 'desc'">
+        <span class="col-header-text" (click)="toggleSort(i)">
+          {{ header }}
+          @if (sortConfig()?.col === i) {
+            <span nz-icon [nzType]="sortConfig()?.dir === 'asc' ? 'sort-ascending' : 'sort-descending'" nzTheme="outline"></span>
+          }
+        </span>
+        <nz-dropdown-menu #filterMenu="nzDropdownMenu">
+          <div class="filter-dropdown" (click)="$event.stopPropagation()">
+            <input nz-input placeholder="Filter..."
+                   [value]="getFilterValue(i)"
+                   (input)="setFilter(i, $any($event.target).value)" />
+          </div>
+        </nz-dropdown-menu>
+        <span class="filter-icon" nz-dropdown [nzDropdownMenu]="filterMenu" nzTrigger="click"
+              [class.active]="getFilterValue(i)">
+          <span nz-icon nzType="filter" nzTheme="outline"></span>
+        </span>
+        <div class="col-resize-handle"
+             (mousedown)="onResizeStart($event, i)"></div>
+      </div>
+    }
+    <div class="add-col-btn" (click)="addColumn()" title="Add column">+</div>
+  </div>
+
+  <cdk-virtual-scroll-viewport itemSize="28" class="grid-scroll-viewport">
+    <div *cdkVirtualFor="let item of filteredRows(); trackBy: trackByIndex"
+         class="grid-row"
+         [class.alt-row]="item.originalIndex % 2 === 1">
+      <div class="row-number"
+           (click)="selectRow(item.originalIndex)">
+        {{ item.originalIndex + 1 }}
+        <button class="delete-row-btn" (click)="deleteRow(item.originalIndex); $event.stopPropagation()" title="Delete row">×</button>
+      </div>
+      @for (cell of item.row; track $index; let ci = $index) {
+        <div class="grid-cell"
+             [style.width.px]="getColumnWidth(ci)"
+             [class.selected]="isCellSelected(item.originalIndex, ci)"
+             [class.active]="isActiveCell(item.originalIndex, ci)"
+             [class.fill-handle-cell]="isFillHandleCell(item.originalIndex, ci)"
+             (mousedown)="onCellMouseDown($event, item.originalIndex, ci)"
+             (mousemove)="onCellMouseMove(item.originalIndex, ci)"
+             (dblclick)="onCellDblClick(item.originalIndex, ci)">
+          @if (editingCell()?.row === item.originalIndex && editingCell()?.col === ci) {
+            <input #editInput
+                   class="cell-input"
+                   [ngModel]="editValue()"
+                   (ngModelChange)="editValue.set($event)"
+                   (keydown)="onEditKeydown($event)"
+                   (blur)="commitEdit()" />
+          } @else {
+            <span class="cell-value">{{ cell }}</span>
+            @if (isFillHandleCell(item.originalIndex, ci)) {
+              <div class="fill-handle" (mousedown)="onFillHandleMouseDown($event)"></div>
+            }
+          }
+        </div>
+      }
+    </div>
+  </cdk-virtual-scroll-viewport>
+
+  <div class="grid-footer">
+    <button nz-button nzType="dashed" nzSize="small" (click)="addRow()">
+      <span nz-icon nzType="plus" nzTheme="outline"></span> Add Row
+    </button>
+  </div>
+
+  @if (isDragOver()) {
+    <div class="drag-overlay">
+      <div class="drag-message">Drop CSV file here</div>
+    </div>
+  }
+</div>
