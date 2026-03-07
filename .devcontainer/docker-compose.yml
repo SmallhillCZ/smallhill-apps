@@ -4,5 +4,5 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ../..:/workspaces/csveditor:cached
+      - ..:/workspaces/csveditor:cached
     command: sleep infinity
