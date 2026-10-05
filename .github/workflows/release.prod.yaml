@@ -1,8 +1,17 @@
 name: Release to PRODUCTION
+run-name: Release to PRODUCTION (${{ inputs.app }})
 
 on:
   workflow_dispatch:
     inputs:
+      app:
+        description: "App to release"
+        required: true
+        type: choice
+        options:
+          - portal
+          - scheduler
+          - tuner
       semver:
         description: "Version bump"
         required: true
@@ -15,7 +24,7 @@ on:
           - major
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ inputs.app }}
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +32,8 @@ jobs:
     name: Resolve version
     uses: ./.github/workflows/_version.yaml
     with:
-      semver: ${{ github.event.inputs.semver }}
+      app: ${{ inputs.app }}
+      semver: ${{ inputs.semver }}
 
   build:
     name: Build
@@ -31,8 +41,8 @@ jobs:
       - version
     uses: ./.github/workflows/_build.yaml
     with:
-      image: ghcr.io/smallhillcz/my-image:latest
-      target: my-target
+      app: ${{ inputs.app }}
+      image: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:latest
       version: ${{ needs.version.outputs.version }}
 
   cleanup:
@@ -41,7 +51,7 @@ jobs:
       - build
     uses: ./.github/workflows/_cleanup.yaml
     with:
-      package: my-image
+      package: smallhill-apps-${{ inputs.app }}
 
   deploy:
     name: Deploy
@@ -49,7 +59,7 @@ jobs:
       - build
     uses: ./.github/workflows/_deploy.yml
     with:
-      images: ghcr.io/smallhillcz/my-image:latest
+      images: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:latest
     secrets: inherit
 
   tag:
@@ -59,5 +69,5 @@ jobs:
       - version
     uses: ./.github/workflows/_tag.yaml
     with:
-      tag: PRODUCTION
-      version: ${{ github.event.inputs.semver != 'none' && needs.version.outputs.version || '' }}
+      tag: ${{ inputs.app }}-PRODUCTION
+      version: ${{ inputs.semver != 'none' && needs.version.outputs.version || '' }}

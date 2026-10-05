@@ -3,6 +3,10 @@ name: Build
 on:
   workflow_call:
     inputs:
+      app:
+        description: "App directory name in apps/"
+        type: string
+        required: true
       image:
         description: "Image reference to build and push"
         type: string
@@ -10,7 +14,7 @@ on:
       target:
         description: "Dockerfile stage to build"
         type: string
-        required: true
+        required: false
       version:
         description: "Version to use for the built Docker images"
         type: string
@@ -18,7 +22,7 @@ on:
 
 jobs:
   build:
-    name: Build and publish ${{ inputs.target }}
+    name: Build and publish ${{ inputs.app }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,6 +30,30 @@ jobs:
     steps:
       - name: Checkout the updated source code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve Dockerfile
+        id: dockerfile
+        env:
+          APP: ${{ inputs.app }}
+        run: |
+          dir="apps/$APP"
+          if [ ! -f "$dir/package.json" ]; then
+            echo "::error::App $APP not found in apps/"
+            exit 1
+          fi
+          if [ -f "$dir/Dockerfile" ]; then
+            echo "file=$dir/Dockerfile" >> "$GITHUB_OUTPUT"
+            echo "base_path=" >> "$GITHUB_OUTPUT"
+          else
+            base_path=$(jq -r 'first(.projects[].architect.build.configurations.production.baseHref // empty)' "$dir/angular.json" 2>/dev/null || true)
+            echo "file=.github/docker/static.Dockerfile" >> "$GITHUB_OUTPUT"
+            echo "base_path=${base_path:-/$APP/}" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f "$dir/.nvmrc" ]; then
+            echo "node_version=$(cat "$dir/.nvmrc")" >> "$GITHUB_OUTPUT"
+          else
+            echo "node_version=24" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -40,11 +68,15 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: .
+          context: apps/${{ inputs.app }}
+          file: ${{ steps.dockerfile.outputs.file }}
           target: ${{ inputs.target }}
           tags: ${{ inputs.image }}
           push: true
-          cache-from: type=gha,scope=${{ inputs.target }}
-          cache-to: type=gha,mode=max,scope=${{ inputs.target }}
-          build-args: VERSION=${{ inputs.version }}
+          cache-from: type=gha,scope=${{ inputs.app }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.app }}
+          build-args: |
+            VERSION=${{ inputs.version }}
+            BASE_PATH=${{ steps.dockerfile.outputs.base_path }}
+            NODE_VERSION=${{ steps.dockerfile.outputs.node_version }}
           provenance: false

@@ -1,10 +1,20 @@
 name: Release to DEV
+run-name: Release to DEV (${{ inputs.app }})
 
 on:
   workflow_dispatch:
+    inputs:
+      app:
+        description: "App to release"
+        required: true
+        type: choice
+        options:
+          - portal
+          - scheduler
+          - tuner
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ inputs.app }}
   cancel-in-progress: true
 
 jobs:
@@ -24,8 +34,8 @@ jobs:
       - version
     uses: ./.github/workflows/_build.yaml
     with:
-      image: ghcr.io/smallhillcz/my-image:dev
-      target: my-target
+      app: ${{ inputs.app }}
+      image: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:dev
       version: DEV-${{ needs.version.outputs.version }}
 
   cleanup:
@@ -34,7 +44,7 @@ jobs:
       - build
     uses: ./.github/workflows/_cleanup.yaml
     with:
-      package: my-image
+      package: smallhill-apps-${{ inputs.app }}
 
   deploy:
     name: Deploy
@@ -42,7 +52,7 @@ jobs:
       - build
     uses: ./.github/workflows/_deploy.yml
     with:
-      images: ghcr.io/smallhillcz/my-image:dev
+      images: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:dev
     secrets: inherit
 
   tag:
@@ -51,4 +61,4 @@ jobs:
       - build
     uses: ./.github/workflows/_tag.yaml
     with:
-      tag: DEV
+      tag: ${{ inputs.app }}-DEV
