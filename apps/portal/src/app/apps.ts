@@ -45,10 +45,10 @@ export const APPS: AppInfo[] = [
 		id: "csveditor",
 		name: { en: "CSV Editor", cs: "CSV Editor" },
 		url: "/csveditor/",
-		tagline: { en: "Edit CSV files in your browser", cs: "Upravujte CSV soubory v prohlížeči" },
+		tagline: { en: "Edit CSV files like a spreadsheet", cs: "Upravujte CSV soubory jako tabulku" },
 		description: {
-			en: "A spreadsheet-like editor for CSV files that runs entirely in your browser. Open and save CSV, sort and filter columns, use the formula bar, transform numbers, dates and markup, undo and redo, all in light or dark mode. Your files never leave your device.",
-			cs: "Editor CSV souborů ve stylu tabulkového procesoru, který běží celý v prohlížeči. Otevírejte a ukládejte CSV, řaďte a filtrujte sloupce, používejte řádek vzorců, převádějte čísla, data a značkování, vracejte změny zpět, ve světlém i tmavém režimu. Vaše soubory nikdy neopustí zařízení.",
+			en: "A spreadsheet-like editor for CSV files. Open and save CSV, sort and filter columns, use the formula bar, transform numbers, dates and markup, undo and redo, all in light or dark mode. Your files never leave your device.",
+			cs: "Editor CSV souborů ve stylu tabulkového procesoru. Otevírejte a ukládejte CSV, řaďte a filtrujte sloupce, používejte řádek vzorců, převádějte čísla, data a značkování, vracejte změny zpět, ve světlém i tmavém režimu. Vaše soubory nikdy neopustí zařízení.",
 		},
 		color: "#1e9e5a",
 		icon: "apps/csveditor/icon.svg",
@@ -58,10 +58,10 @@ export const APPS: AppInfo[] = [
 	{
 		id: "player",
 		name: { en: "Player", cs: "Přehrávač" },
-		tagline: { en: "Play music from your OneDrive", cs: "Hudba z OneDrivu v prohlížeči" },
+		tagline: { en: "Play music from your OneDrive", cs: "Hudba z vašeho OneDrivu" },
 		description: {
-			en: "Sign in with your Microsoft account, browse your OneDrive folders and play MP3s and other audio files right in the browser. Play a whole folder in order or shuffled, and control playback from the lock screen or your headphones. Music streams straight from OneDrive to your device and the app can only read your files.",
-			cs: "Přihlaste se účtem Microsoft, procházejte složky na OneDrivu a přehrávejte MP3 a další zvukové soubory přímo v prohlížeči. Pusťte celou složku popořadě nebo náhodně a ovládejte přehrávání ze zamčené obrazovky nebo ze sluchátek. Hudba se přehrává přímo z OneDrivu do vašeho zařízení a aplikace vaše soubory může jen číst.",
+			en: "Sign in with your Microsoft account, browse your OneDrive folders and play MP3s and other audio files. Play a whole folder in order or shuffled, and control playback from the lock screen or your headphones. Music streams straight from OneDrive to your device and the app can only read your files.",
+			cs: "Přihlaste se účtem Microsoft, procházejte složky na OneDrivu a přehrávejte MP3 a další zvukové soubory. Pusťte celou složku popořadě nebo náhodně a ovládejte přehrávání ze zamčené obrazovky nebo ze sluchátek. Hudba se přehrává přímo z OneDrivu do vašeho zařízení a aplikace vaše soubory může jen číst.",
 		},
 		color: "#7048e8",
 		icon: "apps/player/icon.svg",
@@ -81,6 +81,20 @@ export const APPS: AppInfo[] = [
 		icon: "apps/jachtarskaknizka/icon.png",
 		screenshots: ["apps/jachtarskaknizka/screenshot-1.webp"],
 		url: "https://jachtarskaknizka.eu/",
+		listed: true,
+	},
+	{
+		id: "zpevniky",
+		name: { en: "Zpěvník", cs: "Zpěvník" },
+		tagline: { en: "Chords and lyrics for playing", cs: "Akordy a texty pro hraní" },
+		description: {
+			en: "Songs with chords and lyrics, browsable by artist, songbook or title. Download songs for offline use, play together with friends from one shared song list, keep your favourites and tune your instrument with the built-in tuner.",
+			cs: "Písně s akordy a texty, procházejte je podle interpretů, zpěvníků nebo názvů. Stáhněte si písně pro offline použití, hrajte spolu s přáteli podle společného seznamu písní, ukládejte si oblíbené a nalaďte nástroj vestavěnou ladičkou.",
+		},
+		color: "#ff9800",
+		icon: "apps/zpevniky/icon.png",
+		screenshots: ["apps/zpevniky/screenshot-1.webp", "apps/zpevniky/screenshot-2.webp"],
+		url: "https://app.dev.zpevniky.com/",
 		listed: true,
 	},
 ];

@@ -1,6 +1,6 @@
 # Player
 
-Play music from your OneDrive in the browser. Frontend-only Angular PWA, no ads, no tracking, no backend: the browser signs in with Microsoft and streams files straight from OneDrive.
+Play music from your OneDrive. Frontend-only Angular PWA, no ads, no tracking, no backend: the browser signs in with Microsoft and streams files straight from OneDrive.
 
 ## Features
 
