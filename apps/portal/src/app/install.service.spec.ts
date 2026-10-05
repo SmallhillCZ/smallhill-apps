@@ -19,7 +19,15 @@ function setInstall(install: unknown): void {
 }
 
 describe("InstallService", () => {
-	afterEach(() => setInstall(undefined));
+	afterEach(() => {
+		setInstall(undefined);
+		localStorage.clear();
+	});
+
+	it("reports an app marked as installed by the app itself", () => {
+		localStorage.setItem("smallhill.installed.demo", "2026-10-05T00:00:00Z");
+		expect(TestBed.inject(InstallService).state(app)).toBe("installed");
+	});
 
 	it("shows help when navigator.install is missing", async () => {
 		setInstall(undefined);
@@ -36,6 +44,7 @@ describe("InstallService", () => {
 		const url = new URL("/demo/", document.baseURI).href;
 		expect(install).toHaveBeenCalledWith(url, url);
 		expect(service.state(app)).toBe("installed");
+		expect(localStorage.getItem("smallhill.installed.demo")).not.toBeNull();
 	});
 
 	it("returns to idle when the user cancels", async () => {

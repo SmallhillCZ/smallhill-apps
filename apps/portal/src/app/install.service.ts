@@ -5,6 +5,22 @@ export type InstallState = "idle" | "installing" | "installed" | "help";
 
 type InstallableNavigator = Navigator & { install?: (installUrl?: string, manifestId?: string) => Promise<unknown> };
 
+const INSTALLED_KEY = "smallhill.installed.";
+
+function isMarkedInstalled(app: AppInfo): boolean {
+	try {
+		return localStorage.getItem(INSTALLED_KEY + app.id) !== null;
+	} catch {
+		return false;
+	}
+}
+
+function markInstalled(app: AppInfo): void {
+	try {
+		localStorage.setItem(INSTALLED_KEY + app.id, new Date().toISOString());
+	} catch {}
+}
+
 @Injectable({ providedIn: "root" })
 export class InstallService {
 	private readonly states = signal<Record<string, InstallState>>({});
@@ -12,7 +28,7 @@ export class InstallService {
 	readonly supported = typeof (navigator as InstallableNavigator).install === "function";
 
 	state(app: AppInfo): InstallState {
-		return this.states()[app.id] ?? "idle";
+		return this.states()[app.id] ?? (isMarkedInstalled(app) ? "installed" : "idle");
 	}
 
 	absoluteUrl(app: AppInfo): string {
@@ -29,6 +45,7 @@ export class InstallService {
 		const url = this.absoluteUrl(app);
 		try {
 			await nav.install(url, url);
+			markInstalled(app);
 			return this.set(app, "installed");
 		} catch (err) {
 			return this.set(app, err instanceof DOMException && err.name === "AbortError" ? "idle" : "help");
