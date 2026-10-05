@@ -70,7 +70,7 @@ export class PlayerService {
 			if (!this.retried) {
 				this.retried = true;
 				this.urls.delete(track.id);
-				void this.load(this.time());
+				void this.load(this.time(), true);
 				return;
 			}
 			this.loading.set(false);
@@ -159,11 +159,11 @@ export class PlayerService {
 		this.loading.set(false);
 	}
 
-	private async load(startAt = 0): Promise<void> {
+	private async load(startAt = 0, retry = false): Promise<void> {
 		const track = this.current();
 		if (!track) return;
 		const request = ++this.request;
-		if (startAt === 0) this.retried = false;
+		if (!retry) this.retried = false;
 		this.loading.set(true);
 		this.error.set(false);
 		this.time.set(startAt);

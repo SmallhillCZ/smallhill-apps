@@ -11,23 +11,35 @@ import {
 } from "@angular/core";
 import { lang, LANGS, setLang, T } from "./i18n";
 import { Icon } from "./icon";
+import { cacheChildren, cachedChildren, clearCache } from "./onedrive/folder-cache";
 import { DriveItem, Folder, formatTime, sortFolders, sortTracks, toTrack, Track } from "./onedrive/items";
 import { OneDriveService } from "./onedrive/onedrive.service";
 import { PlayerService } from "./player/player.service";
 import { applyTheme, loadTheme, Theme, THEMES } from "./theme";
 
 const PATH_KEY = "player.path";
+const LIBRARY_KEY = "player.library";
 
-function loadPath(): Folder[] {
+function loadFolders(key: string): Folder[] | null {
 	try {
-		const stored = JSON.parse(localStorage.getItem(PATH_KEY) ?? "[]") as Folder[];
+		const stored = JSON.parse(localStorage.getItem(key) ?? "null") as Folder[] | null;
 		return Array.isArray(stored)
 			? stored.filter((f) => typeof f?.id === "string" && typeof f?.name === "string")
-			: [];
+			: null;
 	} catch {
-		return [];
+		return null;
 	}
 }
+
+function saveFolders(key: string, folders: Folder[] | null): void {
+	try {
+		if (folders) localStorage.setItem(key, JSON.stringify(folders));
+		else localStorage.removeItem(key);
+	} catch {}
+}
+
+const samePath = (a: Folder[] | null, b: Folder[]) =>
+	!!a && a.length === b.length && a.every((folder, i) => folder.id === b[i].id);
 
 @Component({
 	selector: "app-root",
@@ -47,7 +59,8 @@ export class App {
 	protected readonly theme = signal<Theme>(loadTheme());
 	protected readonly formatTime = formatTime;
 
-	protected readonly path = signal<Folder[]>(loadPath());
+	protected readonly library = signal<Folder[] | null>(loadFolders(LIBRARY_KEY));
+	protected readonly path = signal<Folder[]>(this.library() ?? loadFolders(PATH_KEY) ?? []);
 	protected readonly items = signal<DriveItem[]>([]);
 	protected readonly loading = signal(false);
 	protected readonly failed = signal(false);
@@ -57,6 +70,7 @@ export class App {
 	protected readonly folders = computed(() => sortFolders(this.items()));
 	protected readonly tracks = computed<Track[]>(() => sortTracks(this.items()).map(toTrack));
 	protected readonly folderId = computed(() => this.path().at(-1)?.id ?? null);
+	protected readonly isLibrary = computed(() => samePath(this.library(), this.path()));
 	protected readonly progress = computed(() => {
 		const duration = this.player.duration();
 		return duration ? Math.min(100, (this.player.time() / duration) * 100) : 0;
@@ -66,11 +80,8 @@ export class App {
 		effect(() => applyTheme(this.theme()));
 		effect(() => (document.documentElement.lang = lang()));
 		effect(() => (document.title = T().title));
-		effect(() => {
-			try {
-				localStorage.setItem(PATH_KEY, JSON.stringify(this.path()));
-			} catch {}
-		});
+		effect(() => saveFolders(PATH_KEY, this.path()));
+		effect(() => saveFolders(LIBRARY_KEY, this.library()));
 		afterRenderEffect(() => {
 			this.path();
 			const crumbs = this.crumbs()?.nativeElement;
@@ -83,20 +94,37 @@ export class App {
 
 	protected async load(folderId: string | null): Promise<void> {
 		const request = ++this.request;
-		this.loading.set(true);
 		this.failed.set(false);
+		const cached = await cachedChildren(folderId);
+		if (request !== this.request) return;
+		if (cached) this.items.set(cached);
+		this.loading.set(!cached);
 		try {
 			const items = await this.drive.children(folderId);
 			if (request !== this.request) return;
 			this.items.set(items);
+			void cacheChildren(folderId, items);
 		} catch (error) {
 			if (request !== this.request) return;
 			console.error(error);
-			this.items.set([]);
-			this.failed.set(true);
+			if (!cached) {
+				this.items.set([]);
+				this.failed.set(true);
+			}
 		} finally {
 			if (request === this.request) this.loading.set(false);
 		}
+	}
+
+	protected toggleLibrary(): void {
+		this.library.set(this.isLibrary() ? null : this.path());
+	}
+
+	protected goLibrary(): void {
+		const library = this.library();
+		if (!library) return;
+		this.items.set([]);
+		this.path.set(library);
 	}
 
 	protected open(folder: DriveItem): void {
@@ -136,7 +164,8 @@ export class App {
 
 	protected signOut(): void {
 		this.player.stop();
-		this.path.set([]);
+		this.path.set(this.library() ?? []);
+		void clearCache();
 		void this.drive.signOut();
 	}
 }

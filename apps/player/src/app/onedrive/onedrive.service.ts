@@ -73,10 +73,16 @@ export class OneDriveService {
 	}
 
 	async downloadUrl(id: string): Promise<string> {
-		const item = await this.get<Record<string, string>>(
-			`${GRAPH}/me/drive/items/${encodeURIComponent(id)}?$select=id,@microsoft.graph.downloadUrl`,
+		const item = await this.get<Record<string, string | undefined>>(
+			`${GRAPH}/me/drive/items/${encodeURIComponent(id)}`,
 		);
-		return item["@microsoft.graph.downloadUrl"];
+		const url = item["@microsoft.graph.downloadUrl"];
+		if (url) return url;
+		const response = await fetch(`${GRAPH}/me/drive/items/${encodeURIComponent(id)}/content`, {
+			headers: { Authorization: `Bearer ${await this.token()}` },
+		});
+		if (!response.ok) throw new Error(`Graph ${response.status}`);
+		return URL.createObjectURL(await response.blob());
 	}
 
 	private async get<T>(url: string): Promise<T> {
