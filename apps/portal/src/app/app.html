@@ -1,8 +1,20 @@
 <header class="hero">
 	<img src="favicon.svg" alt="" width="48" height="48" />
 	<div>
-		<h1>{{ t.title }}</h1>
-		<p>{{ t.subtitle }}</p>
+		<h1>{{ t().title }}</h1>
+		<p>{{ t().subtitle }}</p>
+	</div>
+	<div class="lang" role="group" [attr.aria-label]="t().language">
+		@for (option of langs; track option) {
+			<button
+				type="button"
+				[attr.aria-pressed]="lang() === option"
+				[attr.lang]="option"
+				(click)="setLang(option)"
+			>
+				{{ option.toUpperCase() }}
+			</button>
+		}
 	</div>
 </header>
 
@@ -14,7 +26,7 @@
 	</ul>
 </main>
 
-<footer>{{ t.footer }}</footer>
+<footer>{{ t().footer }}</footer>
 
 <dialog #dialog (close)="selected() && close()" (click)="onBackdropClick($event)">
 	@if (selected(); as app) {

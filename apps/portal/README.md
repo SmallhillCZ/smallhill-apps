@@ -4,6 +4,8 @@ App store style home page of https://apps.smallhill.cz listing all Smallhill app
 
 Browsers without `navigator.install` get a short hint on how to install the app from the browser menu.
 
+The page is in Czech or English, picked from the system language list (`navigator.languages`, Slovak counts as Czech); the CS/EN switch in the header overrides it and is remembered.
+
 ## Adding an app
 
 1. Put its logo (`icon.svg`, in the app's signature colour) and mobile screenshots (390×780, `.webp`) into `public/apps/<id>/`.

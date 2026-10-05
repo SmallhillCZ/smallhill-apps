@@ -5,23 +5,23 @@
 		<p class="tagline">{{ tr(app().tagline) }}</p>
 		<app-actions [app]="app()" [large]="true" />
 	</div>
-	<button type="button" class="close" (click)="closed.emit()" [attr.aria-label]="t.close" [title]="t.close">
+	<button type="button" class="close" (click)="closed.emit()" [attr.aria-label]="t().close" [title]="t().close">
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
 	</button>
 </header>
 
 @if (showHelp()) {
-	<p class="help" role="status">{{ t.installHelp }}</p>
+	<p class="help" role="status">{{ t().installHelp }}</p>
 }
 
 <ul class="features">
-	@for (feature of t.features; track feature) {
+	@for (feature of t().features; track feature) {
 		<li>{{ feature }}</li>
 	}
 </ul>
 
 <section>
-	<h3>{{ t.screenshots }}</h3>
+	<h3>{{ t().screenshots }}</h3>
 	@if (app().screenshots.length) {
 		<div class="screenshots">
 			@for (shot of app().screenshots; track shot; let i = $index) {
@@ -29,11 +29,11 @@
 			}
 		</div>
 	} @else {
-		<p class="muted">{{ t.noScreenshots }}</p>
+		<p class="muted">{{ t().noScreenshots }}</p>
 	}
 </section>
 
 <section>
-	<h3>{{ t.about }}</h3>
+	<h3>{{ t().about }}</h3>
 	<p class="description">{{ tr(app().description) }}</p>
 </section>
