@@ -1,8 +1,0 @@
-services:
-  devcontainer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ..:/workspaces/csveditor:cached
-    command: sleep infinity
