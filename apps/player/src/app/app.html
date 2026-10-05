@@ -49,6 +49,25 @@
 				}
 			</nav>
 
+			<div class="library">
+				@if (library() && !isLibrary()) {
+					<button type="button" class="chip" (click)="goLibrary()">
+						<app-icon name="library" />{{ t().goLibrary }}
+					</button>
+				}
+				<button
+					type="button"
+					class="chip"
+					[class.on]="isLibrary()"
+					[attr.aria-pressed]="isLibrary()"
+					(click)="toggleLibrary()"
+				>
+					<app-icon [name]="isLibrary() ? 'star' : 'starOutline'" />{{
+						isLibrary() ? t().isLibrary : t().setLibrary
+					}}
+				</button>
+			</div>
+
 			@if (loading()) {
 				<p class="status">{{ t().loading }}</p>
 			} @else if (failed()) {

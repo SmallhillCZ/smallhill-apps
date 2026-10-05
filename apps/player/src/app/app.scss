@@ -199,6 +199,35 @@ footer {
 	}
 }
 
+.library {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px 6px 8px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--surface-2);
+	color: var(--muted);
+	font-size: 0.85rem;
+	font-weight: 600;
+
+	app-icon {
+		width: 18px;
+		height: 18px;
+	}
+
+	&.on {
+		background: var(--accent-soft);
+		color: var(--accent);
+	}
+}
+
 .list {
 	margin: 0;
 	padding: 4px;
