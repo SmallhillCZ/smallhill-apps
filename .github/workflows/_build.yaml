@@ -54,10 +54,10 @@ jobs:
             echo "::error::App $APP not found in apps/"
             exit 1
           fi
-          if [ -f "$dir/Dockerfile" ]; then
-            file="$dir/Dockerfile"
-          else
-            file=".github/docker/static.Dockerfile"
+          file="$dir/Dockerfile"
+          if [ ! -f "$file" ]; then
+            echo "::error::$file not found"
+            exit 1
           fi
           base_path="${BASE_PATH:-/$APP/}"
           base_path="/${base_path#/}"
