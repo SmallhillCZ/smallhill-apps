@@ -1,0 +1,206 @@
+<header>
+	<h1>{{ t().title }}</h1>
+	<div class="langs" role="group" [attr.aria-label]="t().language">
+		@for (l of langs; track l) {
+			<button
+				type="button"
+				[class.selected]="lang() === l"
+				[attr.aria-pressed]="lang() === l"
+				[attr.lang]="l"
+				(click)="setLang(l)"
+			>
+				{{ l.toUpperCase() }}
+			</button>
+		}
+	</div>
+	<select
+		class="theme"
+		[attr.aria-label]="t().theme"
+		[value]="theme()"
+		(change)="setTheme($any($event.target).value)"
+	>
+		@for (option of themes; track option) {
+			<option [value]="option" [selected]="option === theme()">{{ t().themes[option] }}</option>
+		}
+	</select>
+</header>
+
+<main [class.with-player]="player.current()">
+	@switch (drive.status()) {
+		@case ("loading") {
+			<p class="status">{{ t().loading }}</p>
+		}
+		@case ("signedIn") {
+			<div class="account">
+				<span>{{ drive.accountName() }}</span>
+				<button type="button" class="link" (click)="signOut()">{{ t().signOut }}</button>
+			</div>
+
+			<nav #crumbs class="crumbs" aria-label="OneDrive">
+				<button type="button" [class.current]="path().length === 0" (click)="goTo(0)">
+					<app-icon name="cloud" />
+					<span>OneDrive</span>
+				</button>
+				@for (folder of path(); track folder.id; let i = $index) {
+					<span class="sep" aria-hidden="true">›</span>
+					<button type="button" [class.current]="i === path().length - 1" (click)="goTo(i + 1)">
+						{{ folder.name }}
+					</button>
+				}
+			</nav>
+
+			@if (loading()) {
+				<p class="status">{{ t().loading }}</p>
+			} @else if (failed()) {
+				<div class="status">
+					<p>{{ t().folderError }}</p>
+					<button type="button" class="secondary" (click)="load(folderId())">{{ t().retry }}</button>
+				</div>
+			} @else if (!folders().length && !tracks().length) {
+				<p class="status">{{ t().empty }}</p>
+			} @else {
+				@if (folders().length) {
+					<ul class="list">
+						@for (folder of folders(); track folder.id) {
+							<li>
+								<button type="button" class="row" (click)="open(folder)">
+									<app-icon class="folder" name="folder" />
+									<span class="text">
+										<span class="name">{{ folder.name }}</span>
+										<span class="meta">{{ t().items(folder.folder?.childCount ?? 0) }}</span>
+									</span>
+								</button>
+							</li>
+						}
+					</ul>
+				}
+
+				@if (tracks().length) {
+					<div class="actions">
+						<span class="count">{{ t().tracks(tracks().length) }}</span>
+						<button type="button" class="secondary" (click)="playAll(true)">
+							<app-icon name="shuffle" />{{ t().shuffleAll }}
+						</button>
+						<button type="button" class="primary" (click)="playAll(false)">
+							<app-icon name="play" />{{ t().playAll }}
+						</button>
+					</div>
+					<ul class="list">
+						@for (track of tracks(); track track.id; let i = $index) {
+							@let active = player.current()?.id === track.id;
+							<li>
+								<button type="button" class="row" [class.active]="active" (click)="play(i)">
+									<span class="badge">
+										<app-icon
+											[name]="active && player.playing() ? 'pause' : active ? 'play' : 'note'"
+										/>
+									</span>
+									<span class="text">
+										<span class="name">{{ track.title }}</span>
+										@if (track.artist) {
+											<span class="meta">{{ track.artist }}</span>
+										}
+									</span>
+									@if (track.duration) {
+										<span class="duration">{{ formatTime(track.duration) }}</span>
+									}
+								</button>
+							</li>
+						}
+					</ul>
+				}
+			}
+		}
+		@default {
+			<section class="welcome">
+				<img src="icons/icon.svg" alt="" width="96" height="96" />
+				<h2>{{ t().heading }}</h2>
+				<p>{{ t().intro }}</p>
+				@if (drive.status() === "signedOut") {
+					<button type="button" class="primary" (click)="drive.signIn()">{{ t().signIn }}</button>
+				} @else if (drive.status() === "unconfigured") {
+					<p class="notice">{{ t().unconfigured }}</p>
+				} @else {
+					<p class="notice">{{ t().authError }}</p>
+				}
+			</section>
+		}
+	}
+
+	<footer>
+		<p>{{ t().privacy }}</p>
+	</footer>
+</main>
+
+@if (player.current(); as current) {
+	<section class="player" [attr.aria-label]="t().title">
+		<div class="now">
+			<div class="text">
+				<span class="name">{{ current.title }}</span>
+				<span class="meta">
+					@if (player.error()) {
+						<span class="error">{{ t().trackError }}</span>
+					} @else {
+						{{ current.artist }}
+					}
+				</span>
+			</div>
+			<button type="button" class="icon small" [attr.aria-label]="t().close" (click)="player.stop()">
+				<app-icon name="close" />
+			</button>
+		</div>
+		<div class="seek">
+			<span>{{ formatTime(player.time()) }}</span>
+			<input
+				type="range"
+				min="0"
+				step="1"
+				[attr.aria-label]="t().seek"
+				[max]="player.duration() ?? 0"
+				[value]="player.time()"
+				[style.--progress.%]="progress()"
+				[disabled]="!player.duration()"
+				(input)="seek($event)"
+			/>
+			<span>{{ formatTime(player.duration()) }}</span>
+		</div>
+		<div class="controls">
+			<button
+				type="button"
+				class="icon small"
+				[class.on]="player.shuffle()"
+				[attr.aria-pressed]="player.shuffle()"
+				[attr.aria-label]="t().shuffle"
+				[title]="t().shuffle"
+				(click)="player.toggleShuffle()"
+			>
+				<app-icon name="shuffle" />
+			</button>
+			<button type="button" class="icon" [attr.aria-label]="t().previous" (click)="player.prev()">
+				<app-icon name="previous" />
+			</button>
+			<button
+				type="button"
+				class="icon play"
+				[class.busy]="player.loading()"
+				[attr.aria-label]="player.playing() ? t().pause : t().play"
+				(click)="player.toggle()"
+			>
+				<app-icon [name]="player.playing() ? 'pause' : 'play'" />
+			</button>
+			<button type="button" class="icon" [attr.aria-label]="t().next" (click)="player.next()">
+				<app-icon name="next" />
+			</button>
+			<button
+				type="button"
+				class="icon small"
+				[class.on]="player.repeat() !== 'off'"
+				[attr.aria-label]="t().repeat[player.repeat()]"
+				[title]="t().repeat[player.repeat()]"
+				(click)="player.cycleRepeat()"
+			>
+				<app-icon [name]="player.repeat() === 'one' ? 'repeatOne' : 'repeat'" />
+			</button>
+		</div>
+	</section>
+}

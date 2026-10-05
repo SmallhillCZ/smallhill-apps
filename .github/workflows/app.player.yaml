@@ -1,0 +1,25 @@
+name: Player
+
+on:
+  pull_request:
+    paths:
+      - "apps/player/**"
+      - ".github/workflows/app.player.yaml"
+  push:
+    branches:
+      - master
+    paths:
+      - "apps/player/**"
+      - ".github/workflows/app.player.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/_test.yaml
+    with:
+      app: player
+      postgres: false
