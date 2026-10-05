@@ -1,0 +1,25 @@
+name: CSV Editor
+
+on:
+  pull_request:
+    paths:
+      - "apps/csveditor/**"
+      - ".github/workflows/app.csveditor.yaml"
+  push:
+    branches:
+      - master
+    paths:
+      - "apps/csveditor/**"
+      - ".github/workflows/app.csveditor.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/_test.yaml
+    with:
+      app: csveditor
+      postgres: false

@@ -1,4 +1,13 @@
-import { Component, inject, signal, ViewChild, ElementRef, HostListener, input, output } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  ViewChild,
+  ElementRef,
+  HostListener,
+  input,
+  output,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ScrollingModule, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
@@ -13,9 +22,18 @@ import { SelectionState } from '../../models/selection.model';
 @Component({
   selector: 'app-grid',
   standalone: true,
-  imports: [CommonModule, FormsModule, ScrollingModule, NzTooltipModule, NzDropDownModule, NzIconModule, NzButtonModule, NzInputModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ScrollingModule,
+    NzTooltipModule,
+    NzDropDownModule,
+    NzIconModule,
+    NzButtonModule,
+    NzInputModule,
+  ],
   templateUrl: './grid.component.html',
-  styleUrl: './grid.component.scss'
+  styleUrl: './grid.component.scss',
 })
 export class GridComponent {
   data = input<string[][]>([]);
@@ -74,7 +92,7 @@ export class GridComponent {
     filterMap.forEach((filterVal, col) => {
       if (filterVal) {
         indexed = indexed.filter(({ row }) =>
-          (row[col] || '').toLowerCase().includes(filterVal.toLowerCase())
+          (row[col] || '').toLowerCase().includes(filterVal.toLowerCase()),
         );
       }
     });
@@ -97,7 +115,7 @@ export class GridComponent {
 
   isCellSelected(rowIdx: number, colIdx: number): boolean {
     const sel = this.selection();
-    return sel.ranges.some(range => {
+    return sel.ranges.some((range) => {
       const minR = Math.min(range.start.row, range.end.row);
       const maxR = Math.max(range.start.row, range.end.row);
       const minC = Math.min(range.start.col, range.end.col);
@@ -119,7 +137,10 @@ export class GridComponent {
     if (event.ctrlKey || event.metaKey) {
       this.selection.set({
         activeCell: { row: rowIdx, col: colIdx },
-        ranges: [...sel.ranges, { start: { row: rowIdx, col: colIdx }, end: { row: rowIdx, col: colIdx } }]
+        ranges: [
+          ...sel.ranges,
+          { start: { row: rowIdx, col: colIdx }, end: { row: rowIdx, col: colIdx } },
+        ],
       });
     } else if (event.shiftKey && sel.activeCell) {
       const ranges = [...sel.ranges];
@@ -130,7 +151,7 @@ export class GridComponent {
     } else {
       this.selection.set({
         activeCell: { row: rowIdx, col: colIdx },
-        ranges: [{ start: { row: rowIdx, col: colIdx }, end: { row: rowIdx, col: colIdx } }]
+        ranges: [{ start: { row: rowIdx, col: colIdx }, end: { row: rowIdx, col: colIdx } }],
       });
     }
     this.selectionChange.emit(this.selection());
@@ -168,7 +189,7 @@ export class GridComponent {
   commitEdit(): void {
     const editing = this.editingCell();
     if (!editing) return;
-    const newData = this.data().map(row => [...row]);
+    const newData = this.data().map((row) => [...row]);
     if (newData[editing.row]) {
       newData[editing.row][editing.col] = this.editValue();
     }
@@ -265,7 +286,7 @@ export class GridComponent {
     } else {
       this.selection.set({
         activeCell: { row, col },
-        ranges: [{ start: { row, col }, end: { row, col } }]
+        ranges: [{ start: { row, col }, end: { row, col } }],
       });
     }
     this.selectionChange.emit(this.selection());
@@ -273,8 +294,8 @@ export class GridComponent {
 
   clearSelection(): void {
     const sel = this.selection();
-    const newData = this.data().map(row => [...row]);
-    sel.ranges.forEach(range => {
+    const newData = this.data().map((row) => [...row]);
+    sel.ranges.forEach((range) => {
       const minR = Math.min(range.start.row, range.end.row);
       const maxR = Math.max(range.start.row, range.end.row);
       const minC = Math.min(range.start.col, range.end.col);
@@ -296,9 +317,10 @@ export class GridComponent {
     const maxR = Math.max(range.start.row, range.end.row);
     const minC = Math.min(range.start.col, range.end.col);
     const maxC = Math.max(range.start.col, range.end.col);
-    const text = this.data().slice(minR, maxR + 1).map(row =>
-      row.slice(minC, maxC + 1).join('\t')
-    ).join('\n');
+    const text = this.data()
+      .slice(minR, maxR + 1)
+      .map((row) => row.slice(minC, maxC + 1).join('\t'))
+      .join('\n');
     navigator.clipboard.writeText(text);
   }
 
@@ -309,11 +331,11 @@ export class GridComponent {
     if (!text) return;
     event.preventDefault();
 
-    const pasteRows = text.split('\n').map(line => line.split('\t'));
+    const pasteRows = text.split('\n').map((line) => line.split('\t'));
     const active = this.selection().activeCell;
     if (!active) return;
 
-    const newData = this.data().map(row => [...row]);
+    const newData = this.data().map((row) => [...row]);
     pasteRows.forEach((pasteRow, ri) => {
       pasteRow.forEach((cell, ci) => {
         const tr = active.row + ri;
@@ -422,7 +444,7 @@ export class GridComponent {
     if (cols === 0) return;
     this.selection.set({
       activeCell: { row: rowIdx, col: 0 },
-      ranges: [{ start: { row: rowIdx, col: 0 }, end: { row: rowIdx, col: cols - 1 } }]
+      ranges: [{ start: { row: rowIdx, col: 0 }, end: { row: rowIdx, col: cols - 1 } }],
     });
     this.selectionChange.emit(this.selection());
   }
@@ -434,7 +456,7 @@ export class GridComponent {
   }
 
   addColumn(): void {
-    const newData = this.data().map(row => [...row, '']);
+    const newData = this.data().map((row) => [...row, '']);
     this.dataChange.emit(newData);
   }
 
@@ -445,7 +467,7 @@ export class GridComponent {
   }
 
   deleteColumn(colIdx: number): void {
-    const newData = this.data().map(row => {
+    const newData = this.data().map((row) => {
       const newRow = [...row];
       newRow.splice(colIdx, 1);
       return newRow;

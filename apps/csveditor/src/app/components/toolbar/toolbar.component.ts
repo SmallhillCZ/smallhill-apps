@@ -12,12 +12,17 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
   selector: 'app-toolbar',
   standalone: true,
   imports: [
-    CommonModule, FormsModule,
-    NzButtonModule, NzIconModule, NzSelectModule, NzSwitchModule,
-    NzTooltipModule, NzDividerModule,
+    CommonModule,
+    FormsModule,
+    NzButtonModule,
+    NzIconModule,
+    NzSelectModule,
+    NzSwitchModule,
+    NzTooltipModule,
+    NzDividerModule,
   ],
   templateUrl: './toolbar.component.html',
-  styleUrl: './toolbar.component.scss'
+  styleUrl: './toolbar.component.scss',
 })
 export class ToolbarComponent {
   canUndo = input<boolean>(false);
@@ -47,11 +52,25 @@ export class ToolbarComponent {
     { value: '|', label: 'Pipe (|)' },
   ];
 
-  onOpenFile(): void { this.openFile.emit(); }
-  onSaveFile(): void { this.saveFile.emit(this.delimiter()); }
-  onUndo(): void { this.undo.emit(); }
-  onRedo(): void { this.redo.emit(); }
-  onHasHeaderChange(val: boolean): void { this.hasHeaderChange.emit(val); }
-  onDelimiterChange(val: string): void { this.delimiterChange.emit(val); }
-  onDarkModeChange(val: boolean): void { this.darkModeChange.emit(val); }
+  onOpenFile(): void {
+    this.openFile.emit();
+  }
+  onSaveFile(): void {
+    this.saveFile.emit(this.delimiter());
+  }
+  onUndo(): void {
+    this.undo.emit();
+  }
+  onRedo(): void {
+    this.redo.emit();
+  }
+  onHasHeaderChange(val: boolean): void {
+    this.hasHeaderChange.emit(val);
+  }
+  onDelimiterChange(val: string): void {
+    this.delimiterChange.emit(val);
+  }
+  onDarkModeChange(val: boolean): void {
+    this.darkModeChange.emit(val);
+  }
 }

@@ -37,8 +37,12 @@ import TurndownService from 'turndown';
             <tbody>
               @for (item of preview(); track $index) {
                 <tr>
-                  <td><code>{{ item.before }}</code></td>
-                  <td><code>{{ item.after }}</code></td>
+                  <td>
+                    <code>{{ item.before }}</code>
+                  </td>
+                  <td>
+                    <code>{{ item.after }}</code>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -47,12 +51,23 @@ import TurndownService from 'turndown';
       }
     </div>
   `,
-  styles: [`
-    .transform-dialog { padding: 8px 0; }
-    .preview-section { margin-top: 16px; }
-    nz-form-item { margin-bottom: 12px; }
-    code { font-size: 11px; word-break: break-all; }
-  `]
+  styles: [
+    `
+      .transform-dialog {
+        padding: 8px 0;
+      }
+      .preview-section {
+        margin-top: 16px;
+      }
+      nz-form-item {
+        margin-bottom: 12px;
+      }
+      code {
+        font-size: 11px;
+        word-break: break-all;
+      }
+    `,
+  ],
 })
 export class TransformMarkupComponent {
   private modalRef = inject(NzModalRef, { optional: true });
@@ -69,10 +84,12 @@ export class TransformMarkupComponent {
 
   updatePreview(): void {
     const sample = this.inputValues.slice(0, 5);
-    this.preview.set(sample.map(v => ({
-      before: v,
-      after: this.transformValue(v),
-    })));
+    this.preview.set(
+      sample.map((v) => ({
+        before: v,
+        after: this.transformValue(v),
+      })),
+    );
   }
 
   transformValue(value: string): string {

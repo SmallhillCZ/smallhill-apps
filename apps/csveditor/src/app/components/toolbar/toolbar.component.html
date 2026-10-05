@@ -10,11 +10,24 @@
 
   <!-- File operations -->
   <div class="toolbar-group">
-    <button nz-button nzType="default" nz-tooltip nzTooltipTitle="Open CSV file" (click)="onOpenFile()">
+    <button
+      nz-button
+      nzType="default"
+      nz-tooltip
+      nzTooltipTitle="Open CSV file"
+      (click)="onOpenFile()"
+    >
       <span nz-icon nzType="folder-open" nzTheme="outline"></span>
       Open
     </button>
-    <button nz-button nzType="default" nz-tooltip nzTooltipTitle="Save as CSV" [disabled]="!hasData()" (click)="onSaveFile()">
+    <button
+      nz-button
+      nzType="default"
+      nz-tooltip
+      nzTooltipTitle="Save as CSV"
+      [disabled]="!hasData()"
+      (click)="onSaveFile()"
+    >
       <span nz-icon nzType="save" nzTheme="outline"></span>
       Save
     </button>
@@ -24,10 +37,24 @@
 
   <!-- Undo/Redo -->
   <div class="toolbar-group">
-    <button nz-button nzType="text" nz-tooltip nzTooltipTitle="Undo (Ctrl+Z)" [disabled]="!canUndo()" (click)="onUndo()">
+    <button
+      nz-button
+      nzType="text"
+      nz-tooltip
+      nzTooltipTitle="Undo (Ctrl+Z)"
+      [disabled]="!canUndo()"
+      (click)="onUndo()"
+    >
       <span nz-icon nzType="undo" nzTheme="outline"></span>
     </button>
-    <button nz-button nzType="text" nz-tooltip nzTooltipTitle="Redo (Ctrl+Y)" [disabled]="!canRedo()" (click)="onRedo()">
+    <button
+      nz-button
+      nzType="text"
+      nz-tooltip
+      nzTooltipTitle="Redo (Ctrl+Y)"
+      [disabled]="!canRedo()"
+      (click)="onRedo()"
+    >
       <span nz-icon nzType="redo" nzTheme="outline"></span>
     </button>
   </div>
@@ -37,33 +64,74 @@
   <!-- CSV Settings -->
   <div class="toolbar-group">
     <label class="toolbar-label">Delimiter:</label>
-    <nz-select [ngModel]="delimiter()" (ngModelChange)="onDelimiterChange($event)" nzSize="small" style="width: 120px">
+    <nz-select
+      [ngModel]="delimiter()"
+      (ngModelChange)="onDelimiterChange($event)"
+      nzSize="small"
+      style="width: 120px"
+    >
       @for (opt of delimiterOptions; track opt.value) {
         <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
       }
     </nz-select>
 
     <label class="toolbar-label">Header row:</label>
-    <nz-switch [ngModel]="hasHeader()" (ngModelChange)="onHasHeaderChange($event)" nzSize="small"></nz-switch>
+    <nz-switch
+      [ngModel]="hasHeader()"
+      (ngModelChange)="onHasHeaderChange($event)"
+      nzSize="small"
+    ></nz-switch>
   </div>
 
   <nz-divider nzType="vertical"></nz-divider>
 
   <!-- Transform tools -->
   <div class="toolbar-group">
-    <button nz-button nzType="default" nzSize="small" nz-tooltip nzTooltipTitle="Reformat numbers" (click)="transformNumber.emit()" [disabled]="!hasData()">
+    <button
+      nz-button
+      nzType="default"
+      nzSize="small"
+      nz-tooltip
+      nzTooltipTitle="Reformat numbers"
+      (click)="transformNumber.emit()"
+      [disabled]="!hasData()"
+    >
       <span nz-icon nzType="number" nzTheme="outline"></span>
       Numbers
     </button>
-    <button nz-button nzType="default" nzSize="small" nz-tooltip nzTooltipTitle="Reformat dates" (click)="transformDate.emit()" [disabled]="!hasData()">
+    <button
+      nz-button
+      nzType="default"
+      nzSize="small"
+      nz-tooltip
+      nzTooltipTitle="Reformat dates"
+      (click)="transformDate.emit()"
+      [disabled]="!hasData()"
+    >
       <span nz-icon nzType="calendar" nzTheme="outline"></span>
       Dates
     </button>
-    <button nz-button nzType="default" nzSize="small" nz-tooltip nzTooltipTitle="HTML ↔ Markdown" (click)="transformMarkup.emit()" [disabled]="!hasData()">
+    <button
+      nz-button
+      nzType="default"
+      nzSize="small"
+      nz-tooltip
+      nzTooltipTitle="HTML ↔ Markdown"
+      (click)="transformMarkup.emit()"
+      [disabled]="!hasData()"
+    >
       <span nz-icon nzType="code" nzTheme="outline"></span>
       Markup
     </button>
-    <button nz-button nzType="default" nzSize="small" nz-tooltip nzTooltipTitle="Column formula" (click)="showFormula.emit()" [disabled]="!hasData()">
+    <button
+      nz-button
+      nzType="default"
+      nzSize="small"
+      nz-tooltip
+      nzTooltipTitle="Column formula"
+      (click)="showFormula.emit()"
+      [disabled]="!hasData()"
+    >
       <span nz-icon nzType="function" nzTheme="outline"></span>
       Formula
     </button>
@@ -74,6 +142,10 @@
   <!-- Dark mode toggle -->
   <div class="toolbar-group">
     <span nz-icon [nzType]="darkMode() ? 'moon' : 'sun'" nzTheme="outline"></span>
-    <nz-switch [ngModel]="darkMode()" (ngModelChange)="onDarkModeChange($event)" nzSize="small"></nz-switch>
+    <nz-switch
+      [ngModel]="darkMode()"
+      (ngModelChange)="onDarkModeChange($event)"
+      nzSize="small"
+    ></nz-switch>
   </div>
 </div>

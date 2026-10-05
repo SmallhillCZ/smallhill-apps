@@ -24,7 +24,11 @@ const DATE_FORMATS = [
       <nz-form-item>
         <nz-form-label>From format</nz-form-label>
         <nz-form-control>
-          <nz-select [(ngModel)]="fromFormat" style="width: 200px" (ngModelChange)="updatePreview()">
+          <nz-select
+            [(ngModel)]="fromFormat"
+            style="width: 200px"
+            (ngModelChange)="updatePreview()"
+          >
             @for (fmt of dateFormats; track fmt.value) {
               <nz-option [nzValue]="fmt.value" [nzLabel]="fmt.label"></nz-option>
             }
@@ -66,11 +70,19 @@ const DATE_FORMATS = [
       }
     </div>
   `,
-  styles: [`
-    .transform-dialog { padding: 8px 0; }
-    .preview-section { margin-top: 16px; }
-    nz-form-item { margin-bottom: 12px; }
-  `]
+  styles: [
+    `
+      .transform-dialog {
+        padding: 8px 0;
+      }
+      .preview-section {
+        margin-top: 16px;
+      }
+      nz-form-item {
+        margin-bottom: 12px;
+      }
+    `,
+  ],
 })
 export class TransformDateComponent {
   private modalRef = inject(NzModalRef, { optional: true });
@@ -88,10 +100,12 @@ export class TransformDateComponent {
 
   updatePreview(): void {
     const sample = this.inputValues.slice(0, 5);
-    this.preview.set(sample.map(v => ({
-      before: v,
-      after: this.transformValue(v),
-    })));
+    this.preview.set(
+      sample.map((v) => ({
+        before: v,
+        after: this.transformValue(v),
+      })),
+    );
   }
 
   parseDate(value: string, format: string): { year: number; month: number; day: number } | null {

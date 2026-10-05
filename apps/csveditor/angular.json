@@ -29,9 +29,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -47,8 +45,7 @@
                   "maximumError": "20kB"
                 }
               ],
-              "outputHashing": "all",
-              "baseHref": "/csveditor/"
+              "outputHashing": "all"
             },
             "development": {
               "optimization": false,

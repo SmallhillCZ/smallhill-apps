@@ -27,7 +27,7 @@ import { SelectionState } from './models/selection.model';
     NzIconModule,
   ],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
 export class App {
   private csvService = inject(CsvService);
@@ -153,7 +153,7 @@ export class App {
     const sel = this.selection();
     const data = this.data();
     const values: string[] = [];
-    sel.ranges.forEach(range => {
+    sel.ranges.forEach((range) => {
       const minR = Math.min(range.start.row, range.end.row);
       const maxR = Math.max(range.start.row, range.end.row);
       const minC = Math.min(range.start.col, range.end.col);
@@ -169,9 +169,9 @@ export class App {
 
   applyTransformToSelection(transformer: (v: string) => string): void {
     const sel = this.selection();
-    const newData = this.data().map(row => [...row]);
+    const newData = this.data().map((row) => [...row]);
     this.historyService.push(this.data());
-    sel.ranges.forEach(range => {
+    sel.ranges.forEach((range) => {
       const minR = Math.min(range.start.row, range.end.row);
       const maxR = Math.max(range.start.row, range.end.row);
       const minC = Math.min(range.start.col, range.end.col);
@@ -230,9 +230,10 @@ export class App {
 
   openFormula(): void {
     const data = this.hasHeader() ? this.data().slice(1) : this.data();
-    const headers = this.hasHeader() && this.data().length > 0
-      ? this.data()[0]
-      : (this.data()[0] || []).map((_, i) => String.fromCharCode(65 + i));
+    const headers =
+      this.hasHeader() && this.data().length > 0
+        ? this.data()[0]
+        : (this.data()[0] || []).map((_, i) => String.fromCharCode(65 + i));
 
     const ref = this.modal.create({
       nzTitle: 'Column Formula',
@@ -264,4 +265,3 @@ export class App {
     }
   }
 }
-

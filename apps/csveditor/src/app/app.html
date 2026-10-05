@@ -22,11 +22,13 @@
 
   <main class="main-content">
     @if (!hasData) {
-      <div class="empty-state"
-           (dragover)="onDragOver($event)"
-           (dragleave)="onDragLeave($event)"
-           (drop)="onDrop($event)"
-           [class.drag-over]="isDragOver()">
+      <div
+        class="empty-state"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+        [class.drag-over]="isDragOver()"
+      >
         <div class="empty-icon">📊</div>
         <h2>CSV Editor</h2>
         <p>Open a CSV file to get started, or drag and drop a file here.</p>
@@ -46,5 +48,11 @@
   </main>
 
   <!-- Hidden file input -->
-  <input #fileInput type="file" accept=".csv,.tsv,.txt" style="display:none" (change)="onFileSelected($event)" />
+  <input
+    #fileInput
+    type="file"
+    accept=".csv,.tsv,.txt"
+    style="display: none"
+    (change)="onFileSelected($event)"
+  />
 </div>

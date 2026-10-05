@@ -12,7 +12,16 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 @Component({
   selector: 'app-formula-bar',
   standalone: true,
-  imports: [CommonModule, FormsModule, NzFormModule, NzSelectModule, NzButtonModule, NzAlertModule, NzTableModule, NzInputModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    NzFormModule,
+    NzSelectModule,
+    NzButtonModule,
+    NzAlertModule,
+    NzTableModule,
+    NzInputModule,
+  ],
   template: `
     <div class="formula-dialog">
       <nz-form-item>
@@ -29,14 +38,16 @@ import { NzInputModule } from 'ng-zorro-antd/input';
       <nz-form-item>
         <nz-form-label>Formula</nz-form-label>
         <nz-form-control>
-          <textarea nz-input
-                    [(ngModel)]="formula"
-                    (ngModelChange)="updatePreview()"
-                    rows="3"
-                    placeholder="e.g. col[0] + ' ' + col[1] or col[2] > 100 ? 'high' : 'low'"></textarea>
+          <textarea
+            nz-input
+            [(ngModel)]="formula"
+            (ngModelChange)="updatePreview()"
+            rows="3"
+            placeholder="e.g. col[0] + ' ' + col[1] or col[2] > 100 ? 'high' : 'low'"
+          ></textarea>
           <div class="formula-hint">
-            Use <code>col[N]</code> to reference column N (0-indexed).
-            Supports arithmetic, string ops, and ternary expressions.
+            Use <code>col[N]</code> to reference column N (0-indexed). Supports arithmetic, string
+            ops, and ternary expressions.
           </div>
         </nz-form-control>
       </nz-form-item>
@@ -68,13 +79,29 @@ import { NzInputModule } from 'ng-zorro-antd/input';
       }
     </div>
   `,
-  styles: [`
-    .formula-dialog { padding: 8px 0; }
-    .formula-hint { margin-top: 4px; font-size: 12px; color: #8c8c8c; }
-    code { background: #f5f5f5; padding: 1px 4px; border-radius: 2px; }
-    .preview-section { margin-top: 16px; }
-    nz-form-item { margin-bottom: 12px; }
-  `]
+  styles: [
+    `
+      .formula-dialog {
+        padding: 8px 0;
+      }
+      .formula-hint {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #8c8c8c;
+      }
+      code {
+        background: #f5f5f5;
+        padding: 1px 4px;
+        border-radius: 2px;
+      }
+      .preview-section {
+        margin-top: 16px;
+      }
+      nz-form-item {
+        margin-bottom: 12px;
+      }
+    `,
+  ],
 })
 export class FormulaBarComponent {
   private modalRef = inject(NzModalRef, { optional: true });
@@ -97,8 +124,13 @@ export class FormulaBarComponent {
     // This is a power-user feature; only the local user's own data is affected.
     // Global scope is shadowed to limit accidental access.
     // eslint-disable-next-line no-new-func
-    const fn = new Function('col', 'window', 'document', 'globalThis',
-      `"use strict"; return String(${formulaStr});`);
+    const fn = new Function(
+      'col',
+      'window',
+      'document',
+      'globalThis',
+      `"use strict"; return String(${formulaStr});`,
+    );
     return fn(col, undefined, undefined, undefined);
   }
 
@@ -110,10 +142,12 @@ export class FormulaBarComponent {
     }
     const sample = this.data.slice(0, 5);
     try {
-      this.preview.set(sample.map((row, i) => ({
-        row: i + 1,
-        result: this.evaluateFormula(row, this.formula),
-      })));
+      this.preview.set(
+        sample.map((row, i) => ({
+          row: i + 1,
+          result: this.evaluateFormula(row, this.formula),
+        })),
+      );
     } catch (e) {
       this.error.set((e as Error).message);
       this.preview.set([]);

@@ -24,14 +24,18 @@ export class CsvService {
   }
 
   serializeCSV(data: string[][], delimiter = ','): string {
-    return data.map(row =>
-      row.map(cell => {
-        const str = cell ?? '';
-        if (str.includes(delimiter) || str.includes('"') || str.includes('\n')) {
-          return '"' + str.replace(/"/g, '""') + '"';
-        }
-        return str;
-      }).join(delimiter)
-    ).join('\n');
+    return data
+      .map((row) =>
+        row
+          .map((cell) => {
+            const str = cell ?? '';
+            if (str.includes(delimiter) || str.includes('"') || str.includes('\n')) {
+              return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+          })
+          .join(delimiter),
+      )
+      .join('\n');
   }
 }
