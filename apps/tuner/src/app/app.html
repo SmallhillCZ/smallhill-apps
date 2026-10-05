@@ -1,0 +1,121 @@
+<header>
+	<div class="title">
+		<h1>Tuner</h1>
+		<select
+			class="theme"
+			[attr.aria-label]="t.theme"
+			[value]="theme()"
+			(change)="setTheme($any($event.target).value)"
+		>
+			@for (option of themes; track option) {
+				<option [value]="option" [selected]="option === theme()">{{ t.themes[option] }}</option>
+			}
+		</select>
+	</div>
+	<nav class="instruments" role="tablist">
+		@for (item of instruments; track item.id) {
+			<button
+				role="tab"
+				[attr.aria-selected]="item.id === instrumentId()"
+				[class.selected]="item.id === instrumentId()"
+				(click)="selectInstrument(item.id)"
+			>
+				{{ t.instruments[item.id] }}
+			</button>
+		}
+	</nav>
+</header>
+
+<main [class.in-tune]="inTune()" [class.listening]="tuner.status() === 'listening'">
+	<section class="display" aria-live="polite">
+		<div class="note">
+			@if (reading(); as r) {
+				<span class="name">{{ r.target.name }}</span
+				><sub>{{ r.target.octave }}</sub>
+			} @else {
+				<span class="name placeholder">–</span>
+			}
+		</div>
+
+		<app-gauge [cents]="displayCents()" />
+
+		<div class="readout">
+			<span class="cents">
+				@if (displayCents() !== null) {
+					{{ displayCents()! > 0 ? "+" : "" }}{{ displayCents() }} ¢
+				} @else {
+					&nbsp;
+				}
+			</span>
+			<span class="hz">
+				@if (reading(); as r) {
+					{{ r.frequency | number: "1.1-1" }} Hz
+				}
+			</span>
+		</div>
+
+		<p class="hint">
+			@switch (tuner.status()) {
+				@case ("listening") {
+					{{ hint() }}
+				}
+				@case ("starting") {
+					{{ t.starting }}
+				}
+				@case ("denied") {
+					{{ t.denied }}
+				}
+				@case ("error") {
+					{{ t.error }}
+				}
+				@default {
+					&nbsp;
+				}
+			}
+		</p>
+	</section>
+
+	@if (strings().length) {
+		<section class="strings">
+			<button
+				class="auto"
+				[class.selected]="lockedString() === null"
+				[attr.aria-pressed]="lockedString() === null"
+				(click)="lockedString.set(null)"
+			>
+				{{ t.auto }}
+			</button>
+			@for (s of strings(); track s.midi) {
+				<button
+					[class.selected]="lockedString() === s.midi"
+					[class.target]="reading()?.target?.midi === s.midi"
+					[attr.aria-pressed]="lockedString() === s.midi"
+					(click)="toggleString(s.midi)"
+				>
+					{{ s.name }}<sub>{{ s.octave }}</sub>
+				</button>
+			}
+		</section>
+	}
+
+	<section class="controls">
+		@if (tuner.status() === "listening") {
+			<button class="primary" (click)="tuner.stop()">{{ t.stop }}</button>
+		} @else {
+			<button class="primary" [disabled]="tuner.status() === 'starting'" (click)="tuner.start()">
+				{{ t.start }}
+			</button>
+		}
+
+		<div class="reference">
+			<span>{{ t.reference }}</span>
+			<button aria-label="−1 Hz" (click)="changeA4(-1)">−</button>
+			<output>{{ a4() }} Hz</output>
+			<button aria-label="+1 Hz" (click)="changeA4(1)">+</button>
+		</div>
+	</section>
+</main>
+
+<footer>
+	<p>{{ t.privacy }}</p>
+</footer>
