@@ -21,8 +21,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
-    networks:
-      - default
 
   watchtower:
     image: nickfedor/watchtower
@@ -39,11 +37,41 @@ services:
       traefik.enable: "true"
       traefik.http.routers.watchtower.rule: Host(`${APPS_HOST:-apps.smallhill.cz}`) && Path(`/v1/update`)
       traefik.http.services.watchtower.loadbalancer.server.port: "8080"
-    networks:
-      - default
+
+  portal:
+    image: ghcr.io/smallhillcz/smallhill-apps-portal:latest
+    restart: unless-stopped
+
+  tuner:
+    image: ghcr.io/smallhillcz/smallhill-apps-tuner:latest
+    restart: unless-stopped
+
+  scheduler:
+    image: ghcr.io/smallhillcz/smallhill-apps-scheduler:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://scheduler:${SCHEDULER_DB_PASSWORD}@scheduler-db:5432/scheduler
+    depends_on:
+      scheduler-db:
+        condition: service_healthy
+
+  scheduler-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scheduler
+      POSTGRES_PASSWORD: ${SCHEDULER_DB_PASSWORD}
+      POSTGRES_DB: scheduler
+    volumes:
+      - scheduler-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "scheduler"]
+      interval: 5s
+      retries: 10
 
 volumes:
   letsencrypt:
+  scheduler-db:
 
 networks:
   default:
