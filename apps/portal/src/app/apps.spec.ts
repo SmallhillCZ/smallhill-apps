@@ -19,9 +19,9 @@ describe("APPS", () => {
 		expect(new Set(APPS.map((app) => app.color)).size).toBe(APPS.length);
 	});
 
-	it("uses app paths with trailing slash", () => {
+	it("uses app paths or https urls with trailing slash", () => {
 		for (const app of APPS.filter((app) => app.url)) {
-			expect(app.url).toMatch(/^\/[a-z0-9-]+\/$/);
+			expect(app.url).toMatch(/^(\/[a-z0-9-]+|https:\/\/[a-z0-9.-]+)\/$/);
 		}
 	});
 });

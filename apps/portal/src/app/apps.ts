@@ -56,15 +56,16 @@ export const APPS: AppInfo[] = [
 	},
 	{
 		id: "jachtarskaknizka",
-		name: { en: "Sailing Logbook", cs: "Jachtařská knížka" },
+		name: { en: "Jachtařská knížka", cs: "Jachtařská knížka" },
 		tagline: { en: "Your sailing logbook online", cs: "Online jachtařská knížka" },
 		description: {
 			en: "Keep your sailing logbook online, with maps, photos and records of every voyage. The logbook is stored as files on your own disk, not on a server, and you can export it to PDF or Excel.",
 			cs: "Veďte svou jachtařskou knížku online, s mapami, fotkami a záznamy všech plaveb. Knížka se ukládá jako soubory na váš vlastní disk, ne na server, a můžete ji exportovat do PDF nebo Excelu.",
 		},
-		color: "#0b8a8f",
-		icon: "apps/jachtarskaknizka/icon.svg",
-		screenshots: [],
+		color: "#1e3a5f",
+		icon: "apps/jachtarskaknizka/icon.png",
+		screenshots: ["apps/jachtarskaknizka/screenshot-1.webp"],
+		url: "https://jachtarskaknizka.eu/",
 		listed: true,
 	},
 ];

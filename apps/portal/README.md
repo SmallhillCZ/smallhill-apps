@@ -7,7 +7,7 @@ Browsers without `navigator.install` get a short hint on how to install the app 
 ## Adding an app
 
 1. Put its logo (`icon.svg`, in the app's signature colour) and mobile screenshots (390×780, `.webp`) into `public/apps/<id>/`.
-2. Add an entry to `src/app/apps.ts` with `color` set to the app's manifest `theme_color`. Leave out `url` to show it as coming soon, set `listed: false` to hide it.
+2. Add an entry to `src/app/apps.ts` with `color` set to the app's manifest `theme_color`. `url` is a path on apps.smallhill.cz or a full URL of an app hosted elsewhere; leave it out to show it as coming soon, set `listed: false` to hide it.
 
 ## Development
 
