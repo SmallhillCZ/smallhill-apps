@@ -25,6 +25,8 @@ import { HistoryService } from './services/history.service';
 import { SelectionState } from './models/selection.model';
 import { lang, T } from './i18n';
 
+const DARK_MODE_KEY = 'csveditor.darkMode';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -55,10 +57,16 @@ export class App {
   readonly delimiter = signal(',');
   readonly filename = signal('');
   readonly isDarkMode = signal(false);
+  private readonly darkMedia =
+    typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
   readonly isDragOver = signal(false);
   readonly selection = signal<SelectionState>({ activeCell: null, ranges: [] });
 
   constructor() {
+    this.applyDarkMode(this.loadDarkMode() ?? this.darkMedia?.matches ?? false);
+    this.darkMedia?.addEventListener?.('change', (e) => {
+      if (this.loadDarkMode() === null) this.applyDarkMode(e.matches);
+    });
     effect(() => {
       const current = lang();
       document.documentElement.lang = current;
@@ -282,6 +290,23 @@ export class App {
   }
 
   toggleDarkMode(val: boolean): void {
+    try {
+      if (val === (this.darkMedia?.matches ?? false)) localStorage.removeItem(DARK_MODE_KEY);
+      else localStorage.setItem(DARK_MODE_KEY, String(val));
+    } catch {}
+    this.applyDarkMode(val);
+  }
+
+  private loadDarkMode(): boolean | null {
+    try {
+      const stored = localStorage.getItem(DARK_MODE_KEY);
+      return stored === null ? null : stored === 'true';
+    } catch {
+      return null;
+    }
+  }
+
+  private applyDarkMode(val: boolean): void {
     this.isDarkMode.set(val);
     if (val) {
       document.body.setAttribute('data-theme', 'dark');
