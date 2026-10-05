@@ -1,6 +1,5 @@
-import { computed, effect, inject, Injectable, signal } from "@angular/core";
+import { computed, effect, Injectable, signal } from "@angular/core";
 import { Track } from "../onedrive/items";
-import { OneDriveService } from "../onedrive/onedrive.service";
 import { createQueue, nextPos, prevPos, Queue, Repeat, reshuffle } from "./queue";
 
 const STORAGE_KEY = "player.settings";
@@ -21,9 +20,13 @@ function loadSettings(): Settings {
 	}
 }
 
+export interface TrackSource {
+	downloadUrl(id: string): Promise<string>;
+}
+
 @Injectable({ providedIn: "root" })
 export class PlayerService {
-	private readonly drive = inject(OneDriveService);
+	private source: TrackSource | null = null;
 	private readonly audio = new Audio();
 	private readonly urls = new Map<string, { url: string; at: number }>();
 	private request = 0;
@@ -91,7 +94,9 @@ export class PlayerService {
 		this.setupMediaSession();
 	}
 
-	playList(tracks: Track[], start: number): void {
+	playList(tracks: Track[], start: number, source: TrackSource): void {
+		if (source !== this.source) this.clearUrls();
+		this.source = source;
 		this.tracks.set(tracks);
 		this.queue.set(createQueue(tracks.length, start, this.shuffle()));
 		void this.load();
@@ -151,6 +156,8 @@ export class PlayerService {
 		this.audio.pause();
 		this.audio.removeAttribute("src");
 		this.audio.load();
+		this.clearUrls();
+		this.source = null;
 		this.tracks.set([]);
 		this.queue.set({ order: [], pos: 0 });
 		this.time.set(0);
@@ -185,13 +192,23 @@ export class PlayerService {
 		}
 	}
 
+	isFrom(source: TrackSource): boolean {
+		return this.source === source;
+	}
+
+	private clearUrls(): void {
+		for (const { url } of this.urls.values()) if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+		this.urls.clear();
+	}
+
 	private cached(id: string): string | null {
 		const entry = this.urls.get(id);
 		return entry && Date.now() - entry.at < URL_TTL ? entry.url : null;
 	}
 
 	private async fetchUrl(id: string): Promise<string> {
-		const url = await this.drive.downloadUrl(id);
+		if (!this.source) throw new Error("No source");
+		const url = await this.source.downloadUrl(id);
 		this.urls.set(id, { url, at: Date.now() });
 		return url;
 	}

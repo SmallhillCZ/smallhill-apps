@@ -1,5 +1,4 @@
 import { TestBed } from "@angular/core/testing";
-import { OneDriveService } from "../onedrive/onedrive.service";
 import { PlayerService } from "./player.service";
 
 describe("PlayerService", () => {
@@ -13,7 +12,6 @@ describe("PlayerService", () => {
 		});
 		vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
 		vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
-		TestBed.configureTestingModule({ providers: [{ provide: OneDriveService, useValue: { downloadUrl } }] });
 	});
 
 	afterEach(() => vi.restoreAllMocks());
@@ -22,14 +20,14 @@ describe("PlayerService", () => {
 
 	it("plays from a fresh download URL", async () => {
 		const player = TestBed.inject(PlayerService);
-		player.playList([track], 0);
+		player.playList([track], 0, { downloadUrl });
 		await vi.waitFor(() => expect(audio?.src).toBe("https://files.example/t1"));
 		expect(downloadUrl).toHaveBeenCalledTimes(1);
 	});
 
 	it("retries a failing track once and then stops", async () => {
 		const player = TestBed.inject(PlayerService);
-		player.playList([track], 0);
+		player.playList([track], 0, { downloadUrl });
 		await vi.waitFor(() => expect(downloadUrl).toHaveBeenCalledTimes(1));
 		await vi.waitFor(() => expect(audio?.src).toContain("t1"));
 		audio.dispatchEvent(new Event("error"));

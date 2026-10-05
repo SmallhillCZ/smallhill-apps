@@ -2,7 +2,7 @@ export interface DriveItem {
 	id: string;
 	name: string;
 	size?: number;
-	folder?: { childCount: number };
+	folder?: { childCount?: number };
 	file?: { mimeType?: string };
 	audio?: {
 		title?: string;
