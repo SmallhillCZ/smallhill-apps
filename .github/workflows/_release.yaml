@@ -45,6 +45,8 @@ jobs:
     uses: ./.github/workflows/_build.yaml
     with:
       app: ${{ inputs.app }}
+      host: ${{ inputs.environment == 'production' && (vars.APPS_HOST || 'apps.smallhill.cz') || (vars.APPS_DEV_HOST || 'dev.apps.smallhill.cz') }}
+      router: ${{ inputs.app }}-${{ inputs.environment == 'production' && 'prod' || 'dev' }}
       image: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:${{ inputs.environment == 'production' && 'latest' || 'dev' }}
       version: ${{ inputs.environment == 'production' && needs.semver.outputs.version || needs.version.outputs.version }}
 

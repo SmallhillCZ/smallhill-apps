@@ -19,6 +19,14 @@ on:
         description: "Version to use for the built Docker images"
         type: string
         required: false
+      host:
+        description: "Host the app is served on, used in the Traefik router rule"
+        type: string
+        required: true
+      router:
+        description: "Unique Traefik router name for this app and environment"
+        type: string
+        required: true
 
 jobs:
   build:
@@ -42,18 +50,46 @@ jobs:
             exit 1
           fi
           if [ -f "$dir/Dockerfile" ]; then
-            echo "file=$dir/Dockerfile" >> "$GITHUB_OUTPUT"
-            echo "base_path=" >> "$GITHUB_OUTPUT"
+            file="$dir/Dockerfile"
           else
-            base_path=$(jq -r 'first(.projects[].architect.build.configurations.production.baseHref // empty)' "$dir/angular.json" 2>/dev/null || true)
-            echo "file=.github/docker/static.Dockerfile" >> "$GITHUB_OUTPUT"
-            echo "base_path=${base_path:-/$APP/}" >> "$GITHUB_OUTPUT"
+            file=".github/docker/static.Dockerfile"
           fi
-          if [ -f "$dir/.nvmrc" ]; then
-            echo "node_version=$(cat "$dir/.nvmrc")" >> "$GITHUB_OUTPUT"
-          else
-            echo "node_version=24" >> "$GITHUB_OUTPUT"
-          fi
+          base_path=$(jq -r 'first(.projects[].architect.build.configurations.production.baseHref // empty)' "$dir/angular.json" 2>/dev/null || true)
+          port=$(awk 'toupper($1) == "EXPOSE" { print $2 }' "$file" | tail -n1)
+          node_version=$(cat "$dir/.nvmrc" 2>/dev/null || echo 24)
+          {
+            echo "file=$file"
+            echo "base_path=${base_path:-/$APP/}"
+            echo "port=${port:-80}"
+            echo "node_version=$node_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Traefik labels
+        id: labels
+        env:
+          HOST: ${{ inputs.host }}
+          ROUTER: ${{ inputs.router }}
+          BASE_PATH: ${{ steps.dockerfile.outputs.base_path }}
+          PORT: ${{ steps.dockerfile.outputs.port }}
+        run: |
+          prefix="${BASE_PATH%/}"
+          {
+            echo "labels<<EOF"
+            echo "traefik.enable=true"
+            echo "com.centurylinklabs.watchtower.enable=true"
+            echo "traefik.http.services.$ROUTER.loadbalancer.server.port=$PORT"
+            echo "traefik.http.routers.$ROUTER.service=$ROUTER"
+            if [ -z "$prefix" ]; then
+              echo "traefik.http.routers.$ROUTER.rule=Host(\`$HOST\`)"
+            else
+              echo "traefik.http.routers.$ROUTER.rule=Host(\`$HOST\`) && (Path(\`$prefix\`) || PathPrefix(\`$prefix/\`))"
+              echo "traefik.http.routers.$ROUTER.middlewares=$ROUTER-slash"
+              echo "traefik.http.middlewares.$ROUTER-slash.redirectregex.regex=^(https?://[^/]+$prefix)\$"
+              echo "traefik.http.middlewares.$ROUTER-slash.redirectregex.replacement=\${1}/"
+              echo "traefik.http.middlewares.$ROUTER-slash.redirectregex.permanent=true"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -75,6 +111,7 @@ jobs:
           push: true
           cache-from: type=gha,scope=${{ inputs.app }}
           cache-to: type=gha,mode=max,scope=${{ inputs.app }}
+          labels: ${{ steps.labels.outputs.labels }}
           build-args: |
             VERSION=${{ inputs.version }}
             BASE_PATH=${{ steps.dockerfile.outputs.base_path }}
