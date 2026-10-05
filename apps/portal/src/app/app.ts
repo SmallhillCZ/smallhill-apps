@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, signa
 import { AppDetail } from "./app-detail/app-detail";
 import { AppTile } from "./app-tile/app-tile";
 import { APPS } from "./apps";
-import { T } from "./i18n";
+import { Lang, lang, setLang, T } from "./i18n";
 
 @Component({
 	selector: "app-root",
@@ -14,6 +14,9 @@ import { T } from "./i18n";
 })
 export class App {
 	protected readonly t = T;
+	protected readonly lang = lang;
+	protected readonly langs: Lang[] = ["cs", "en"];
+	protected readonly setLang = setLang;
 	protected readonly apps = APPS.filter((app) => app.listed);
 
 	private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>("dialog");
@@ -22,6 +25,9 @@ export class App {
 
 	constructor() {
 		this.syncFromHash();
+		effect(() => {
+			document.documentElement.lang = lang();
+		});
 		effect(() => {
 			const dialog = this.dialog().nativeElement;
 			if (this.selected() && !dialog.open) dialog.showModal();
