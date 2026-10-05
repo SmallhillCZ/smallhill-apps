@@ -1,6 +1,6 @@
 # Deployment
 
-All apps run in one container, `ghcr.io/smallhillcz/smallhill-apps`, built by **Release to DEV / Release to PRODUCTION** (from SmallhillCZ/skeletons). The release builds every `apps/<name>` with `--base-href /<name>/` (portal at `/`):
+All apps run in one container, `ghcr.io/smallhillcz/smallhill-apps`, built by **Release to PRODUCTION** (from SmallhillCZ/skeletons). The release builds every `apps/<name>` with `--base-href /<name>/` (portal at `/`):
 
 - Apps without a `serve` script are static files served by nginx under `/<name>/`.
 - Apps with a `serve` script (Scheduler) run as a Node process inside the same container on `127.0.0.1:3001+`, with `PORT`, `HOST` and `BASE_PATH=/<name>/` set; nginx proxies `/<name>/` to it. All server apps share the container env, including one common `DATABASE_URL` (one Postgres account for all apps).
