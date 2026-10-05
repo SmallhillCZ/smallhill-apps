@@ -6,15 +6,33 @@ on:
     branches: [master]
 
 jobs:
-  build:
+  apps:
     runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.list.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: echo "apps=$(ls -d apps/*/ | xargs -n1 basename | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: apps
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.apps.outputs.apps) }}
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: apps/${{ matrix.app }}/.nvmrc
           cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
       - run: npm ci
-      - run: npm run format:check
-      - run: npm run build
-      - run: npm test
+      - run: npm run format:check --if-present
+      - run: npm run build --if-present
+      - run: npm test --if-present

@@ -12,13 +12,13 @@ Simple guitar, bass and violin tuner. Frontend-only Angular PWA, no ads, no trac
 
 ## Development
 
-Run from the repository root (Node.js 24):
+Requires Node.js 24 (see `.nvmrc`).
 
 ```sh
 npm install
-npm run dev -w @smallhillcz/tuner     # dev server on http://localhost:4200
-npm test -w @smallhillcz/tuner        # unit tests (vitest)
-npm run build -w @smallhillcz/tuner   # production build into apps/tuner/dist/tuner/browser
+npm run dev      # dev server on http://localhost:4200
+npm test         # unit tests (vitest)
+npm run build    # production build into dist/tuner/browser
 ```
 
 Production builds use base href `/tuner/` for https://apps.smallhill.cz/tuner/. The service worker is enabled only in production builds. Serve `dist/tuner/browser` from any static host over HTTPS.

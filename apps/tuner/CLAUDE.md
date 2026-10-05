@@ -4,4 +4,4 @@
 - Pitch detection: YIN in `src/app/tuning/pitch-detector.ts`; notes/instruments in `notes.ts`; mic loop in `tuner.service.ts`.
 - UI texts EN/CS in `src/app/i18n.ts`. Icons generated from `public/icons/icon.svg`.
 - Hosted at https://apps.smallhill.cz/tuner/ (production baseHref `/tuner/`).
-- Part of the smallhill-apps monorepo; see root CLAUDE.md.
+- Independent project inside smallhill-apps; prettier: tabs, double quotes, width 120.

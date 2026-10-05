@@ -10,11 +10,4 @@ Simple, ad-free, no-tracking apps served at https://apps.smallhill.cz.
 
 ## Development
 
-Requires Node.js 24 (see `.nvmrc`).
-
-```sh
-npm install
-npm run dev -w @smallhillcz/tuner
-npm run build
-npm test
-```
+Each app in `apps/<name>` is an independent project. See its README.

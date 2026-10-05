@@ -1,5 +1,4 @@
 # Smallhill Apps
 
-- npm workspaces monorepo; each app in `apps/<name>`, package `@smallhillcz/<name>`, served at `https://apps.smallhill.cz/<name>/` (Angular prod `baseHref`).
-- Node 24 (`.nvmrc`), single root `package-lock.json`. Root scripts: `build`, `test`, `format`, `format:check`.
-- Prettier at root: tabs, double quotes, width 120. CI: `.github/workflows/ci.yml`.
+- Each app is an independent project in `apps/<name>` (own package.json, lockfile, prettier, .nvmrc), package `@smallhillcz/<name>`, served at `https://apps.smallhill.cz/<name>/`. No npm workspaces unless truly needed.
+- CI (`.github/workflows/ci.yml`) runs `npm ci`, `format:check`, `build`, `test` in every `apps/*` directory.
