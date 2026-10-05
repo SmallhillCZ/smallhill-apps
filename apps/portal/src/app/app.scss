@@ -19,6 +19,10 @@
 		height: 48px;
 	}
 
+	> div:first-of-type {
+		flex: 1;
+	}
+
 	h1 {
 		margin: 0;
 		font-size: 1.75rem;
@@ -28,6 +32,33 @@
 	p {
 		margin: 4px 0 0;
 		color: var(--muted);
+	}
+}
+
+.lang {
+	display: flex;
+	flex: none;
+	align-self: flex-start;
+	padding: 3px;
+	border-radius: 999px;
+	background: var(--surface-2);
+
+	button {
+		min-width: 40px;
+		height: 30px;
+		padding: 0 10px;
+		border: 0;
+		border-radius: 999px;
+		background: none;
+		color: var(--muted);
+		font-size: 0.8rem;
+		font-weight: 700;
+
+		&[aria-pressed="true"] {
+			background: var(--surface);
+			color: var(--text);
+			box-shadow: var(--shadow);
+		}
 	}
 }
 
