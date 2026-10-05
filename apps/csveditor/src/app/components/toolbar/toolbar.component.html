@@ -1,6 +1,6 @@
 <div class="toolbar">
   <div class="toolbar-brand">
-    <span class="brand-name">CSV Editor</span>
+    <span class="brand-name">{{ t().title }}</span>
     @if (filename()) {
       <span class="filename">{{ filename() }}</span>
     }
@@ -14,22 +14,22 @@
       nz-button
       nzType="default"
       nz-tooltip
-      nzTooltipTitle="Open CSV file"
+      [nzTooltipTitle]="t().openTooltip"
       (click)="onOpenFile()"
     >
       <span nz-icon nzType="folder-open" nzTheme="outline"></span>
-      Open
+      {{ t().open }}
     </button>
     <button
       nz-button
       nzType="default"
       nz-tooltip
-      nzTooltipTitle="Save as CSV"
+      [nzTooltipTitle]="t().saveTooltip"
       [disabled]="!hasData()"
       (click)="onSaveFile()"
     >
       <span nz-icon nzType="save" nzTheme="outline"></span>
-      Save
+      {{ t().save }}
     </button>
   </div>
 
@@ -41,7 +41,7 @@
       nz-button
       nzType="text"
       nz-tooltip
-      nzTooltipTitle="Undo (Ctrl+Z)"
+      [nzTooltipTitle]="t().undo"
       [disabled]="!canUndo()"
       (click)="onUndo()"
     >
@@ -51,7 +51,7 @@
       nz-button
       nzType="text"
       nz-tooltip
-      nzTooltipTitle="Redo (Ctrl+Y)"
+      [nzTooltipTitle]="t().redo"
       [disabled]="!canRedo()"
       (click)="onRedo()"
     >
@@ -63,19 +63,19 @@
 
   <!-- CSV Settings -->
   <div class="toolbar-group">
-    <label class="toolbar-label">Delimiter:</label>
+    <label class="toolbar-label">{{ t().delimiter }}</label>
     <nz-select
       [ngModel]="delimiter()"
       (ngModelChange)="onDelimiterChange($event)"
       nzSize="small"
       style="width: 120px"
     >
-      @for (opt of delimiterOptions; track opt.value) {
+      @for (opt of delimiterOptions(); track opt.value) {
         <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
       }
     </nz-select>
 
-    <label class="toolbar-label">Header row:</label>
+    <label class="toolbar-label">{{ t().headerRow }}</label>
     <nz-switch
       [ngModel]="hasHeader()"
       (ngModelChange)="onHasHeaderChange($event)"
@@ -92,24 +92,24 @@
       nzType="default"
       nzSize="small"
       nz-tooltip
-      nzTooltipTitle="Reformat numbers"
+      [nzTooltipTitle]="t().numbersTooltip"
       (click)="transformNumber.emit()"
       [disabled]="!hasData()"
     >
       <span nz-icon nzType="number" nzTheme="outline"></span>
-      Numbers
+      {{ t().numbers }}
     </button>
     <button
       nz-button
       nzType="default"
       nzSize="small"
       nz-tooltip
-      nzTooltipTitle="Reformat dates"
+      [nzTooltipTitle]="t().datesTooltip"
       (click)="transformDate.emit()"
       [disabled]="!hasData()"
     >
       <span nz-icon nzType="calendar" nzTheme="outline"></span>
-      Dates
+      {{ t().dates }}
     </button>
     <button
       nz-button
@@ -121,29 +121,46 @@
       [disabled]="!hasData()"
     >
       <span nz-icon nzType="code" nzTheme="outline"></span>
-      Markup
+      {{ t().markup }}
     </button>
     <button
       nz-button
       nzType="default"
       nzSize="small"
       nz-tooltip
-      nzTooltipTitle="Column formula"
+      [nzTooltipTitle]="t().formulaTooltip"
       (click)="showFormula.emit()"
       [disabled]="!hasData()"
     >
       <span nz-icon nzType="function" nzTheme="outline"></span>
-      Formula
+      {{ t().formula }}
     </button>
   </div>
 
   <div class="toolbar-spacer"></div>
+
+  <div class="toolbar-group langs" role="group" [attr.aria-label]="t().language">
+    @for (l of langs; track l) {
+      <button
+        nz-button
+        nzType="text"
+        nzSize="small"
+        [class.active]="lang() === l"
+        [attr.aria-pressed]="lang() === l"
+        [attr.lang]="l"
+        (click)="setLang(l)"
+      >
+        {{ l.toUpperCase() }}
+      </button>
+    }
+  </div>
 
   <!-- Dark mode toggle -->
   <div class="toolbar-group">
     <span nz-icon [nzType]="darkMode() ? 'moon' : 'sun'" nzTheme="outline"></span>
     <nz-switch
       [ngModel]="darkMode()"
+      [attr.aria-label]="t().darkMode"
       (ngModelChange)="onDarkModeChange($event)"
       nzSize="small"
     ></nz-switch>

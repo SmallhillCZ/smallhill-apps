@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzModalRef } from 'ng-zorro-antd/modal';
+import { T } from '../../i18n';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -33,76 +34,76 @@ export interface NumberTransformConfig {
   template: `
     <div class="transform-dialog">
       <nz-form-item>
-        <nz-form-label>From format</nz-form-label>
+        <nz-form-label>{{ t().fromFormat }}</nz-form-label>
         <nz-form-control>
           <div class="format-row">
-            <label>Thousands separator:</label>
+            <label>{{ t().thousandsSeparator }}</label>
             <nz-select
               [(ngModel)]="config.fromThousands"
               style="width: 120px"
               (ngModelChange)="updatePreview()"
             >
-              <nz-option nzValue="" nzLabel="None"></nz-option>
-              <nz-option nzValue="," nzLabel="Comma (,)"></nz-option>
-              <nz-option nzValue="." nzLabel="Period (.)"></nz-option>
-              <nz-option nzValue=" " nzLabel="Space"></nz-option>
+              <nz-option nzValue="" [nzLabel]="t().none"></nz-option>
+              <nz-option nzValue="," [nzLabel]="t().comma"></nz-option>
+              <nz-option nzValue="." [nzLabel]="t().period"></nz-option>
+              <nz-option nzValue=" " [nzLabel]="t().space"></nz-option>
             </nz-select>
-            <label>Decimal separator:</label>
+            <label>{{ t().decimalSeparator }}</label>
             <nz-select
               [(ngModel)]="config.fromDecimal"
               style="width: 120px"
               (ngModelChange)="updatePreview()"
             >
-              <nz-option nzValue="." nzLabel="Period (.)"></nz-option>
-              <nz-option nzValue="," nzLabel="Comma (,)"></nz-option>
+              <nz-option nzValue="." [nzLabel]="t().period"></nz-option>
+              <nz-option nzValue="," [nzLabel]="t().comma"></nz-option>
             </nz-select>
           </div>
         </nz-form-control>
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label>To format</nz-form-label>
+        <nz-form-label>{{ t().toFormat }}</nz-form-label>
         <nz-form-control>
           <div class="format-row">
-            <label>Thousands separator:</label>
+            <label>{{ t().thousandsSeparator }}</label>
             <nz-select
               [(ngModel)]="config.toThousands"
               style="width: 120px"
               (ngModelChange)="updatePreview()"
             >
-              <nz-option nzValue="" nzLabel="None"></nz-option>
-              <nz-option nzValue="," nzLabel="Comma (,)"></nz-option>
-              <nz-option nzValue="." nzLabel="Period (.)"></nz-option>
-              <nz-option nzValue=" " nzLabel="Space"></nz-option>
+              <nz-option nzValue="" [nzLabel]="t().none"></nz-option>
+              <nz-option nzValue="," [nzLabel]="t().comma"></nz-option>
+              <nz-option nzValue="." [nzLabel]="t().period"></nz-option>
+              <nz-option nzValue=" " [nzLabel]="t().space"></nz-option>
             </nz-select>
-            <label>Decimal separator:</label>
+            <label>{{ t().decimalSeparator }}</label>
             <nz-select
               [(ngModel)]="config.toDecimal"
               style="width: 120px"
               (ngModelChange)="updatePreview()"
             >
-              <nz-option nzValue="." nzLabel="Period (.)"></nz-option>
-              <nz-option nzValue="," nzLabel="Comma (,)"></nz-option>
+              <nz-option nzValue="." [nzLabel]="t().period"></nz-option>
+              <nz-option nzValue="," [nzLabel]="t().comma"></nz-option>
             </nz-select>
           </div>
         </nz-form-control>
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label>Currency</nz-form-label>
+        <nz-form-label>{{ t().currency }}</nz-form-label>
         <nz-form-control>
           <div class="format-row">
-            <label>Strip currency symbols</label>
+            <label>{{ t().stripCurrency }}</label>
             <input
               type="checkbox"
               [(ngModel)]="config.stripCurrency"
               (ngModelChange)="updatePreview()"
             />
-            <label>Add currency:</label>
+            <label>{{ t().addCurrency }}</label>
             <input
               nz-input
               [(ngModel)]="config.addCurrency"
-              placeholder="e.g. $"
+              [placeholder]="t().currencyPlaceholder"
               style="width: 60px"
               (ngModelChange)="updatePreview()"
             />
@@ -111,7 +112,7 @@ export interface NumberTransformConfig {
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label>Decimal places</nz-form-label>
+        <nz-form-label>{{ t().decimalPlaces }}</nz-form-label>
         <nz-form-control>
           <div class="format-row">
             <nz-select
@@ -119,7 +120,7 @@ export interface NumberTransformConfig {
               style="width: 120px"
               (ngModelChange)="updatePreview()"
             >
-              <nz-option [nzValue]="null" nzLabel="Keep original"></nz-option>
+              <nz-option [nzValue]="null" [nzLabel]="t().keepOriginal"></nz-option>
               <nz-option [nzValue]="0" nzLabel="0"></nz-option>
               <nz-option [nzValue]="1" nzLabel="1"></nz-option>
               <nz-option [nzValue]="2" nzLabel="2"></nz-option>
@@ -132,12 +133,12 @@ export interface NumberTransformConfig {
 
       @if (preview().length > 0) {
         <div class="preview-section">
-          <strong>Preview:</strong>
+          <strong>{{ t().preview }}</strong>
           <nz-table [nzData]="preview()" nzSize="small" [nzShowPagination]="false">
             <thead>
               <tr>
-                <th>Before</th>
-                <th>After</th>
+                <th>{{ t().before }}</th>
+                <th>{{ t().after }}</th>
               </tr>
             </thead>
             <tbody>
@@ -174,6 +175,7 @@ export interface NumberTransformConfig {
   ],
 })
 export class TransformNumberComponent {
+  protected readonly t = T;
   private modalRef = inject(NzModalRef, { optional: true });
 
   config: NumberTransformConfig = {

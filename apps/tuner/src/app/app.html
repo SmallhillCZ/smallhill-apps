@@ -1,14 +1,27 @@
 <header>
 	<div class="title">
 		<h1>Tuner</h1>
+		<div class="langs" role="group" [attr.aria-label]="t().language">
+			@for (l of langs; track l) {
+				<button
+					type="button"
+					[class.selected]="lang() === l"
+					[attr.aria-pressed]="lang() === l"
+					[attr.lang]="l"
+					(click)="setLang(l)"
+				>
+					{{ l.toUpperCase() }}
+				</button>
+			}
+		</div>
 		<select
 			class="theme"
-			[attr.aria-label]="t.theme"
+			[attr.aria-label]="t().theme"
 			[value]="theme()"
 			(change)="setTheme($any($event.target).value)"
 		>
 			@for (option of themes; track option) {
-				<option [value]="option" [selected]="option === theme()">{{ t.themes[option] }}</option>
+				<option [value]="option" [selected]="option === theme()">{{ t().themes[option] }}</option>
 			}
 		</select>
 	</div>
@@ -20,7 +33,7 @@
 				[class.selected]="item.id === instrumentId()"
 				(click)="selectInstrument(item.id)"
 			>
-				{{ t.instruments[item.id] }}
+				{{ t().instruments[item.id] }}
 			</button>
 		}
 	</nav>
@@ -60,13 +73,13 @@
 					{{ hint() }}
 				}
 				@case ("starting") {
-					{{ t.starting }}
+					{{ t().starting }}
 				}
 				@case ("denied") {
-					{{ t.denied }}
+					{{ t().denied }}
 				}
 				@case ("error") {
-					{{ t.error }}
+					{{ t().error }}
 				}
 				@default {
 					&nbsp;
@@ -83,7 +96,7 @@
 				[attr.aria-pressed]="lockedString() === null"
 				(click)="lockedString.set(null)"
 			>
-				{{ t.auto }}
+				{{ t().auto }}
 			</button>
 			@for (s of strings(); track s.midi) {
 				<button
@@ -100,15 +113,15 @@
 
 	<section class="controls">
 		@if (tuner.status() === "listening") {
-			<button class="primary" (click)="tuner.stop()">{{ t.stop }}</button>
+			<button class="primary" (click)="tuner.stop()">{{ t().stop }}</button>
 		} @else {
 			<button class="primary" [disabled]="tuner.status() === 'starting'" (click)="tuner.start()">
-				{{ t.start }}
+				{{ t().start }}
 			</button>
 		}
 
 		<div class="reference">
-			<span>{{ t.reference }}</span>
+			<span>{{ t().reference }}</span>
 			<button aria-label="−1 Hz" (click)="changeA4(-1)">−</button>
 			<output>{{ a4() }} Hz</output>
 			<button aria-label="+1 Hz" (click)="changeA4(1)">+</button>
@@ -117,5 +130,5 @@
 </main>
 
 <footer>
-	<p>{{ t.privacy }}</p>
+	<p>{{ t().privacy }}</p>
 </footer>

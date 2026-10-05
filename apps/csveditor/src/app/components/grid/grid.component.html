@@ -29,7 +29,7 @@
           <div class="filter-dropdown" (click)="$event.stopPropagation()">
             <input
               nz-input
-              placeholder="Filter..."
+              [placeholder]="t().filter"
               [value]="getFilterValue(i)"
               (input)="setFilter(i, $any($event.target).value)"
             />
@@ -47,7 +47,7 @@
         <div class="col-resize-handle" (mousedown)="onResizeStart($event, i)"></div>
       </div>
     }
-    <div class="add-col-btn" (click)="addColumn()" title="Add column">+</div>
+    <div class="add-col-btn" (click)="addColumn()" [title]="t().addColumn">+</div>
   </div>
 
   <cdk-virtual-scroll-viewport itemSize="28" class="grid-scroll-viewport">
@@ -61,7 +61,7 @@
         <button
           class="delete-row-btn"
           (click)="deleteRow(item.originalIndex); $event.stopPropagation()"
-          title="Delete row"
+          [title]="t().deleteRow"
         >
           ×
         </button>
@@ -99,13 +99,13 @@
 
   <div class="grid-footer">
     <button nz-button nzType="dashed" nzSize="small" (click)="addRow()">
-      <span nz-icon nzType="plus" nzTheme="outline"></span> Add Row
+      <span nz-icon nzType="plus" nzTheme="outline"></span> {{ t().addRow }}
     </button>
   </div>
 
   @if (isDragOver()) {
     <div class="drag-overlay">
-      <div class="drag-message">Drop CSV file here</div>
+      <div class="drag-message">{{ t().dropHere }}</div>
     </div>
   }
 </div>

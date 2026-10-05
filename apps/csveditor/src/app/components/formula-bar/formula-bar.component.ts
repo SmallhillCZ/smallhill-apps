@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzModalRef } from 'ng-zorro-antd/modal';
+import { T } from '../../i18n';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -25,7 +26,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
   template: `
     <div class="formula-dialog">
       <nz-form-item>
-        <nz-form-label>Target column</nz-form-label>
+        <nz-form-label>{{ t().targetColumn }}</nz-form-label>
         <nz-form-control>
           <nz-select [(ngModel)]="targetCol" style="width: 200px" (ngModelChange)="updatePreview()">
             @for (col of columns(); track $index; let i = $index) {
@@ -36,18 +37,17 @@ import { NzInputModule } from 'ng-zorro-antd/input';
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label>Formula</nz-form-label>
+        <nz-form-label>{{ t().formula }}</nz-form-label>
         <nz-form-control>
           <textarea
             nz-input
             [(ngModel)]="formula"
             (ngModelChange)="updatePreview()"
             rows="3"
-            placeholder="e.g. col[0] + ' ' + col[1] or col[2] > 100 ? 'high' : 'low'"
+            [placeholder]="t().formulaPlaceholder"
           ></textarea>
           <div class="formula-hint">
-            Use <code>col[N]</code> to reference column N (0-indexed). Supports arithmetic, string
-            ops, and ternary expressions.
+            {{ t().formulaHintBefore }} <code>col[N]</code> {{ t().formulaHintAfter }}
           </div>
         </nz-form-control>
       </nz-form-item>
@@ -58,12 +58,12 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 
       @if (preview().length > 0) {
         <div class="preview-section">
-          <strong>Preview (first 5 rows):</strong>
+          <strong>{{ t().previewFirst }}</strong>
           <nz-table [nzData]="preview()" nzSize="small" [nzShowPagination]="false">
             <thead>
               <tr>
-                <th>Row</th>
-                <th>Result</th>
+                <th>{{ t().row }}</th>
+                <th>{{ t().result }}</th>
               </tr>
             </thead>
             <tbody>
@@ -104,6 +104,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
   ],
 })
 export class FormulaBarComponent {
+  protected readonly t = T;
   private modalRef = inject(NzModalRef, { optional: true });
 
   readonly columns = signal<string[]>([]);
