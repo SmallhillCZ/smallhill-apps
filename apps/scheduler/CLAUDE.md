@@ -6,3 +6,4 @@
 - Tests: `npm test` (needs Postgres DB `scheduler_test`, or `TEST_DATABASE_URL`; root CI provides a Postgres service). `npm run build` also typechecks the server.
 - Admin/edit keys live only in the browser (`src/app/local-store.ts`); the DB stores SHA-256 hashes.
 - Hosted at https://apps.smallhill.cz/scheduler/.
+- Signature colour: blue `#3b5bdb` (manifest `theme_color`, icons, `--accent` in `src/styles.css`). Icons are rendered from `public/icon.svg`.
