@@ -6,12 +6,14 @@
 		"start": "ng serve",
 		"build": "ng build",
 		"watch": "ng build --watch --configuration development",
-		"test": "ng test --watch=false",
+		"test": "node scripts/share-pages.mts --check && ng test --watch=false",
 		"dev": "ng serve",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"share-pages": "node scripts/share-pages.mts"
 	},
 	"private": true,
+	"type": "module",
 	"dependencies": {
 		"@angular/common": "^22.2.0",
 		"@angular/compiler": "^22.2.0",

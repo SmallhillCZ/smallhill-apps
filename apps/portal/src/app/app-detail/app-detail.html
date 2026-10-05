@@ -5,10 +5,21 @@
 		<p class="tagline">{{ tr(app().tagline) }}</p>
 		<app-actions [app]="app()" [large]="true" />
 	</div>
-	<button type="button" class="close" (click)="closed.emit()" [attr.aria-label]="t().close" [title]="t().close">
-		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-	</button>
+	<div class="tools">
+		<button type="button" class="tool" (click)="closed.emit()" [attr.aria-label]="t().close" [title]="t().close">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+		</button>
+		<button type="button" class="tool" (click)="share()" [attr.aria-label]="t().share" [title]="t().share">
+			<svg viewBox="0 0 24 24" aria-hidden="true">
+				<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+			</svg>
+		</button>
+	</div>
 </header>
+
+@if (copied()) {
+	<p class="help" role="status">{{ t().linkCopied }}</p>
+}
 
 @if (showHelp()) {
 	<p class="help" role="status">{{ t().installHelp }}</p>

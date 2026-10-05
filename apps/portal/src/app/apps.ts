@@ -1,4 +1,4 @@
-import { Text } from "./i18n";
+import type { Text } from "./i18n";
 
 export interface AppInfo {
 	id: string;

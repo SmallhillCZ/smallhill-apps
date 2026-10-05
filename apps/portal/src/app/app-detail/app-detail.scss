@@ -34,7 +34,14 @@ h2 {
 	color: var(--muted);
 }
 
-.close {
+.tools {
+	display: flex;
+	flex-direction: column;
+	flex: none;
+	gap: 8px;
+}
+
+.tool {
 	display: grid;
 	place-items: center;
 	flex: none;
@@ -49,8 +56,10 @@ h2 {
 		width: 18px;
 		height: 18px;
 		stroke: currentColor;
+		fill: none;
 		stroke-width: 2;
 		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 }
 
