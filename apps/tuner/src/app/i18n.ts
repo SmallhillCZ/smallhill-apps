@@ -1,3 +1,7 @@
+import { computed, signal } from "@angular/core";
+
+export type Lang = "en" | "cs";
+
 const en = {
 	start: "Start tuning",
 	stop: "Stop",
@@ -15,6 +19,7 @@ const en = {
 	instruments: { guitar: "Guitar", bass: "Bass", violin: "Violin", chromatic: "Chromatic" },
 	theme: "Theme",
 	themes: { auto: "Auto theme", light: "Light", dark: "Dark", eink: "E-ink" },
+	language: "Language",
 };
 
 const cs: typeof en = {
@@ -34,8 +39,37 @@ const cs: typeof en = {
 	instruments: { guitar: "Kytara", bass: "Baskytara", violin: "Housle", chromatic: "Chromatické" },
 	theme: "Vzhled",
 	themes: { auto: "Automatický vzhled", light: "Světlý", dark: "Tmavý", eink: "E-ink" },
+	language: "Jazyk",
 };
 
-export const LANG =
-	typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("cs") ? "cs" : "en";
-export const T = LANG === "cs" ? cs : en;
+const STORAGE_KEY = "tuner.lang";
+export const LANGS: Lang[] = ["en", "cs"];
+const TEXTS: Record<Lang, typeof en> = { en, cs };
+
+export function detectLang(languages: readonly string[]): Lang {
+	for (const language of languages) {
+		const code = language.toLowerCase().split("-")[0];
+		if (code === "cs" || code === "sk") return "cs";
+		if (code === "en") return "en";
+	}
+	return "en";
+}
+
+function initialLang(): Lang {
+	try {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (LANGS.includes(stored as Lang)) return stored as Lang;
+	} catch {}
+	if (typeof navigator === "undefined") return "en";
+	return detectLang(navigator.languages?.length ? navigator.languages : [navigator.language ?? ""]);
+}
+
+export const lang = signal<Lang>(initialLang());
+export const T = computed(() => TEXTS[lang()]);
+
+export function setLang(value: Lang): void {
+	lang.set(value);
+	try {
+		localStorage.setItem(STORAGE_KEY, value);
+	} catch {}
+}

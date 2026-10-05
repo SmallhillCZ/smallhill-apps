@@ -2,18 +2,19 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzModalRef } from 'ng-zorro-antd/modal';
+import { T } from '../../i18n';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule } from 'ng-zorro-antd/table';
 
 const DATE_FORMATS = [
-  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (US)' },
-  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (EU)' },
-  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (ISO)' },
-  { value: 'DD.MM.YYYY', label: 'DD.MM.YYYY' },
-  { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
-];
+  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY', note: 'dateUs' },
+  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY', note: 'dateEu' },
+  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (ISO)', note: null },
+  { value: 'DD.MM.YYYY', label: 'DD.MM.YYYY', note: null },
+  { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY', note: null },
+] as const;
 
 @Component({
   selector: 'app-transform-date',
@@ -22,7 +23,7 @@ const DATE_FORMATS = [
   template: `
     <div class="transform-dialog">
       <nz-form-item>
-        <nz-form-label>From format</nz-form-label>
+        <nz-form-label>{{ t().fromFormat }}</nz-form-label>
         <nz-form-control>
           <nz-select
             [(ngModel)]="fromFormat"
@@ -30,18 +31,24 @@ const DATE_FORMATS = [
             (ngModelChange)="updatePreview()"
           >
             @for (fmt of dateFormats; track fmt.value) {
-              <nz-option [nzValue]="fmt.value" [nzLabel]="fmt.label"></nz-option>
+              <nz-option
+                [nzValue]="fmt.value"
+                [nzLabel]="fmt.note ? fmt.label + ' (' + t()[fmt.note] + ')' : fmt.label"
+              ></nz-option>
             }
           </nz-select>
         </nz-form-control>
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label>To format</nz-form-label>
+        <nz-form-label>{{ t().toFormat }}</nz-form-label>
         <nz-form-control>
           <nz-select [(ngModel)]="toFormat" style="width: 200px" (ngModelChange)="updatePreview()">
             @for (fmt of dateFormats; track fmt.value) {
-              <nz-option [nzValue]="fmt.value" [nzLabel]="fmt.label"></nz-option>
+              <nz-option
+                [nzValue]="fmt.value"
+                [nzLabel]="fmt.note ? fmt.label + ' (' + t()[fmt.note] + ')' : fmt.label"
+              ></nz-option>
             }
           </nz-select>
         </nz-form-control>
@@ -49,12 +56,12 @@ const DATE_FORMATS = [
 
       @if (preview().length > 0) {
         <div class="preview-section">
-          <strong>Preview:</strong>
+          <strong>{{ t().preview }}</strong>
           <nz-table [nzData]="preview()" nzSize="small" [nzShowPagination]="false">
             <thead>
               <tr>
-                <th>Before</th>
-                <th>After</th>
+                <th>{{ t().before }}</th>
+                <th>{{ t().after }}</th>
               </tr>
             </thead>
             <tbody>
@@ -85,12 +92,13 @@ const DATE_FORMATS = [
   ],
 })
 export class TransformDateComponent {
+  protected readonly t = T;
   private modalRef = inject(NzModalRef, { optional: true });
 
   dateFormats = DATE_FORMATS;
   fromFormat = 'MM/DD/YYYY';
   toFormat = 'YYYY-MM-DD';
-  inputValues: string[] = [];
+  inputValues: string[] = [] as const;
   readonly preview = signal<{ before: string; after: string }[]>([]);
 
   setInputValues(values: string[]): void {

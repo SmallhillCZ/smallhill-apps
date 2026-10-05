@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -7,6 +7,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { lang, LANGS, setLang, T } from '../../i18n';
 
 @Component({
   selector: 'app-toolbar',
@@ -45,12 +46,17 @@ export class ToolbarComponent {
   transformMarkup = output<void>();
   showFormula = output<void>();
 
-  delimiterOptions = [
-    { value: ',', label: 'Comma (,)' },
-    { value: ';', label: 'Semicolon (;)' },
-    { value: '\t', label: 'Tab' },
-    { value: '|', label: 'Pipe (|)' },
-  ];
+  protected readonly t = T;
+  protected readonly lang = lang;
+  protected readonly langs = LANGS;
+  protected readonly setLang = setLang;
+
+  delimiterOptions = computed(() => [
+    { value: ',', label: T().comma },
+    { value: ';', label: T().semicolon },
+    { value: '\t', label: T().tab },
+    { value: '|', label: T().pipe },
+  ]);
 
   onOpenFile(): void {
     this.openFile.emit();

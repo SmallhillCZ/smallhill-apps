@@ -1,7 +1,7 @@
 import { DecimalPipe } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, effect, inject, OnDestroy, signal } from "@angular/core";
 import { Gauge } from "./gauge/gauge";
-import { T } from "./i18n";
+import { lang, LANGS, setLang, T } from "./i18n";
 import { applyTheme, loadTheme, Theme, THEMES } from "./theme";
 import { analyze, InstrumentId, INSTRUMENTS, noteInfo } from "./tuning/notes";
 import { TunerService } from "./tuning/tuner.service";
@@ -37,6 +37,9 @@ function loadSettings(): Settings {
 export class App implements OnDestroy {
 	protected readonly tuner = inject(TunerService);
 	protected readonly t = T;
+	protected readonly lang = lang;
+	protected readonly langs = LANGS;
+	protected readonly setLang = setLang;
 	protected readonly instruments = INSTRUMENTS;
 	protected readonly themes = THEMES;
 	protected readonly theme = signal<Theme>(loadTheme());
@@ -58,9 +61,9 @@ export class App implements OnDestroy {
 
 	protected readonly hint = computed(() => {
 		const reading = this.reading();
-		if (!reading) return this.instrument().strings.length ? T.playString : T.playNote;
-		if (Math.abs(reading.cents) <= IN_TUNE_CENTS) return T.inTune;
-		return reading.cents < 0 ? T.tuneUp : T.tuneDown;
+		if (!reading) return this.instrument().strings.length ? T().playString : T().playNote;
+		if (Math.abs(reading.cents) <= IN_TUNE_CENTS) return T().inTune;
+		return reading.cents < 0 ? T().tuneUp : T().tuneDown;
 	});
 
 	protected readonly inTune = computed(() => {
@@ -75,6 +78,7 @@ export class App implements OnDestroy {
 
 	constructor() {
 		effect(() => applyTheme(this.theme()));
+		effect(() => (document.documentElement.lang = lang()));
 		effect(() => {
 			const { minFrequency, maxFrequency } = this.instrument();
 			this.tuner.setRange(minFrequency, maxFrequency);

@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzModalRef } from 'ng-zorro-antd/modal';
+import { T } from '../../i18n';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -15,7 +16,7 @@ import TurndownService from 'turndown';
   template: `
     <div class="transform-dialog">
       <nz-form-item>
-        <nz-form-label>Conversion direction</nz-form-label>
+        <nz-form-label>{{ t().direction }}</nz-form-label>
         <nz-form-control>
           <nz-radio-group [(ngModel)]="direction" (ngModelChange)="updatePreview()">
             <label nz-radio nzValue="html-to-md">HTML → Markdown</label>
@@ -26,12 +27,12 @@ import TurndownService from 'turndown';
 
       @if (preview().length > 0) {
         <div class="preview-section">
-          <strong>Preview:</strong>
+          <strong>{{ t().preview }}</strong>
           <nz-table [nzData]="preview()" nzSize="small" [nzShowPagination]="false">
             <thead>
               <tr>
-                <th>Before</th>
-                <th>After</th>
+                <th>{{ t().before }}</th>
+                <th>{{ t().after }}</th>
               </tr>
             </thead>
             <tbody>
@@ -70,6 +71,7 @@ import TurndownService from 'turndown';
   ],
 })
 export class TransformMarkupComponent {
+  protected readonly t = T;
   private modalRef = inject(NzModalRef, { optional: true });
   private turndown = new TurndownService();
 
