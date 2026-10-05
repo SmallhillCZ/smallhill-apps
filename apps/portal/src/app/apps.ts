@@ -53,13 +53,13 @@ export const APPS: AppInfo[] = [
 	{
 		id: "jachtarskaknizka",
 		name: { en: "Sailing Logbook", cs: "Jachtařská knížka" },
-		tagline: { en: "Keep a log of your sailing voyages", cs: "Záznamy o vašich plavbách" },
+		tagline: { en: "Your sailing logbook online", cs: "Online jachtařská knížka" },
 		description: {
-			en: "An online logbook for your sailing voyages. Record each voyage with its captain and dates, draw routes, markers and areas on a map, see all your sailing on one overview map and organize voyages with tags.",
-			cs: "Online knížka pro vaše plavby. Zapisujte plavby s kapitánem a daty, kreslete do mapy trasy, body i oblasti, prohlížejte všechny plavby na jedné přehledové mapě a třiďte je pomocí štítků.",
+			en: "Keep your sailing logbook online, with maps, photos and records of every voyage. The logbook is stored as files on your own disk, not on a server, and you can export it to PDF or Excel.",
+			cs: "Veďte svou jachtařskou knížku online, s mapami, fotkami a záznamy všech plaveb. Knížka se ukládá jako soubory na váš vlastní disk, ne na server, a můžete ji exportovat do PDF nebo Excelu.",
 		},
 		icon: "apps/jachtarskaknizka/icon.svg",
 		screenshots: [],
-		listed: false,
+		listed: true,
 	},
 ];
