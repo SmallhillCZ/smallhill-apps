@@ -30,7 +30,7 @@ This app is a standalone project with its own `package.json` and lockfile, so ch
 
 ## Run locally
 
-Requires Node 24 and PostgreSQL.
+Requires Node 24 (see `.nvmrc`) and PostgreSQL.
 
 ```sh
 # database

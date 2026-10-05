@@ -14,7 +14,7 @@
 		"ng": "ng",
 		"dev": "ng serve",
 		"dev:server": "node --watch server/server.ts",
-		"build": "ng build",
+		"build": "tsc -p server && ng build",
 		"start": "WEB_ROOT=dist/scheduler/browser node server/server.ts",
 		"typecheck": "tsc -p server",
 		"test": "node --test test/*.test.ts",
