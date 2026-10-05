@@ -1,0 +1,59 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #8c8c8c;
+  padding: 32px;
+  border: 2px dashed #d9d9d9;
+  margin: 32px;
+  border-radius: 8px;
+  transition: all 0.2s;
+
+  &.drag-over {
+    border-color: #1890ff;
+    background: #e6f7ff;
+  }
+
+  .empty-icon {
+    font-size: 64px;
+  }
+
+  h2 {
+    color: #262626;
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+    text-align: center;
+  }
+}
+
+.dark-mode {
+  background: #141414;
+  color: #fff;
+
+  .empty-state {
+    border-color: #303030;
+    color: #8c8c8c;
+
+    h2 { color: #fff; }
+  }
+}
