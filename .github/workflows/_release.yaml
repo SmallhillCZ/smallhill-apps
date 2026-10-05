@@ -15,6 +15,11 @@ on:
         description: "URL path the app is served under, defaults to /<app>/"
         type: string
         required: false
+      bundle:
+        description: "Bundle every app without its own Dockerfile into this image"
+        type: boolean
+        required: false
+        default: false
       semver:
         description: "Version bump for production"
         type: string
@@ -50,6 +55,7 @@ jobs:
     with:
       app: ${{ inputs.app }}
       base_path: ${{ inputs.base_path }}
+      bundle: ${{ inputs.bundle }}
       host: ${{ inputs.environment == 'production' && (vars.APPS_HOST || 'apps.smallhill.cz') || (vars.APPS_DEV_HOST || 'dev.apps.smallhill.cz') }}
       router: ${{ inputs.app }}-${{ inputs.environment == 'production' && 'prod' || 'dev' }}
       image: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:${{ inputs.environment == 'production' && 'latest' || 'dev' }}

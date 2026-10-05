@@ -1,0 +1,262 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.grid-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  user-select: none;
+  outline: none;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+
+  &:focus {
+    border-color: #1890ff;
+  }
+
+  &.drag-over {
+    border: 2px dashed #1890ff;
+  }
+}
+
+.grid-header {
+  display: flex;
+  background: #fafafa;
+  border-bottom: 2px solid #e8e8e8;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.row-number-header {
+  width: 50px;
+  min-width: 50px;
+  border-right: 1px solid #e8e8e8;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-right: 1px solid #e8e8e8;
+  font-weight: 600;
+  color: #595959;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  height: 28px;
+
+  &.sorted-asc,
+  &.sorted-desc {
+    background: #e6f7ff;
+  }
+}
+
+.col-header-text {
+  flex: 1;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    color: #1890ff;
+  }
+}
+
+.filter-icon {
+  cursor: pointer;
+  padding: 0 2px;
+  color: #bfbfbf;
+
+  &:hover,
+  &.active {
+    color: #1890ff;
+  }
+}
+
+.filter-dropdown {
+  padding: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  min-width: 150px;
+}
+
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+
+  &:hover {
+    background: #1890ff;
+  }
+}
+
+.add-col-btn {
+  width: 32px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #bfbfbf;
+  font-size: 16px;
+
+  &:hover {
+    color: #1890ff;
+    background: #e6f7ff;
+  }
+}
+
+.grid-scroll-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.grid-row {
+  display: flex;
+  height: 28px;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:hover {
+    background: #fafafa;
+  }
+
+  &.alt-row {
+    background: #fafcff;
+
+    &:hover {
+      background: #f0f7ff;
+    }
+  }
+}
+
+.row-number {
+  width: 50px;
+  min-width: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  color: #8c8c8c;
+  font-size: 11px;
+  border-right: 1px solid #e8e8e8;
+  cursor: pointer;
+  position: relative;
+
+  .delete-row-btn {
+    display: none;
+    position: absolute;
+    right: 2px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ff4d4f;
+    font-size: 14px;
+    padding: 0 2px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background: #e6f7ff;
+
+    .delete-row-btn {
+      display: block;
+    }
+  }
+}
+
+.grid-cell {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  border-right: 1px solid #f0f0f0;
+  overflow: hidden;
+  position: relative;
+  cursor: cell;
+
+  &.selected {
+    background: #bae7ff !important;
+  }
+
+  &.active {
+    outline: 2px solid #1890ff;
+    outline-offset: -2px;
+    z-index: 1;
+  }
+}
+
+.cell-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.cell-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+
+.fill-handle {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 6px;
+  height: 6px;
+  background: #1890ff;
+  border: 1px solid #fff;
+  cursor: crosshair;
+  z-index: 2;
+}
+
+.grid-footer {
+  padding: 4px 8px;
+  border-top: 1px solid #e8e8e8;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.drag-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 144, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.drag-message {
+  background: #1890ff;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}

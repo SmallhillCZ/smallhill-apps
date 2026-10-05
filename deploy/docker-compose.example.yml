@@ -42,10 +42,6 @@ services:
     image: ghcr.io/smallhillcz/smallhill-apps-portal:latest
     restart: unless-stopped
 
-  tuner:
-    image: ghcr.io/smallhillcz/smallhill-apps-tuner:latest
-    restart: unless-stopped
-
   scheduler:
     image: ghcr.io/smallhillcz/smallhill-apps-scheduler:latest
     restart: unless-stopped

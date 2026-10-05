@@ -44,6 +44,7 @@ export const APPS: AppInfo[] = [
 	{
 		id: "csveditor",
 		name: { en: "CSV Editor", cs: "CSV Editor" },
+		url: "/csveditor/",
 		tagline: { en: "Edit CSV files in your browser", cs: "Upravujte CSV soubory v prohlížeči" },
 		description: {
 			en: "A spreadsheet-like editor for CSV files that runs entirely in your browser. Open and save CSV, sort and filter columns, use the formula bar, transform numbers, dates and markup, undo and redo, all in light or dark mode. Your files never leave your device.",

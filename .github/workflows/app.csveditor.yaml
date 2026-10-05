@@ -1,16 +1,16 @@
-name: Tuner
+name: CSV Editor
 
 on:
   pull_request:
     paths:
-      - "apps/tuner/**"
-      - ".github/workflows/app.tuner.yaml"
+      - "apps/csveditor/**"
+      - ".github/workflows/app.csveditor.yaml"
   push:
     branches:
       - master
     paths:
-      - "apps/tuner/**"
-      - ".github/workflows/app.tuner.yaml"
+      - "apps/csveditor/**"
+      - ".github/workflows/app.csveditor.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,5 +21,5 @@ jobs:
     name: Test
     uses: ./.github/workflows/_test.yaml
     with:
-      app: tuner
+      app: csveditor
       postgres: false
