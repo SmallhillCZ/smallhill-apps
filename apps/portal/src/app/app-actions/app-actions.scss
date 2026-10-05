@@ -1,0 +1,89 @@
+:host {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	--h: 36px;
+}
+
+:host(.large) {
+	--h: 44px;
+}
+
+.install {
+	flex: 1;
+	min-width: 0;
+	height: var(--h);
+	padding: 0 16px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border: 0;
+	border-radius: 999px;
+	background: var(--app-color, var(--primary));
+	color: var(--on-app-color, var(--on-primary));
+	font-weight: 600;
+	white-space: nowrap;
+
+	&:hover:not(:disabled) {
+		filter: brightness(0.92);
+	}
+
+	&:disabled {
+		cursor: default;
+		opacity: 0.7;
+	}
+}
+
+:host(.large) .install {
+	flex: 0 1 200px;
+}
+
+.web {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: var(--h);
+	height: var(--h);
+	border-radius: 50%;
+	background: var(--surface-2);
+	color: var(--text);
+
+	&:hover {
+		background: var(--surface-3);
+	}
+
+	svg {
+		width: 18px;
+		height: 18px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.7;
+	}
+}
+
+.soon {
+	flex: 1;
+	display: grid;
+	place-items: center;
+	height: var(--h);
+	border-radius: 999px;
+	background: var(--surface-2);
+	color: var(--muted);
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+:host(.large) .soon {
+	flex: 0 1 200px;
+}
+
+@media (max-width: 420px) {
+	:host(:not(.large)) {
+		--h: 34px;
+		gap: 6px;
+
+		.install {
+			padding: 0 8px;
+			font-size: 0.9rem;
+		}
+	}
+}

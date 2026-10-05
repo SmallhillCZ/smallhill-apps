@@ -1,0 +1,6 @@
+<button type="button" class="open" (click)="details.emit()" [attr.aria-label]="t.details + ' ' + tr(app().name)">
+	<img class="logo" [src]="app().icon" alt="" width="72" height="72" />
+	<span class="name">{{ tr(app().name) }}</span>
+	<span class="tagline">{{ tr(app().tagline) }}</span>
+</button>
+<app-actions [app]="app()" />
