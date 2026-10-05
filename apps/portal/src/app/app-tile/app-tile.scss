@@ -4,7 +4,7 @@
 	aspect-ratio: 1;
 	padding: 16px;
 	border-radius: var(--radius);
-	background: var(--surface);
+	background: linear-gradient(color-mix(in srgb, var(--app-color) 14%, var(--surface)), var(--surface) 65%);
 	box-shadow: var(--shadow);
 	transition:
 		transform 0.15s ease,

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from "@angular/core";
 import { AppActions } from "../app-actions/app-actions";
 import { AppInfo } from "../apps";
+import { onColor } from "../color";
 import { T, tr } from "../i18n";
 
 @Component({
@@ -8,6 +9,7 @@ import { T, tr } from "../i18n";
 	imports: [AppActions],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: "./app-tile.html",
+	host: { "[style.--app-color]": "app().color", "[style.--on-app-color]": "onColor(app().color)" },
 	styleUrl: "./app-tile.scss",
 })
 export class AppTile {
@@ -16,4 +18,5 @@ export class AppTile {
 
 	protected readonly t = T;
 	protected readonly tr = tr;
+	protected readonly onColor = onColor;
 }

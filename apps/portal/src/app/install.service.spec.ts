@@ -7,6 +7,7 @@ const app: AppInfo = {
 	name: { en: "Demo", cs: "Demo" },
 	tagline: { en: "", cs: "" },
 	description: { en: "", cs: "" },
+	color: "#000000",
 	icon: "",
 	screenshots: [],
 	url: "/demo/",

@@ -1,6 +1,7 @@
 :host {
 	display: block;
 	padding: 24px;
+	background: linear-gradient(color-mix(in srgb, var(--app-color) 14%, var(--surface)), var(--surface) 240px);
 }
 
 header {
@@ -57,7 +58,7 @@ h2 {
 	margin: 16px 0 0;
 	padding: 12px 14px;
 	border-radius: 12px;
-	background: var(--primary-soft);
+	background: color-mix(in srgb, var(--app-color) 14%, var(--surface));
 	font-size: 0.9rem;
 	line-height: 1.45;
 }
