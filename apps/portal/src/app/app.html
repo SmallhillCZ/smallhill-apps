@@ -1,0 +1,23 @@
+<header class="hero">
+	<img src="favicon.svg" alt="" width="48" height="48" />
+	<div>
+		<h1>{{ t.title }}</h1>
+		<p>{{ t.subtitle }}</p>
+	</div>
+</header>
+
+<main>
+	<ul class="grid">
+		@for (app of apps; track app.id) {
+			<li><app-tile [app]="app" (details)="open(app.id)" /></li>
+		}
+	</ul>
+</main>
+
+<footer>{{ t.footer }}</footer>
+
+<dialog #dialog (close)="selected() && close()" (click)="onBackdropClick($event)">
+	@if (selected(); as app) {
+		<app-detail [app]="app" (closed)="close()" />
+	}
+</dialog>
