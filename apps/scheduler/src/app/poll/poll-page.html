@@ -1,0 +1,290 @@
+@if (notFound()) {
+	<section class="card">
+		<h1>Poll not found</h1>
+		<p class="muted">It may have been deleted by its creator, or removed after it ended.</p>
+		<a class="button primary" routerLink="/new">Create a new poll</a>
+	</section>
+} @else if (poll(); as p) {
+	@if (error()) {
+		<div class="error" role="alert">{{ error() }}</div>
+	}
+
+	@if (created() && adminKey()) {
+		<section class="card share created">
+			<h2>Your poll is ready</h2>
+			<p>Send this link to everyone you want to ask. Nobody needs an account.</p>
+			<div class="link-row">
+				<input
+					type="text"
+					readonly
+					[value]="shareUrl()"
+					aria-label="Share link"
+					(focus)="$any($event.target).select()"
+				/>
+				<button class="primary" (click)="copy(shareUrl(), 'share')">
+					{{ copied() === "share" ? "Copied" : "Copy" }}
+				</button>
+				@if (canShare) {
+					<button (click)="share()">Share…</button>
+				}
+			</div>
+		</section>
+	}
+
+	<section class="card">
+		<h1>{{ p.title }}</h1>
+		@if (p.location) {
+			<p class="meta">📍 {{ p.location }}</p>
+		}
+		@if (p.description) {
+			<p class="description">{{ p.description }}</p>
+		}
+		<p class="muted small">
+			Times are shown in your time zone ({{ myTimezone }}).
+			@if (timezoneDiffers()) {
+				The organiser is in {{ p.timezone }}.
+			}
+		</p>
+	</section>
+
+	@if (finalSlot(); as f) {
+		<section class="card final">
+			<p class="eyebrow">It's decided</p>
+			<h2>{{ formatDay(f.start) }}, {{ formatRange(f) }}</h2>
+			<button (click)="downloadIcs()">Add to calendar</button>
+		</section>
+	} @else if (p.closed) {
+		<div class="notice muted">This poll is closed. Answers can no longer be changed.</div>
+	}
+
+	<section class="card">
+		<div class="row head">
+			<h2>{{ answering() ? "Which times work for you?" : "Times" }}</h2>
+			<span class="spacer"></span>
+			@if (answering()) {
+				<span class="small muted">Mark all:</span>
+				@for (v of voteOrder; track v) {
+					<button class="link small" type="button" (click)="setAll(v)">{{ voteLabel[v] }}</button>
+				}
+			}
+		</div>
+
+		@for (day of days(); track day.day) {
+			<h3 class="day">{{ formatDay(day.slots[0].slot.start) }}</h3>
+			<ul class="slots">
+				@for (s of day.slots; track s.slot.id) {
+					<li
+						[class.best]="p.responses.length > 0 && s.score === bestScore() && s.score > 0"
+						[class.final]="s.slot.id === p.finalSlotId"
+					>
+						<div class="slot-main">
+							<div class="time">
+								{{ formatRange(s.slot) }}
+								@if (s.slot.id === p.finalSlotId) {
+									<span class="badge final-badge">Chosen</span>
+								} @else if (p.responses.length > 0 && s.score === bestScore() && s.score > 0) {
+									<span class="badge">Best so far</span>
+								}
+							</div>
+							<div class="tally small">
+								<span class="yes" title="Yes">✓ {{ s.yes.length }}</span>
+								@if (s.maybe.length) {
+									<span class="maybe" title="If need be">~ {{ s.maybe.length }}</span>
+								}
+								@if (s.yes.length || s.maybe.length) {
+									<span class="names muted">
+										{{ s.yes.join(", ") }}
+										@if (s.yes.length && s.maybe.length) {
+											,
+										}
+										@if (s.maybe.length) {
+											<i>{{ s.maybe.join(", ") }}</i>
+										}
+									</span>
+								}
+							</div>
+						</div>
+						@if (answering()) {
+							<div
+								class="vote"
+								role="radiogroup"
+								[attr.aria-label]="'Your answer for ' + formatRange(s.slot)"
+							>
+								@for (v of voteOrder; track v) {
+									<button
+										type="button"
+										role="radio"
+										[class]="'v-' + v"
+										[class.on]="myVotes()[s.slot.id] === v"
+										[attr.aria-checked]="myVotes()[s.slot.id] === v"
+										(click)="setVote(s.slot.id, v)"
+									>
+										{{ voteLabel[v] }}
+									</button>
+								}
+							</div>
+						}
+						@if (adminKey() && s.slot.id !== p.finalSlotId) {
+							<button
+								class="choose small"
+								[disabled]="busy()"
+								(click)="chooseFinal(s.slot.id)"
+								title="Pick this as the final time"
+							>
+								Choose
+							</button>
+						}
+					</li>
+				}
+			</ul>
+		}
+
+		@if (answering()) {
+			<form class="answer" (submit)="$event.preventDefault(); submit()">
+				<label for="name">Your name</label>
+				<div class="row">
+					<input
+						id="name"
+						type="text"
+						maxlength="80"
+						autocomplete="name"
+						[value]="name()"
+						(input)="name.set($any($event.target).value)"
+					/>
+					<button class="primary" type="submit" [disabled]="!name().trim() || busy()">
+						{{ busy() ? "Saving…" : myResponse() ? "Save changes" : "Send my answer" }}
+					</button>
+					@if (editing()) {
+						<button type="button" (click)="cancelEditing()">Cancel</button>
+					}
+				</div>
+				<p class="muted small">
+					Slots you leave blank count as “No”. Your answer is visible to everyone with the link.
+				</p>
+			</form>
+		} @else if (myResponse(); as mine) {
+			<div class="row answered">
+				<span
+					>You answered as <strong>{{ mine.name }}</strong
+					>.</span
+				>
+				@if (!p.closed) {
+					<button (click)="startEditing()">Change my answer</button>
+					<button class="danger" (click)="removeResponse(mine.id)" [disabled]="busy()">Remove</button>
+				}
+			</div>
+		}
+	</section>
+
+	@if (p.responses.length > 0) {
+		<section class="card">
+			<div class="row">
+				<h2>{{ p.responses.length }} {{ p.responses.length === 1 ? "person has" : "people have" }} answered</h2>
+				<span class="spacer"></span>
+				<button class="link" (click)="showGrid.set(!showGrid())">
+					{{ showGrid() ? "Hide" : "Show" }} all answers
+				</button>
+			</div>
+			@if (showGrid()) {
+				<div class="grid-wrap">
+					<table class="grid">
+						<thead>
+							<tr>
+								<th></th>
+								@for (s of p.slots; track s.id) {
+									<th class="small">{{ formatDay(s.start) }}<br />{{ formatRange(s) }}</th>
+								}
+								@if (adminKey()) {
+									<th></th>
+								}
+							</tr>
+						</thead>
+						<tbody>
+							@for (r of p.responses; track r.id) {
+								<tr>
+									<th class="who">
+										{{ r.name }}
+										@if (r.id === myResponse()?.id) {
+											<span class="muted small">(you)</span>
+										}
+									</th>
+									@for (s of p.slots; track s.id) {
+										@let v = voteOf(r, s.id);
+										<td
+											[class]="'c-' + (v ?? 'none')"
+											[attr.title]="v ? voteLabel[v] : 'No answer'"
+										>
+											{{ v ? voteMark[v] : "" }}
+										</td>
+									}
+									@if (adminKey()) {
+										<td>
+											<button
+												class="icon small"
+												(click)="removeResponse(r.id)"
+												[attr.aria-label]="'Remove ' + r.name"
+											>
+												✕
+											</button>
+										</td>
+									}
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		</section>
+	}
+
+	@if (adminKey()) {
+		<section class="card admin">
+			<h2>Manage poll</h2>
+			<p class="muted small">Only you see this, because you created the poll in this browser.</p>
+			<div class="row">
+				<a class="button" [routerLink]="['/p', p.id, 'edit']">Edit poll</a>
+				@if (p.closed) {
+					<button (click)="setClosed(false)" [disabled]="busy()">Reopen</button>
+				} @else {
+					<button (click)="setClosed(true)" [disabled]="busy()">Close poll</button>
+				}
+				@if (p.finalSlotId) {
+					<button (click)="chooseFinal(null)" [disabled]="busy()">Undo chosen time</button>
+				}
+				<span class="spacer"></span>
+				<button class="danger" (click)="deletePoll()" [disabled]="busy()">Delete</button>
+			</div>
+			<div class="field links">
+				<label>Share link</label>
+				<div class="link-row">
+					<input
+						type="text"
+						readonly
+						[value]="shareUrl()"
+						aria-label="Share link"
+						(focus)="$any($event.target).select()"
+					/>
+					<button (click)="copy(shareUrl(), 'share')">{{ copied() === "share" ? "Copied" : "Copy" }}</button>
+				</div>
+				<label
+					>Admin link
+					<span class="muted">(keep it private; it lets you manage the poll on another device)</span></label
+				>
+				<div class="link-row">
+					<input
+						type="text"
+						readonly
+						[value]="adminUrl()"
+						aria-label="Admin link"
+						(focus)="$any($event.target).select()"
+					/>
+					<button (click)="copy(adminUrl(), 'admin')">{{ copied() === "admin" ? "Copied" : "Copy" }}</button>
+				</div>
+			</div>
+		</section>
+	}
+} @else if (error()) {
+	<div class="error" role="alert">{{ error() }}</div>
+} @else {
+	<p class="muted">Loading…</p>
+}
