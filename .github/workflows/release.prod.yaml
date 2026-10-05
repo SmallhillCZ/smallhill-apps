@@ -1,6 +1,11 @@
 name: Release to PRODUCTION
 
 on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
   workflow_dispatch:
     inputs:
       semver:
@@ -27,7 +32,7 @@ jobs:
     name: Resolve version
     uses: ./.github/workflows/_version.yaml
     with:
-      semver: ${{ github.event.inputs.semver }}
+      semver: ${{ inputs.semver || 'none' }}
 
   build:
     name: Build
@@ -65,4 +70,4 @@ jobs:
     uses: ./.github/workflows/_tag.yaml
     with:
       tag: PRODUCTION
-      version: ${{ github.event.inputs.semver != 'none' && needs.version.outputs.version || '' }}
+      version: ${{ (inputs.semver || 'none') != 'none' && needs.version.outputs.version || '' }}
