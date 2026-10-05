@@ -19,6 +19,10 @@ on:
         description: "Version to use for the built Docker images"
         type: string
         required: false
+      base_path:
+        description: "URL path the app is served under, defaults to /<app>/"
+        type: string
+        required: false
       host:
         description: "Host the app is served on, used in the Traefik router rule"
         type: string
@@ -43,6 +47,7 @@ jobs:
         id: dockerfile
         env:
           APP: ${{ inputs.app }}
+          BASE_PATH: ${{ inputs.base_path }}
         run: |
           dir="apps/$APP"
           if [ ! -f "$dir/package.json" ]; then
@@ -54,12 +59,14 @@ jobs:
           else
             file=".github/docker/static.Dockerfile"
           fi
-          base_path=$(jq -r 'first(.projects[].architect.build.configurations.production.baseHref // empty)' "$dir/angular.json" 2>/dev/null || true)
+          base_path="${BASE_PATH:-/$APP/}"
+          base_path="/${base_path#/}"
+          base_path="${base_path%/}/"
           port=$(awk 'toupper($1) == "EXPOSE" { print $2 }' "$file" | tail -n1)
           node_version=$(cat "$dir/.nvmrc" 2>/dev/null || echo 24)
           {
             echo "file=$file"
-            echo "base_path=${base_path:-/$APP/}"
+            echo "base_path=$base_path"
             echo "port=${port:-80}"
             echo "node_version=$node_version"
           } >> "$GITHUB_OUTPUT"

@@ -55,6 +55,7 @@ jobs:
     uses: ./.github/workflows/_release.yaml
     with:
       app: portal
+      base_path: /
       environment: ${{ inputs.action == 'release-production' && 'production' || 'dev' }}
       semver: ${{ inputs.semver }}
     secrets: inherit

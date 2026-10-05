@@ -1,11 +1,12 @@
 ARG NODE_VERSION=24
 
 FROM node:${NODE_VERSION}-alpine AS build
+ARG BASE_PATH=/
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npx ng build && mkdir -p /out && cp -r dist/*/browser/. /out/
+RUN npx ng build --base-href "${BASE_PATH}" && mkdir -p /out && cp -r dist/*/browser/. /out/
 
 FROM nginx:alpine
 ARG BASE_PATH=/
