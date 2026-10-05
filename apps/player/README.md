@@ -6,6 +6,8 @@ Play music from your OneDrive in the browser. Frontend-only Angular PWA, no ads,
 
 - Sign in with a personal or work/school Microsoft account (MSAL.js, redirect flow with PKCE, read-only `Files.Read`)
 - Browse OneDrive folders, play MP3 and other audio files (m4a, aac, ogg, opus, wav, flac)
+- Play a folder on the device (File System Access API in Chrome, Edge and Android, remembered; other browsers pick the folder each session)
+- Set a music folder that opens on start; OneDrive folder listings are cached locally
 - Play a folder in order or shuffled, repeat all or one, seek
 - Lock screen, notification and headphone controls (Media Session API)
 - Auto, light and dark themes; English and Czech UI (by browser language, with a switch)

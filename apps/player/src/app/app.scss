@@ -142,11 +142,50 @@ footer {
 }
 
 .link {
+	flex: none;
 	border: 0;
 	background: transparent;
 	padding: 4px 0;
 	color: var(--accent);
 	font-weight: 600;
+}
+
+.sources {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 4px;
+	padding: 4px;
+	background: var(--surface-2);
+	border-radius: var(--radius);
+
+	button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 8px;
+		border: 0;
+		border-radius: calc(var(--radius) - 4px);
+		background: transparent;
+		color: var(--muted);
+		font-size: 0.9rem;
+		font-weight: 600;
+
+		app-icon {
+			width: 20px;
+			height: 20px;
+		}
+
+		&.selected {
+			background: var(--surface);
+			color: var(--text);
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+			app-icon {
+				color: var(--accent);
+			}
+		}
+	}
 }
 
 .account {
