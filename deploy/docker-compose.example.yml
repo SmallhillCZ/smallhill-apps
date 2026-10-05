@@ -41,12 +41,6 @@ services:
   smallhill-apps:
     image: ghcr.io/smallhillcz/smallhill-apps:latest
     restart: unless-stopped
-    labels:
-      com.centurylinklabs.watchtower.enable: "true"
-      traefik.enable: "true"
-      traefik.http.routers.smallhill-apps.rule: Host(`${APPS_HOST:-apps.smallhill.cz}`)
-      traefik.http.routers.smallhill-apps.tls: "true"
-      traefik.http.services.smallhill-apps.loadbalancer.server.port: "80"
     environment:
       DATABASE_URL: postgres://smallhill-apps:${DB_PASSWORD}@db:5432/smallhill-apps
     depends_on:

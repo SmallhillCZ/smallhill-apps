@@ -11,6 +11,14 @@ on:
         description: "Version to use for the built Docker images"
         type: string
         required: false
+      host:
+        description: "Host the apps are served on, used in the Traefik router rule"
+        type: string
+        required: true
+      router:
+        description: "Unique Traefik router name for this environment"
+        type: string
+        required: true
 
 jobs:
   build:
@@ -78,6 +86,27 @@ jobs:
           cp -r docker/. "$out/"
           echo "context=$out" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve Traefik labels
+        id: labels
+        env:
+          HOST: ${{ inputs.host }}
+          ROUTER: ${{ inputs.router }}
+          CERT_RESOLVER: ${{ vars.TRAEFIK_CERT_RESOLVER }}
+        run: |
+          {
+            echo "labels<<EOF"
+            echo "traefik.enable=true"
+            echo "com.centurylinklabs.watchtower.enable=true"
+            echo "traefik.http.services.$ROUTER.loadbalancer.server.port=80"
+            echo "traefik.http.routers.$ROUTER.service=$ROUTER"
+            echo "traefik.http.routers.$ROUTER.tls=true"
+            if [ -n "$CERT_RESOLVER" ]; then
+              echo "traefik.http.routers.$ROUTER.tls.certresolver=$CERT_RESOLVER"
+            fi
+            echo "traefik.http.routers.$ROUTER.rule=Host(\`$HOST\`)"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
@@ -96,5 +125,6 @@ jobs:
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          labels: ${{ steps.labels.outputs.labels }}
           build-args: VERSION=${{ inputs.version }}
           provenance: false
