@@ -67,7 +67,7 @@ export const APPS: AppInfo[] = [
 		icon: "apps/player/icon.svg",
 		screenshots: ["apps/player/screenshot-1.webp", "apps/player/screenshot-2.webp"],
 		url: "/player/",
-		listed: false,
+		listed: true,
 	},
 	{
 		id: "jachtarskaknizka",
