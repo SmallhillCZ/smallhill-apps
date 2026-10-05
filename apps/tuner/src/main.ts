@@ -7,4 +7,10 @@ import { applyTheme, loadTheme } from "./app/theme";
 document.documentElement.lang = lang();
 applyTheme(loadTheme());
 
+if (matchMedia("(display-mode: standalone)").matches) {
+	try {
+		localStorage.setItem("smallhill.installed.tuner", new Date().toISOString());
+	} catch {}
+}
+
 bootstrapApplication(App, appConfig).catch((err) => console.error(err));
