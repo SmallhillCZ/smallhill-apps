@@ -1,0 +1,42 @@
+name: Notify Watchtower
+
+on:
+  workflow_call:
+    inputs:
+      images:
+        description: "Comma-separated list of images that were updated"
+        type: string
+        required: false
+
+jobs:
+  notify-watchtower:
+    name: Notify Watchtower
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tell the watchtower server there is a new image
+        id: watchtower-update
+        env:
+          WATCHTOWER_URL: ${{ vars.WATCHTOWER_URL }}?image=${{ inputs.images }}
+          WATCHTOWER_TOKEN: ${{ secrets.WATCHTOWER_TOKEN }}
+        run: |
+          response=$(curl --request POST --fail --header "Authorization: Bearer $WATCHTOWER_TOKEN" $WATCHTOWER_URL)
+          echo "$response"
+          echo "response=$response" >> $GITHUB_OUTPUT
+
+      - name: Generate job summary
+        if: steps.watchtower-update.outputs.response != ''
+        env:
+          RESPONSE: ${{ steps.watchtower-update.outputs.response }}
+        run: |
+          echo "## 🐳 Watchtower Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ✅ Updated | $(echo $RESPONSE | jq -r '.summary.updated') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Scanned | $(echo $RESPONSE | jq -r '.summary.scanned') |" >> $GITHUB_STEP_SUMMARY
+          echo "| ❌ Failed | $(echo $RESPONSE | jq -r '.summary.failed') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔄 Restarted | $(echo $RESPONSE | jq -r '.summary.restarted') |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Duration:** $(echo $RESPONSE | jq -r '.timing.duration')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(echo $RESPONSE | jq -r '.timestamp')" >> $GITHUB_STEP_SUMMARY

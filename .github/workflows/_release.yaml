@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: "App directory name in apps/"
+        type: string
+        required: true
+      environment:
+        description: "dev or production"
+        type: string
+        required: true
+      base_path:
+        description: "URL path the app is served under, defaults to /<app>/"
+        type: string
+        required: false
+      semver:
+        description: "Version bump for production"
+        type: string
+        required: false
+        default: none
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.short_sha.outputs.version }}
+    steps:
+      - name: Set short SHA
+        id: short_sha
+        run: echo "version=DEV-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+  semver:
+    name: Resolve version
+    if: inputs.environment == 'production'
+    uses: ./.github/workflows/_version.yaml
+    with:
+      app: ${{ inputs.app }}
+      semver: ${{ inputs.semver }}
+
+  build:
+    name: Build
+    needs:
+      - version
+      - semver
+    if: always() && needs.version.result == 'success' && needs.semver.result != 'failure'
+    uses: ./.github/workflows/_build.yaml
+    with:
+      app: ${{ inputs.app }}
+      base_path: ${{ inputs.base_path }}
+      host: ${{ inputs.environment == 'production' && (vars.APPS_HOST || 'apps.smallhill.cz') || (vars.APPS_DEV_HOST || 'dev.apps.smallhill.cz') }}
+      router: ${{ inputs.app }}-${{ inputs.environment == 'production' && 'prod' || 'dev' }}
+      image: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:${{ inputs.environment == 'production' && 'latest' || 'dev' }}
+      version: ${{ inputs.environment == 'production' && needs.semver.outputs.version || needs.version.outputs.version }}
+
+  cleanup:
+    name: Clean up
+    needs:
+      - build
+    if: always() && needs.build.result == 'success'
+    uses: ./.github/workflows/_cleanup.yaml
+    with:
+      package: smallhill-apps-${{ inputs.app }}
+
+  deploy:
+    name: Deploy
+    needs:
+      - build
+    if: always() && needs.build.result == 'success'
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      images: ghcr.io/smallhillcz/smallhill-apps-${{ inputs.app }}:${{ inputs.environment == 'production' && 'latest' || 'dev' }}
+    secrets: inherit
+
+  tag:
+    name: Tag
+    needs:
+      - build
+      - semver
+    if: always() && needs.build.result == 'success'
+    uses: ./.github/workflows/_tag.yaml
+    with:
+      tag: ${{ inputs.app }}-${{ inputs.environment == 'production' && 'PRODUCTION' || 'DEV' }}
+      version: ${{ inputs.environment == 'production' && inputs.semver != 'none' && needs.semver.outputs.version || '' }}
