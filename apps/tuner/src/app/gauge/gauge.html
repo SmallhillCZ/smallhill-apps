@@ -1,0 +1,23 @@
+<svg
+	viewBox="0 0 200 125"
+	role="img"
+	[attr.aria-label]="cents() === null ? '' : (cents()! | number: '1.0-0') + ' cents'"
+>
+	<path class="track" [attr.d]="fullArc" />
+	<path class="zone" [attr.d]="toleranceArc()" />
+	@for (tick of ticks; track tick.value) {
+		<line
+			class="tick"
+			[class.major]="tick.major"
+			x1="100"
+			[attr.y1]="tick.major ? 12 : 16"
+			x2="100"
+			y2="24"
+			[attr.transform]="'rotate(' + tick.angle + ' 100 110)'"
+		/>
+	}
+	<g class="needle" [style.transform]="'rotate(' + angle() + 'deg)'">
+		<line x1="100" y1="110" x2="100" y2="26" />
+	</g>
+	<circle class="hub" cx="100" cy="110" r="6" />
+</svg>

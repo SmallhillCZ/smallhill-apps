@@ -1,0 +1,73 @@
+:host {
+	display: block;
+	width: 100%;
+	max-width: 420px;
+}
+
+svg {
+	display: block;
+	width: 100%;
+	overflow: visible;
+}
+
+.track {
+	fill: none;
+	stroke: var(--surface-2);
+	stroke-width: 14;
+	stroke-linecap: round;
+}
+
+.zone {
+	fill: none;
+	stroke: var(--good-soft);
+	stroke-width: 14;
+}
+
+.tick {
+	stroke: var(--muted);
+	stroke-width: 1.5;
+
+	&.major {
+		stroke: var(--text);
+		stroke-width: 2.5;
+	}
+}
+
+.needle {
+	transform-origin: 100px 110px;
+	transition: transform 120ms linear;
+
+	line {
+		stroke: var(--muted);
+		stroke-width: 3.5;
+		stroke-linecap: round;
+	}
+}
+
+.hub {
+	fill: var(--muted);
+}
+
+:host(.active) {
+	.needle line {
+		stroke: var(--accent);
+	}
+
+	.hub {
+		fill: var(--accent);
+	}
+}
+
+:host(.in-tune) {
+	.needle line {
+		stroke: var(--good);
+	}
+
+	.hub {
+		fill: var(--good);
+	}
+
+	.zone {
+		stroke: var(--good);
+	}
+}
