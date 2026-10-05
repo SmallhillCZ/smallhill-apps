@@ -19,6 +19,10 @@ Part of [Smallhill Apps](../../README.md), served at https://apps.smallhill.cz/s
 - **Privacy**: no cookies, no analytics, no IP logging. Keys are stored only as SHA-256 hashes.
   Polls are deleted automatically `RETENTION_DAYS` (default 60) after their last slot ends.
 
+## Languages
+
+English and Czech. The app picks the first supported language from the browser's preferred languages (English otherwise); the EN/CS switch in the header overrides it and is remembered in the browser. Texts live in `src/app/i18n.ts`; dates and times follow the chosen language.
+
 ## Layout
 
 | Path      | What                                                                                                                                                          |
@@ -83,4 +87,3 @@ Limits: 100 slots per poll, 300 answers per poll.
 ## Not done yet
 
 - Rate limiting (do it at the reverse proxy for now).
-- Translations (UI is English; dates and times already follow the browser locale).

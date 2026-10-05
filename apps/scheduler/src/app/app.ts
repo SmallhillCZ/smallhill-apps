@@ -1,5 +1,6 @@
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { RouterLink, RouterOutlet } from "@angular/router";
+import { I18n, LANGS } from "./i18n";
 
 @Component({
 	imports: [RouterOutlet, RouterLink],
@@ -7,13 +8,25 @@ import { RouterLink, RouterOutlet } from "@angular/router";
 	template: `
 		<header>
 			<a routerLink="/" class="brand"><img src="icon.svg" alt="" width="28" height="28" /> Scheduler</a>
+			<div class="langs" role="group" [attr.aria-label]="i18n.t().language">
+				@for (l of langs; track l) {
+					<button
+						type="button"
+						class="link small"
+						[class.on]="i18n.lang() === l"
+						[attr.aria-pressed]="i18n.lang() === l"
+						[attr.lang]="l"
+						(click)="i18n.setLang(l)"
+					>
+						{{ l.toUpperCase() }}
+					</button>
+				}
+			</div>
 		</header>
 		<main>
 			<router-outlet />
 		</main>
-		<footer class="muted small">
-			No sign-up, no ads, no tracking. Polls are deleted 60 days after their last time slot.
-		</footer>
+		<footer class="muted small">{{ i18n.t().footer }}</footer>
 	`,
 	styles: `
 		:host {
@@ -24,6 +37,16 @@ import { RouterLink, RouterOutlet } from "@angular/router";
 		}
 		header {
 			padding: 1rem 0;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+		.langs button {
+			color: var(--muted);
+		}
+		.langs button.on {
+			color: var(--accent);
+			font-weight: 700;
 		}
 		.brand {
 			display: inline-flex;
@@ -40,4 +63,7 @@ import { RouterLink, RouterOutlet } from "@angular/router";
 		}
 	`,
 })
-export class App {}
+export class App {
+	protected readonly i18n = inject(I18n);
+	protected readonly langs = LANGS;
+}

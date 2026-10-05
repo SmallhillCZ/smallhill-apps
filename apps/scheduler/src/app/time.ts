@@ -17,14 +17,19 @@ export function toInstant(date: string, time: string): string {
 
 export const browserTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-const dayFmt = new Intl.DateTimeFormat(undefined, {
-	weekday: "short",
-	day: "numeric",
-	month: "short",
-	year: "numeric",
-});
-const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+let locale: string | undefined;
+let dayFmt: Intl.DateTimeFormat;
+let timeFmt: Intl.DateTimeFormat;
+setDateLocale(undefined);
 
+/** Locale for all date and time formatting; set by the I18n service. */
+export function setDateLocale(l: string | undefined) {
+	locale = l;
+	dayFmt = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+	timeFmt = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" });
+}
+
+export const dateLocale = () => locale;
 export const formatDay = (iso: string) => dayFmt.format(new Date(iso));
 export const formatTime = (iso: string) => timeFmt.format(new Date(iso));
 export const formatRange = (slot: Pick<Slot, "start" | "end">) => {

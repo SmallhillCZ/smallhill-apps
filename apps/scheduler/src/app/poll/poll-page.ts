@@ -2,6 +2,7 @@ import { Component, computed, effect, inject, input, signal } from "@angular/cor
 import { Title } from "@angular/platform-browser";
 import { Router, RouterLink } from "@angular/router";
 import { Api, errorMessage, type Poll, type Slot, type Vote } from "../api";
+import { I18n } from "../i18n";
 import { LocalStore } from "../local-store";
 import { browserTimezone, formatDay, formatRange, groupByDay, icsFor } from "../time";
 
@@ -47,7 +48,7 @@ export class PollPage {
 	protected readonly formatDay = formatDay;
 	protected readonly formatRange = formatRange;
 	protected readonly voteOrder = VOTE_ORDER;
-	protected readonly voteLabel: Record<Vote, string> = { yes: "Yes", maybe: "If need be", no: "No" };
+	protected readonly t = inject(I18n).t;
 	protected readonly voteMark: Record<Vote, string> = { yes: "✓", maybe: "~", no: "✕" };
 	protected readonly myTimezone = browserTimezone();
 
@@ -115,7 +116,7 @@ export class PollPage {
 			}
 		} catch (e: any) {
 			if (e?.status === 404) this.notFound.set(true);
-			else this.error.set(errorMessage(e));
+			else this.error.set(errorMessage(e, this.t()));
 		}
 	}
 
@@ -124,7 +125,7 @@ export class PollPage {
 			await this.api.checkAdmin(id, key);
 			this.store.remember(id, { adminKey: key });
 		} catch {
-			this.error.set("That admin link is not valid for this poll.");
+			this.error.set(this.t().invalidAdminLink);
 		}
 		await this.router.navigate([], {
 			queryParams: { admin: null },
@@ -160,7 +161,7 @@ export class PollPage {
 			this.editing.set(false);
 			await this.load(poll.id);
 		} catch (e) {
-			this.error.set(errorMessage(e));
+			this.error.set(errorMessage(e, this.t()));
 		} finally {
 			this.busy.set(false);
 		}
@@ -180,7 +181,7 @@ export class PollPage {
 		const mine = this.myResponse();
 		const isMine = mine?.id === responseId;
 		const who = poll.responses.find((r) => r.id === responseId)?.name ?? "";
-		if (!confirm(isMine ? "Remove your answer?" : `Remove the answer from ${who}?`)) return;
+		if (!confirm(isMine ? this.t().confirmRemoveMine : this.t().confirmRemoveOther(who))) return;
 		await this.run(async () => {
 			await this.api.deleteResponse(poll.id, responseId, {
 				editKey: isMine ? mine!.editKey : undefined,
@@ -210,7 +211,7 @@ export class PollPage {
 	}
 
 	protected async deletePoll() {
-		if (!confirm("Delete this poll and all answers? This cannot be undone.")) return;
+		if (!confirm(this.t().confirmDelete)) return;
 		await this.run(async () => {
 			await this.api.deletePoll(this.id(), this.adminKey()!);
 			this.store.forget(this.id());
@@ -224,15 +225,13 @@ export class PollPage {
 			this.copied.set(what);
 			setTimeout(() => this.copied.set(""), 2000);
 		} catch {
-			prompt("Copy this link:", text);
+			prompt(this.t().copyPrompt, text);
 		}
 	}
 
 	protected readonly canShare = typeof navigator !== "undefined" && "share" in navigator;
 	protected share() {
-		navigator
-			.share({ title: this.poll()?.title, text: "Which times work for you?", url: this.shareUrl() })
-			.catch(() => {});
+		navigator.share({ title: this.poll()?.title, text: this.t().shareText, url: this.shareUrl() }).catch(() => {});
 	}
 
 	protected downloadIcs() {
@@ -256,7 +255,7 @@ export class PollPage {
 		try {
 			await fn();
 		} catch (e) {
-			this.error.set(errorMessage(e));
+			this.error.set(errorMessage(e, this.t()));
 		} finally {
 			this.busy.set(false);
 		}

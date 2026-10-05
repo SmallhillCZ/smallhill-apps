@@ -1,5 +1,6 @@
 import { Component, computed, inject } from "@angular/core";
 import { RouterLink } from "@angular/router";
+import { I18n } from "../i18n";
 import { LocalStore } from "../local-store";
 
 @Component({
@@ -7,30 +8,27 @@ import { LocalStore } from "../local-store";
 	imports: [RouterLink],
 	template: `
 		<section class="hero">
-			<h1>Find a time that works for everyone</h1>
-			<p class="muted">
-				Suggest a few times, send one link, and see who can make it. Nobody needs an account, and there are no
-				ads or trackers.
-			</p>
-			<a class="button primary" routerLink="/new">Create a poll</a>
+			<h1>{{ t().heroTitle }}</h1>
+			<p class="muted">{{ t().heroText }}</p>
+			<a class="button primary" routerLink="/new">{{ t().createPoll }}</a>
 		</section>
 
 		@if (mine().length) {
 			<section class="card">
-				<h2>Your polls</h2>
-				<p class="muted small">Remembered in this browser only.</p>
+				<h2>{{ t().yourPolls }}</h2>
+				<p class="muted small">{{ t().rememberedHere }}</p>
 				<ul>
 					@for (p of mine(); track p.id) {
 						<li>
-							<a [routerLink]="['/p', p.id]">{{ p.title || "Untitled poll" }}</a>
-							<span class="muted small">{{ p.adminKey ? "you created it" : "you answered" }}</span>
+							<a [routerLink]="['/p', p.id]">{{ p.title || t().untitled }}</a>
+							<span class="muted small">{{ p.adminKey ? t().youCreated : t().youAnswered }}</span>
 							<span class="spacer"></span>
 							<button
 								class="link small"
 								(click)="store.forget(p.id)"
-								[attr.aria-label]="'Forget ' + p.title"
+								[attr.aria-label]="t().forget + ' ' + p.title"
 							>
-								Forget
+								{{ t().forget }}
 							</button>
 						</li>
 					}
@@ -65,6 +63,7 @@ import { LocalStore } from "../local-store";
 })
 export class Home {
 	protected readonly store = inject(LocalStore);
+	protected readonly t = inject(I18n).t;
 	protected readonly mine = computed(() =>
 		Object.values(this.store.polls())
 			.filter((p) => p.adminKey || p.response)

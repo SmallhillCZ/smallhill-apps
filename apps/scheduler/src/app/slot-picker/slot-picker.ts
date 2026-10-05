@@ -1,4 +1,5 @@
-import { Component, computed, model, signal } from "@angular/core";
+import { Component, computed, inject, model, signal } from "@angular/core";
+import { I18n } from "../i18n";
 import { formatDay, isoDate } from "../time";
 
 export interface TimeRange {
@@ -22,14 +23,16 @@ const DEFAULT_TIMES: TimeRange[] = [{ start: "10:00", end: "11:00" }];
 })
 export class SlotPicker {
 	readonly days = model.required<DayPlan[]>();
+	protected readonly i18n = inject(I18n);
+	protected readonly t = this.i18n.t;
 
 	private readonly today = isoDate(new Date());
 	protected readonly month = signal(startOfMonth(new Date()));
-	protected readonly weekdays = weekdayNames();
+	protected readonly weekdays = computed(() => weekdayNames(this.i18n.locale()));
 	protected readonly formatDay = (d: string) => formatDay(`${d}T12:00`);
 
 	protected readonly monthLabel = computed(() =>
-		new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(this.month()),
+		new Intl.DateTimeFormat(this.i18n.locale(), { month: "long", year: "numeric" }).format(this.month()),
 	);
 
 	protected readonly selected = computed(() => new Set(this.days().map((d) => d.date)));
@@ -128,8 +131,8 @@ function startOfMonth(d: Date) {
 	return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
-function weekdayNames() {
-	const fmt = new Intl.DateTimeFormat(undefined, { weekday: "narrow" });
+function weekdayNames(locale: string) {
+	const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
 	// 2024-01-01 was a Monday.
 	return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 0, 1 + i)));
 }
