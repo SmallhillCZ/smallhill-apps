@@ -23,6 +23,11 @@ on:
         description: "URL path the app is served under, defaults to /<app>/"
         type: string
         required: false
+      bundle:
+        description: "Bundle every app without its own Dockerfile into this image"
+        type: boolean
+        required: false
+        default: false
       host:
         description: "Host the app is served on, used in the Traefik router rule"
         type: string
@@ -59,6 +64,7 @@ jobs:
             echo "::error::$file not found"
             exit 1
           fi
+          context="$dir"
           base_path="${BASE_PATH:-/$APP/}"
           base_path="/${base_path#/}"
           base_path="${base_path%/}/"
@@ -66,10 +72,45 @@ jobs:
           node_version=$(cat "$dir/.nvmrc" 2>/dev/null || echo 24)
           {
             echo "file=$file"
+            echo "context=$context"
             echo "base_path=$base_path"
             echo "port=${port:-80}"
             echo "node_version=$node_version"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        if: inputs.bundle
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.dockerfile.outputs.node_version }}
+
+      - name: Bundle apps
+        id: bundle
+        if: inputs.bundle
+        env:
+          APP: ${{ inputs.app }}
+          BASE_PATH: ${{ steps.dockerfile.outputs.base_path }}
+        run: |
+          out="$RUNNER_TEMP/bundle"
+          mkdir -p "$out/html"
+          for dir in apps/*/; do
+            name=$(basename "$dir")
+            if [ "$name" = "$APP" ]; then
+              base="$BASE_PATH"
+            elif [ -f "$dir/Dockerfile" ] || [ ! -f "$dir/angular.json" ]; then
+              continue
+            else
+              base="/$name/"
+            fi
+            echo "::group::$name at $base"
+            (cd "$dir" && npm ci && npx ng build --base-href "$base")
+            mkdir -p "$out/html$base"
+            cp -r "$dir"dist/*/browser/. "$out/html$base"
+            echo "::endgroup::"
+            echo "- \`$name\` at \`$base\`" >> "$GITHUB_STEP_SUMMARY"
+          done
+          cp -r "apps/$APP/docker/." "$out/"
+          echo "context=$out" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Traefik labels
         id: labels
@@ -112,7 +153,7 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: apps/${{ inputs.app }}
+          context: ${{ steps.bundle.outputs.context || steps.dockerfile.outputs.context }}
           file: ${{ steps.dockerfile.outputs.file }}
           target: ${{ inputs.target }}
           tags: ${{ inputs.image }}

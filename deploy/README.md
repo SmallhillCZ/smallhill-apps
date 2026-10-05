@@ -1,6 +1,6 @@
 # Deployment
 
-Every app is its own container, built from `apps/<app>/Dockerfile`. Frontend-only apps (portal, tuner) use the same nginx Dockerfile; copy it for a new one. Routing comes from labels baked into each image by the release workflow, so the server never needs reconfiguring when an app is added or changed.
+Frontend-only apps (no `Dockerfile` in their folder) are bundled into the portal image: releasing Portal builds every such app with `--base-href /<app>/` and serves it from the portal's nginx under `/<app>/`. Apps with a backend (Scheduler) have their own `Dockerfile` and container. Routing comes from labels baked into each image by the release workflow.
 
 - Each app is served under `/<app>/` (its folder name); `app.portal.yaml` sets `base_path: /`. The path is passed to the build as `BASE_PATH` (`ng build --base-href`) and to the Traefik rule `Host(apps.smallhill.cz) && PathPrefix(/<app>/)`, so it is not hardcoded in app code. Longer rules win, so the portal only gets what no app claims.
 - `/<app>` redirects to `/<app>/`.
@@ -17,12 +17,6 @@ Watchtower's update API is exposed at `https://apps.smallhill.cz/v1/update`. Git
 
 ## Adding an app
 
-Release it once from its workflow (Actions → app → Run workflow → `release-production`), add it to the compose file as two lines and run `docker compose up -d`:
+Frontend-only app, no server change: merge the app (with its `app.<name>.yaml` test workflow), then run **Portal → Run workflow → `release-production`**. Watchtower pulls the new portal image and the app is live at `/<name>/`.
 
-```yaml
-  myapp:
-    image: ghcr.io/smallhillcz/smallhill-apps-myapp:latest
-    restart: unless-stopped
-```
-
-No routing config is needed: the image carries its Traefik labels. Later releases are picked up by Watchtower automatically.
+App with a backend: give it a `Dockerfile` and add its service to the server compose file once; later releases are pulled by Watchtower.
