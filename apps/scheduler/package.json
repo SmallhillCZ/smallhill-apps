@@ -19,7 +19,8 @@
 		"typecheck": "tsc -p server",
 		"test": "node --test test/*.test.ts",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"serve": "WEB_ROOT=dist/scheduler/browser node server/server.ts"
 	},
 	"dependencies": {
 		"@angular/common": "^22.2.0",

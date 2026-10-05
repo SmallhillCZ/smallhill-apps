@@ -3,10 +3,6 @@ name: Resolve version
 on:
   workflow_call:
     inputs:
-      app:
-        description: "App directory name in apps/"
-        type: string
-        required: true
       semver:
         description: "Version bump"
         required: true
@@ -38,7 +34,7 @@ jobs:
         id: version
         uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
         env:
-          TAG_PREFIX: ${{ inputs.app }}-v
+          TAG_PREFIX: v
           PRERELEASE: ${{ inputs.prerelease }}
           DEFAULT_BUMP: ${{ inputs.semver }}
           PRERELEASE_SUFFIX: rc

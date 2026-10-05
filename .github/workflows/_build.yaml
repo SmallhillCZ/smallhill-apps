@@ -3,43 +3,26 @@ name: Build
 on:
   workflow_call:
     inputs:
-      app:
-        description: "App directory name in apps/"
-        type: string
-        required: true
       image:
         description: "Image reference to build and push"
         type: string
         required: true
-      target:
-        description: "Dockerfile stage to build"
-        type: string
-        required: false
       version:
         description: "Version to use for the built Docker images"
         type: string
         required: false
-      base_path:
-        description: "URL path the app is served under, defaults to /<app>/"
-        type: string
-        required: false
-      bundle:
-        description: "Bundle every app without its own Dockerfile into this image"
-        type: boolean
-        required: false
-        default: false
       host:
-        description: "Host the app is served on, used in the Traefik router rule"
+        description: "Host the apps are served on, used in the Traefik router rule"
         type: string
         required: true
       router:
-        description: "Unique Traefik router name for this app and environment"
+        description: "Unique Traefik router name for this environment"
         type: string
         required: true
 
 jobs:
   build:
-    name: Build and publish ${{ inputs.app }}
+    name: Build and publish
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,68 +31,59 @@ jobs:
       - name: Checkout the updated source code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Resolve Dockerfile
-        id: dockerfile
-        env:
-          APP: ${{ inputs.app }}
-          BASE_PATH: ${{ inputs.base_path }}
-        run: |
-          dir="apps/$APP"
-          if [ ! -f "$dir/package.json" ]; then
-            echo "::error::App $APP not found in apps/"
-            exit 1
-          fi
-          file="$dir/Dockerfile"
-          if [ ! -f "$file" ]; then
-            echo "::error::$file not found"
-            exit 1
-          fi
-          context="$dir"
-          base_path="${BASE_PATH:-/$APP/}"
-          base_path="/${base_path#/}"
-          base_path="${base_path%/}/"
-          port=$(awk 'toupper($1) == "EXPOSE" { print $2 }' "$file" | tail -n1)
-          node_version=$(cat "$dir/.nvmrc" 2>/dev/null || echo 24)
-          {
-            echo "file=$file"
-            echo "context=$context"
-            echo "base_path=$base_path"
-            echo "port=${port:-80}"
-            echo "node_version=$node_version"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Set up Node.js
-        if: inputs.bundle
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ steps.dockerfile.outputs.node_version }}
+          node-version-file: docker/.nvmrc
 
       - name: Bundle apps
         id: bundle
-        if: inputs.bundle
-        env:
-          APP: ${{ inputs.app }}
-          BASE_PATH: ${{ steps.dockerfile.outputs.base_path }}
         run: |
           out="$RUNNER_TEMP/bundle"
-          mkdir -p "$out/html"
+          mkdir -p "$out/html" "$out/servers"
+          : > "$out/servers.list"
+          : > "$out/servers.conf"
+          port=3001
+          echo "| App | Path | Kind |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
           for dir in apps/*/; do
+            dir="${dir%/}"
             name=$(basename "$dir")
-            if [ "$name" = "$APP" ]; then
-              base="$BASE_PATH"
-            elif [ -f "$dir/Dockerfile" ] || [ ! -f "$dir/angular.json" ]; then
-              continue
+            [ -f "$dir/package.json" ] || continue
+            if [ "$name" = "portal" ]; then
+              base="/"
             else
               base="/$name/"
             fi
+            serve=$(cd "$dir" && npm pkg get scripts.serve)
             echo "::group::$name at $base"
             (cd "$dir" && npm ci && npx ng build --base-href "$base")
-            mkdir -p "$out/html$base"
-            cp -r "$dir"dist/*/browser/. "$out/html$base"
+            if [ "$serve" = "{}" ]; then
+              mkdir -p "$out/html$base"
+              cp -r "$dir"/dist/*/browser/. "$out/html$base"
+              kind=static
+            else
+              (cd "$dir" && npm prune --omit=dev)
+              mkdir -p "$out/servers/$name"
+              cp -r "$dir"/. "$out/servers/$name/"
+              rm -rf "$out/servers/$name/.angular" "$out/servers/$name/src" "$out/servers/$name/test"
+              echo "$name $port" >> "$out/servers.list"
+              {
+                echo "location = /$name { return 301 /$name/; }"
+                echo "location ^~ /$name/ {"
+                echo "  proxy_pass http://127.0.0.1:$port;"
+                echo "  proxy_set_header Host \$host;"
+                echo "  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;"
+                echo "  proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;"
+                echo "}"
+              } >> "$out/servers.conf"
+              kind="server on port $port"
+              port=$((port + 1))
+            fi
             echo "::endgroup::"
-            echo "- \`$name\` at \`$base\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "| $name | \`$base\` | $kind |" >> "$GITHUB_STEP_SUMMARY"
           done
-          cp -r "apps/$APP/docker/." "$out/"
+          cp -r docker/. "$out/"
           echo "context=$out" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Traefik labels
@@ -117,26 +91,19 @@ jobs:
         env:
           HOST: ${{ inputs.host }}
           ROUTER: ${{ inputs.router }}
-          BASE_PATH: ${{ steps.dockerfile.outputs.base_path }}
-          PORT: ${{ steps.dockerfile.outputs.port }}
+          CERT_RESOLVER: ${{ vars.TRAEFIK_CERT_RESOLVER }}
         run: |
-          prefix="${BASE_PATH%/}"
           {
             echo "labels<<EOF"
             echo "traefik.enable=true"
             echo "com.centurylinklabs.watchtower.enable=true"
-            echo "traefik.http.services.$ROUTER.loadbalancer.server.port=$PORT"
+            echo "traefik.http.services.$ROUTER.loadbalancer.server.port=80"
             echo "traefik.http.routers.$ROUTER.service=$ROUTER"
             echo "traefik.http.routers.$ROUTER.tls=true"
-            if [ -z "$prefix" ]; then
-              echo "traefik.http.routers.$ROUTER.rule=Host(\`$HOST\`)"
-            else
-              echo "traefik.http.routers.$ROUTER.rule=Host(\`$HOST\`) && (Path(\`$prefix\`) || PathPrefix(\`$prefix/\`))"
-              echo "traefik.http.routers.$ROUTER.middlewares=$ROUTER-slash"
-              echo "traefik.http.middlewares.$ROUTER-slash.redirectregex.regex=^(https?://[^/]+$prefix)\$"
-              echo "traefik.http.middlewares.$ROUTER-slash.redirectregex.replacement=\${1}/"
-              echo "traefik.http.middlewares.$ROUTER-slash.redirectregex.permanent=true"
+            if [ -n "$CERT_RESOLVER" ]; then
+              echo "traefik.http.routers.$ROUTER.tls.certresolver=$CERT_RESOLVER"
             fi
+            echo "traefik.http.routers.$ROUTER.rule=Host(\`$HOST\`)"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -153,16 +120,11 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: ${{ steps.bundle.outputs.context || steps.dockerfile.outputs.context }}
-          file: ${{ steps.dockerfile.outputs.file }}
-          target: ${{ inputs.target }}
+          context: ${{ steps.bundle.outputs.context }}
           tags: ${{ inputs.image }}
           push: true
-          cache-from: type=gha,scope=${{ inputs.app }}
-          cache-to: type=gha,mode=max,scope=${{ inputs.app }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           labels: ${{ steps.labels.outputs.labels }}
-          build-args: |
-            VERSION=${{ inputs.version }}
-            BASE_PATH=${{ steps.dockerfile.outputs.base_path }}
-            NODE_VERSION=${{ steps.dockerfile.outputs.node_version }}
+          build-args: VERSION=${{ inputs.version }}
           provenance: false

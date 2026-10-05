@@ -1,0 +1,40 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver:
+        description: "Version bump"
+        required: true
+        type: choice
+        default: none
+        options:
+          - none
+          - patch
+          - minor
+          - major
+      # prerelease:
+      #   description: "Prerelease version"
+      #   type: boolean
+      #   required: false
+      #   default: false
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    name: Resolve version
+    uses: ./.github/workflows/_version.yaml
+    with:
+      semver: ${{ github.event.inputs.semver }}
+      # prerelease: ${{ github.event.inputs.prerelease }}
+
+  tag:
+    name: Tag
+    needs: version
+    uses: ./.github/workflows/_tag.yaml
+    with:
+      tag: PRODUCTION
+      version: ${{ needs.version.outputs.version }}
