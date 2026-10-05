@@ -24,7 +24,7 @@ describe("InstallService", () => {
 	it("shows help when navigator.install is missing", async () => {
 		setInstall(undefined);
 		const service = TestBed.inject(InstallService);
-		await service.install(app);
+		expect(await service.install(app)).toBe("help");
 		expect(service.state(app)).toBe("help");
 	});
 

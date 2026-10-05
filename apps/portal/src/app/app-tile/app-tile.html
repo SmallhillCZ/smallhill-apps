@@ -3,4 +3,4 @@
 	<span class="name">{{ tr(app().name) }}</span>
 	<span class="tagline">{{ tr(app().tagline) }}</span>
 </button>
-<app-actions [app]="app()" />
+<app-actions [app]="app()" (help)="details.emit()" />

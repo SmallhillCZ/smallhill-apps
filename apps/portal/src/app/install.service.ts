@@ -19,24 +19,24 @@ export class InstallService {
 		return new URL(app.url!, document.baseURI).href;
 	}
 
-	async install(app: AppInfo): Promise<void> {
-		if (!app.url) return;
+	async install(app: AppInfo): Promise<InstallState> {
+		if (!app.url) return this.state(app);
 		const nav = navigator as InstallableNavigator;
 		if (!nav.install) {
-			this.set(app, "help");
-			return;
+			return this.set(app, "help");
 		}
 		this.set(app, "installing");
 		const url = this.absoluteUrl(app);
 		try {
 			await nav.install(url, url);
-			this.set(app, "installed");
+			return this.set(app, "installed");
 		} catch (err) {
-			this.set(app, err instanceof DOMException && err.name === "AbortError" ? "idle" : "help");
+			return this.set(app, err instanceof DOMException && err.name === "AbortError" ? "idle" : "help");
 		}
 	}
 
-	private set(app: AppInfo, state: InstallState): void {
+	private set(app: AppInfo, state: InstallState): InstallState {
 		this.states.update((states) => ({ ...states, [app.id]: state }));
+		return state;
 	}
 }

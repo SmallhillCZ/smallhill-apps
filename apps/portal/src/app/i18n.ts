@@ -18,7 +18,7 @@ const en = {
 	details: "Details of",
 	features: ["Free", "No ads", "No tracking"],
 	installHelp:
-		"Your browser can't install apps from this page. Open the app and install it from the browser menu: Install app in Chrome or Edge, Share → Add to Home Screen in Safari.",
+		"Your browser can't install apps from this page. Open the app and install it from the browser menu: Install app in Chrome, Edge or Vivaldi, Share → Add to Home Screen in Safari.",
 	language: "Language",
 	footer: "Made with care by Smallhill. No ads, no tracking, no accounts unless an app truly needs one.",
 };
@@ -38,7 +38,7 @@ const cs: typeof en = {
 	details: "Podrobnosti o",
 	features: ["Zdarma", "Bez reklam", "Bez sledování"],
 	installHelp:
-		"Váš prohlížeč neumí instalovat aplikace z této stránky. Otevřete aplikaci a nainstalujte ji z nabídky prohlížeče: Instalovat aplikaci v Chrome nebo Edge, Sdílet → Přidat na plochu v Safari.",
+		"Váš prohlížeč neumí instalovat aplikace z této stránky. Otevřete aplikaci a nainstalujte ji z nabídky prohlížeče: Instalovat aplikaci v Chrome, Edge nebo Vivaldi, Sdílet → Přidat na plochu v Safari.",
 	language: "Jazyk",
 	footer: "S péčí vytváří Smallhill. Bez reklam, bez sledování a bez účtů, pokud je aplikace opravdu nepotřebuje.",
 };

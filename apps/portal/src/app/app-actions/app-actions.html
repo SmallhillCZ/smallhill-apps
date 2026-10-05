@@ -3,7 +3,7 @@
 		type="button"
 		class="install"
 		[disabled]="state() === 'installing' || state() === 'installed'"
-		(click)="installer.install(app())"
+		(click)="install()"
 	>
 		@switch (state()) {
 			@case ("installing") {
