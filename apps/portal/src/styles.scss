@@ -1,0 +1,69 @@
+:root {
+	color-scheme: light dark;
+	--bg: #f4f5f7;
+	--surface: #ffffff;
+	--surface-2: #eceef2;
+	--surface-3: #dfe2e8;
+	--border: #e1e4ea;
+	--text: #16181d;
+	--muted: #646a76;
+	--primary: #1c1e24;
+	--on-primary: #ffffff;
+	--radius: 20px;
+	--shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 8px rgba(16, 24, 40, 0.06);
+	--shadow-hover: 0 4px 10px rgba(16, 24, 40, 0.08), 0 10px 24px rgba(16, 24, 40, 0.1);
+	font-family:
+		system-ui,
+		-apple-system,
+		"Segoe UI",
+		Roboto,
+		sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #111317;
+		--surface: #1b1e24;
+		--surface-2: #272b33;
+		--surface-3: #323742;
+		--border: #2c313a;
+		--text: #eef0f4;
+		--muted: #949aa6;
+		--primary: #eef0f4;
+		--on-primary: #111317;
+		--shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+		--shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.5);
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+	background: var(--bg);
+	color: var(--text);
+}
+
+body:has(dialog[open]) {
+	overflow: hidden;
+}
+
+button {
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+a {
+	color: inherit;
+}
+
+:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}

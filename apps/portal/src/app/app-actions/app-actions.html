@@ -1,0 +1,28 @@
+@if (app().url) {
+	<button
+		type="button"
+		class="install"
+		[disabled]="state() === 'installing' || state() === 'installed'"
+		(click)="installer.install(app())"
+	>
+		@switch (state()) {
+			@case ("installing") {
+				{{ t.installing }}
+			}
+			@case ("installed") {
+				{{ t.installed }}
+			}
+			@default {
+				{{ t.install }}
+			}
+		}
+	</button>
+	<a class="web" [href]="app().url" target="_blank" rel="noopener" [attr.aria-label]="t.open" [title]="t.open">
+		<svg viewBox="0 0 24 24" aria-hidden="true">
+			<circle cx="12" cy="12" r="9" />
+			<path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z" />
+		</svg>
+	</a>
+} @else {
+	<span class="soon">{{ t.soon }}</span>
+}
