@@ -7,7 +7,7 @@
 	"scope": "./",
 	"start_url": "./",
 	"background_color": "#121211",
-	"theme_color": "#121211",
+	"theme_color": "#e8892b",
 	"categories": ["music", "utilities"],
 	"icons": [
 		{
