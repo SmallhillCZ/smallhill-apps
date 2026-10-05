@@ -21,10 +21,10 @@ Part of [Smallhill Apps](../../README.md), served at https://apps.smallhill.cz/s
 
 ## Layout
 
-| Path      | What                                                                                                                                            |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/`    | Angular 22 PWA (standalone components, signals, zoneless, service worker). Production `baseHref` is `/scheduler/`.                              |
-| `server/` | Node 24 + Fastify + PostgreSQL. TypeScript runs natively via Node's type stripping, no build step. Also serves the built PWA under `BASE_PATH`. |
+| Path      | What                                                                                                                                                          |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/`    | Angular 22 PWA (standalone components, signals, zoneless, service worker). The base href comes from the Docker build arg `BASE_PATH` (default `/scheduler/`). |
+| `server/` | Node 24 + Fastify + PostgreSQL. TypeScript runs natively via Node's type stripping, no build step. Also serves the built PWA under `BASE_PATH`.               |
 
 This app is a standalone project with its own `package.json` and lockfile, so changes here don't affect the other apps.
 
@@ -43,7 +43,7 @@ npm run dev:server   # API on :3000, creates tables on start
 npm run dev          # app on :4200, proxies /api to :3000
 ```
 
-Production-like: `npm run build && BASE_PATH=/scheduler npm start` → http://localhost:3000/scheduler/
+Production-like: `npm run build -- --base-href /scheduler/ && BASE_PATH=/scheduler/ npm start` → http://localhost:3000/scheduler/
 
 Or in Docker: `docker compose up --build` → http://localhost:3000/scheduler/
 
@@ -53,7 +53,7 @@ Or in Docker: `docker compose up --build` → http://localhost:3000/scheduler/
 | ---------------- | --------------------------------------------------------- |
 | `DATABASE_URL`   | `postgres://scheduler:scheduler@localhost:5432/scheduler` |
 | `PORT` / `HOST`  | `3000` / `0.0.0.0`                                        |
-| `BASE_PATH`      | empty (Docker image: `/scheduler`)                        |
+| `BASE_PATH`      | empty (Docker image: build arg, default `/scheduler/`)    |
 | `WEB_ROOT`       | unset; directory of the built PWA to serve                |
 | `RETENTION_DAYS` | `60`                                                      |
 

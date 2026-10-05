@@ -41,8 +41,7 @@
 								}
 							],
 							"outputHashing": "all",
-							"serviceWorker": "ngsw-config.json",
-							"baseHref": "/scheduler/"
+							"serviceWorker": "ngsw-config.json"
 						},
 						"development": {
 							"optimization": false,

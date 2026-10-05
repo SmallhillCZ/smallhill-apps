@@ -1,14 +1,19 @@
 # Builds the Angular PWA, then runs the server, which also serves it under BASE_PATH.
-FROM node:24-alpine AS build
+ARG NODE_VERSION=24
+
+FROM node:${NODE_VERSION}-alpine AS build
+ARG BASE_PATH=/scheduler/
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npx ng build
+RUN npx ng build --base-href "$BASE_PATH"
 
-FROM node:24-alpine
+FROM node:${NODE_VERSION}-alpine
+ARG BASE_PATH=/scheduler/
+ARG VERSION
+ENV NODE_ENV=production PORT=3000 BASE_PATH=$BASE_PATH WEB_ROOT=/app/public VERSION=$VERSION
 WORKDIR /app
-ENV NODE_ENV=production PORT=3000 BASE_PATH=/scheduler WEB_ROOT=/app/public
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY server ./server
