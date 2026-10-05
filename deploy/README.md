@@ -1,10 +1,13 @@
 # Deployment
 
-Frontend-only apps (no `Dockerfile` in their folder) are bundled into the portal image: releasing Portal builds every such app with `--base-href /<app>/` and serves it from the portal's nginx under `/<app>/`. Apps with a backend (Scheduler) have their own `Dockerfile` and container. Routing comes from labels baked into each image by the release workflow.
+All apps run in one container, `ghcr.io/smallhillcz/smallhill-apps`, built by **Release to DEV / Release to PRODUCTION** (from SmallhillCZ/skeletons). The release builds every `apps/<name>` with `--base-href /<name>/` (portal at `/`):
 
-- Each app is served under `/<app>/` (its folder name); `app.portal.yaml` sets `base_path: /`. The path is passed to the build as `BASE_PATH` (`ng build --base-href`) and to the Traefik rule `Host(apps.smallhill.cz) && PathPrefix(/<app>/)`, so it is not hardcoded in app code. Longer rules win, so the portal only gets what no app claims.
-- `/<app>` redirects to `/<app>/`.
-- DEV images use `dev.apps.smallhill.cz`. Override with repo variables `APPS_HOST` and ## Server setup
+- Apps without a `serve` script are static files served by nginx under `/<name>/`.
+- Apps with a `serve` script (Scheduler) run as a Node process inside the same container on `127.0.0.1:3001+`, with `PORT`, `HOST` and `BASE_PATH=/<name>/` set; nginx proxies `/<name>/` to it. Container env vars prefixed with the app name are passed on without the prefix, e.g. `SCHEDULER_DATABASE_URL` becomes `DATABASE_URL` for Scheduler.
+
+The image carries Traefik (`Host(apps.smallhill.cz)`, `tls=true`, plus `tls.certresolver` when the repo variable `TRAEFIK_CERT_RESOLVER` is set) and Watchtower labels, so Watchtower pulls every release.
+
+## Server setup
 
 [`docker-compose.example.yml`](docker-compose.example.yml) is the whole stack: Traefik (ports 80/443, Let's Encrypt), Watchtower, the portal, Tuner, and Scheduler with its own Postgres. Copy it to the server as `docker-compose.yml` and run:
 
@@ -17,6 +20,4 @@ Watchtower's update API is exposed at `https://apps.smallhill.cz/v1/update`. Git
 
 ## Adding an app
 
-Frontend-only app, no server change: merge the app (with its `app.<name>.yaml` test workflow), then run **Portal → Run workflow → `release-production`**. Watchtower pulls the new portal image and the app is live at `/<name>/`.
-
-App with a backend: give it a `Dockerfile` and add its service to the server compose file once; later releases are pulled by Watchtower.
+Merge the app into `apps/<name>` (with its `app.<name>.yaml` test workflow), then run **Release to PRODUCTION**. Watchtower pulls the new image and the app is live at `/<name>/`. No server change, unless a server app needs a new env var (`<NAME>_...`) or database.

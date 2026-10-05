@@ -38,17 +38,16 @@ services:
       traefik.http.routers.watchtower.rule: Host(`${APPS_HOST:-apps.smallhill.cz}`) && Path(`/v1/update`)
       traefik.http.services.watchtower.loadbalancer.server.port: "8080"
 
-  portal:
-    image: ghcr.io/smallhillcz/smallhill-apps-portal:latest
-    restart: unless-stopped
-
-  scheduler:
-    image: ghcr.io/smallhillcz/smallhill-apps-scheduler:latest
+  smallhill-apps:
+    image: ghcr.io/smallhillcz/smallhill-apps:latest
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://scheduler:${SCHEDULER_DB_PASSWORD}@scheduler-db:5432/scheduler
+      SCHEDULER_DATABASE_URL: postgres://scheduler:${SCHEDULER_DB_PASSWORD}@scheduler-db:5432/scheduler
     depends_on:
       scheduler-db:
+        condition: service_healthy
+
+  scheduler-db:
         condition: service_healthy
 
   scheduler-db:
