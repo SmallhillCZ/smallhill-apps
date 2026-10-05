@@ -56,6 +56,20 @@ export const APPS: AppInfo[] = [
 		listed: true,
 	},
 	{
+		id: "player",
+		name: { en: "Player", cs: "Přehrávač" },
+		tagline: { en: "Play music from your OneDrive", cs: "Hudba z OneDrivu v prohlížeči" },
+		description: {
+			en: "Sign in with your Microsoft account, browse your OneDrive folders and play MP3s and other audio files right in the browser. Play a whole folder in order or shuffled, and control playback from the lock screen or your headphones. Music streams straight from OneDrive to your device and the app can only read your files.",
+			cs: "Přihlaste se účtem Microsoft, procházejte složky na OneDrivu a přehrávejte MP3 a další zvukové soubory přímo v prohlížeči. Pusťte celou složku popořadě nebo náhodně a ovládejte přehrávání ze zamčené obrazovky nebo ze sluchátek. Hudba se přehrává přímo z OneDrivu do vašeho zařízení a aplikace vaše soubory může jen číst.",
+		},
+		color: "#7048e8",
+		icon: "apps/player/icon.svg",
+		screenshots: ["apps/player/screenshot-1.webp", "apps/player/screenshot-2.webp"],
+		url: "/player/",
+		listed: false,
+	},
+	{
 		id: "jachtarskaknizka",
 		name: { en: "Jachtařská knížka", cs: "Jachtařská knížka" },
 		tagline: { en: "Your sailing logbook online", cs: "Online jachtařská knížka" },
