@@ -22,4 +22,4 @@ npm test         # unit tests (vitest)
 npm run build    # production build into dist/tuner/browser
 ```
 
-Production builds use base href `/tuner/` for https://apps.smallhill.cz/tuner/. The service worker is enabled only in production builds. Serve `dist/tuner/browser` from any static host over HTTPS.
+Deployed to https://apps.smallhill.cz/tuner/; the base path is passed at build time with `ng build --base-href /tuner/`. The service worker is enabled only in production builds. Serve `dist/tuner/browser` from any static host over HTTPS.
