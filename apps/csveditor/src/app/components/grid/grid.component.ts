@@ -18,6 +18,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { CellRange, CellPosition } from '../../models/cell.model';
 import { SelectionState } from '../../models/selection.model';
+import { T } from '../../i18n';
 
 @Component({
   selector: 'app-grid',
@@ -36,6 +37,7 @@ import { SelectionState } from '../../models/selection.model';
   styleUrl: './grid.component.scss',
 })
 export class GridComponent {
+  protected readonly t = T;
   data = input<string[][]>([]);
   hasHeader = input<boolean>(true);
 

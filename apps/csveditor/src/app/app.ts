@@ -1,10 +1,19 @@
-import { Component, inject, signal, ViewChild, ElementRef, HostListener } from '@angular/core';
+import {
+  Component,
+  effect,
+  inject,
+  signal,
+  ViewChild,
+  ElementRef,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { cs_CZ, en_US, NzI18nService } from 'ng-zorro-antd/i18n';
 import { GridComponent } from './components/grid/grid.component';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { TransformNumberComponent } from './components/transform-number/transform-number.component';
@@ -14,6 +23,7 @@ import { FormulaBarComponent } from './components/formula-bar/formula-bar.compon
 import { CsvService } from './services/csv.service';
 import { HistoryService } from './services/history.service';
 import { SelectionState } from './models/selection.model';
+import { lang, T } from './i18n';
 
 const DARK_MODE_KEY = 'csveditor.darkMode';
 
@@ -36,6 +46,9 @@ export class App {
   private historyService = inject(HistoryService<string[][]>);
   private modal = inject(NzModalService);
   private message = inject(NzMessageService);
+  private nzI18n = inject(NzI18nService);
+
+  protected readonly t = T;
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -53,6 +66,11 @@ export class App {
     this.applyDarkMode(this.loadDarkMode() ?? this.darkMedia?.matches ?? false);
     this.darkMedia?.addEventListener?.('change', (e) => {
       if (this.loadDarkMode() === null) this.applyDarkMode(e.matches);
+    });
+    effect(() => {
+      const current = lang();
+      document.documentElement.lang = current;
+      this.nzI18n.setLocale(current === 'cs' ? cs_CZ : en_US);
     });
   }
 
@@ -104,9 +122,9 @@ export class App {
         this.filename.set(file.name);
         this.historyService.clear();
         this.historyService.push(parsed);
-        this.message.success(`Loaded ${file.name} (${parsed.length} rows)`);
+        this.message.success(T().loaded(file.name, parsed.length));
       } catch (err) {
-        this.message.error(`Failed to parse CSV: ${(err as Error).message}`);
+        this.message.error(T().parseFailed((err as Error).message));
       }
     };
     reader.readAsText(file);
@@ -121,7 +139,7 @@ export class App {
     a.download = this.filename() || 'data.csv';
     a.click();
     URL.revokeObjectURL(url);
-    this.message.success('File saved');
+    this.message.success(T().saved);
   }
 
   onDataChange(newData: string[][]): void {
@@ -196,14 +214,15 @@ export class App {
       }
     });
     this.data.set(newData);
-    this.message.success('Transform applied');
+    this.message.success(T().transformApplied);
   }
 
   openNumberTransform(): void {
     const ref = this.modal.create({
-      nzTitle: 'Reformat Numbers',
+      nzTitle: T().reformatNumbers,
       nzContent: TransformNumberComponent,
-      nzOkText: 'Apply',
+      nzOkText: T().apply,
+      nzCancelText: T().cancel,
       nzOnOk: (instance: TransformNumberComponent) => {
         const { transformer } = instance.getResult();
         this.applyTransformToSelection(transformer);
@@ -215,9 +234,10 @@ export class App {
 
   openDateTransform(): void {
     const ref = this.modal.create({
-      nzTitle: 'Reformat Dates',
+      nzTitle: T().reformatDates,
       nzContent: TransformDateComponent,
-      nzOkText: 'Apply',
+      nzOkText: T().apply,
+      nzCancelText: T().cancel,
       nzOnOk: (instance: TransformDateComponent) => {
         this.applyTransformToSelection(instance.getTransformer());
       },
@@ -228,9 +248,10 @@ export class App {
 
   openMarkupTransform(): void {
     const ref = this.modal.create({
-      nzTitle: 'HTML ↔ Markdown Conversion',
+      nzTitle: T().markupConversion,
       nzContent: TransformMarkupComponent,
-      nzOkText: 'Apply',
+      nzOkText: T().apply,
+      nzCancelText: T().cancel,
       nzOnOk: (instance: TransformMarkupComponent) => {
         this.applyTransformToSelection(instance.getTransformer());
       },
@@ -247,9 +268,10 @@ export class App {
         : (this.data()[0] || []).map((_, i) => String.fromCharCode(65 + i));
 
     const ref = this.modal.create({
-      nzTitle: 'Column Formula',
+      nzTitle: T().columnFormula,
       nzContent: FormulaBarComponent,
-      nzOkText: 'Apply',
+      nzOkText: T().apply,
+      nzCancelText: T().cancel,
       nzOnOk: (instance: FormulaBarComponent) => {
         const { targetCol, transformer } = instance.getResult();
         const newData = this.data().map((row, ri) => {
@@ -260,7 +282,7 @@ export class App {
         });
         this.historyService.push(this.data());
         this.data.set(newData);
-        this.message.success('Formula applied');
+        this.message.success(T().formulaApplied);
       },
     });
     const instance = ref.getContentComponent();

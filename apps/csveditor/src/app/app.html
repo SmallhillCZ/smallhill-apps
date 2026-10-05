@@ -30,10 +30,10 @@
         [class.drag-over]="isDragOver()"
       >
         <div class="empty-icon">📊</div>
-        <h2>CSV Editor</h2>
-        <p>Open a CSV file to get started, or drag and drop a file here.</p>
+        <h2>{{ t().title }}</h2>
+        <p>{{ t().emptyText }}</p>
         <button nz-button nzType="primary" nzSize="large" (click)="openFile()">
-          Open CSV File
+          {{ t().openCsvFile }}
         </button>
       </div>
     } @else {
