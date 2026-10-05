@@ -1,6 +1,6 @@
 # Tuner
 
-Simple guitar, bass and violin tuner. Frontend-only Angular PWA, no ads, no tracking. Audio is analyzed locally in the browser.
+Simple guitar, bass and violin tuner. Frontend-only Angular PWA, no ads, no tracking. Audio is analyzed locally on the device.
 
 ## Features
 

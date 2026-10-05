@@ -5,7 +5,7 @@ export type Lang = "en" | "cs";
 const en = {
 	title: "Player",
 	heading: "Your music from OneDrive",
-	intro: "Sign in with your Microsoft account, browse your OneDrive folders and play MP3s and other audio files right in the browser.",
+	intro: "Sign in with your Microsoft account, browse your OneDrive folders and play MP3s and other audio files.",
 	signIn: "Sign in with Microsoft",
 	signOut: "Sign out",
 	loading: "Loading…",
@@ -37,7 +37,7 @@ const en = {
 const cs: typeof en = {
 	title: "Přehrávač",
 	heading: "Vaše hudba z OneDrivu",
-	intro: "Přihlaste se účtem Microsoft, procházejte složky na OneDrivu a přehrávejte MP3 a další zvukové soubory přímo v prohlížeči.",
+	intro: "Přihlaste se účtem Microsoft, procházejte složky na OneDrivu a přehrávejte MP3 a další zvukové soubory.",
 	signIn: "Přihlásit se přes Microsoft",
 	signOut: "Odhlásit",
 	loading: "Načítám…",

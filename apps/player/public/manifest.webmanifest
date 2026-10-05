@@ -1,7 +1,7 @@
 {
 	"name": "Player",
 	"short_name": "Player",
-	"description": "Play music from your OneDrive in the browser. No ads, no tracking.",
+	"description": "Play music from your OneDrive. No ads, no tracking.",
 	"display": "standalone",
 	"scope": "./",
 	"start_url": "./",
