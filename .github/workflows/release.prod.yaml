@@ -1,0 +1,63 @@
+name: Release to PRODUCTION
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver:
+        description: "Version bump"
+        required: true
+        type: choice
+        default: none
+        options:
+          - none
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    name: Resolve version
+    uses: ./.github/workflows/_version.yaml
+    with:
+      semver: ${{ github.event.inputs.semver }}
+
+  build:
+    name: Build
+    needs:
+      - version
+    uses: ./.github/workflows/_build.yaml
+    with:
+      image: ghcr.io/smallhillcz/my-image:latest
+      target: my-target
+      version: ${{ needs.version.outputs.version }}
+
+  cleanup:
+    name: Clean up
+    needs:
+      - build
+    uses: ./.github/workflows/_cleanup.yaml
+    with:
+      package: my-image
+
+  deploy:
+    name: Deploy
+    needs:
+      - build
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      images: ghcr.io/smallhillcz/my-image:latest
+    secrets: inherit
+
+  tag:
+    name: Tag
+    needs:
+      - build
+      - version
+    uses: ./.github/workflows/_tag.yaml
+    with:
+      tag: PRODUCTION
+      version: ${{ github.event.inputs.semver != 'none' && needs.version.outputs.version || '' }}

@@ -1,0 +1,65 @@
+name: Resolve version
+
+on:
+  workflow_call:
+    inputs:
+      semver:
+        description: "Version bump"
+        required: true
+        type: string
+        default: none
+      prerelease:
+        description: "Prerelease version"
+        type: boolean
+        required: false
+        default: false
+    outputs:
+      version:
+        description: "Resolved version tag"
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+  version:
+    name: Resolve version tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.new_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: "0"
+
+      - name: Resolve version tag
+        id: version
+        uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
+        env:
+          TAG_PREFIX: v
+          PRERELEASE: ${{ inputs.prerelease }}
+          DEFAULT_BUMP: ${{ inputs.semver }}
+          PRERELEASE_SUFFIX: rc
+          DRY_RUN: true
+          FORCE_WITHOUT_CHANGES: true
+          FORCE_WITHOUT_CHANGES_PRE: true
+          RELEASE_BRANCHES: no_release_branches_exist # otherwise prerelease is not generated for main branch
+
+      - name: Print resolved tags
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+          OLD_TAG: ${{ steps.version.outputs.old_tag }}
+          BUMP: ${{ inputs.semver }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          echo "New tag: $NEW_TAG"
+          echo "Old tag: $OLD_TAG"
+          {
+            echo "## Resolved version"
+            echo
+            echo "### \`$NEW_TAG\`"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Previous tag | \`$OLD_TAG\` |"
+            echo "| Bump | \`$BUMP\` |"
+            echo "| Prerelease | \`$PRERELEASE\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
