@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
+import type { Texts } from "./i18n";
 
 // URLs are relative so they resolve against <base href>, e.g. /scheduler/api/... in production.
 
@@ -46,13 +47,13 @@ export interface PollInput {
 }
 
 /** Turns an HTTP failure into a sentence we can show. */
-export function errorMessage(e: unknown): string {
+export function errorMessage(e: unknown, t: Texts): string {
 	if (e instanceof HttpErrorResponse) {
-		if (e.status === 0) return "Cannot reach the server. Check your connection and try again.";
-		if (typeof e.error?.error === "string") return e.error.error;
-		if (typeof e.error?.message === "string") return e.error.message;
+		if (e.status === 0) return t.offline;
+		const msg = typeof e.error?.error === "string" ? e.error.error : undefined;
+		if (msg) return t.serverErrors[msg] ?? msg;
 	}
-	return "Something went wrong. Please try again.";
+	return t.genericError;
 }
 
 @Injectable({ providedIn: "root" })

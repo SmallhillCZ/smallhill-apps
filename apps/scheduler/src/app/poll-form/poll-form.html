@@ -1,6 +1,8 @@
-<h1>{{ id() ? "Edit poll" : "New poll" }}</h1>
+<h1>{{ id() ? t().editPoll : t().newPoll }}</h1>
 
-@if (error()) {
+@if (notOwner()) {
+	<div class="error" role="alert">{{ t().notOwner }}</div>
+} @else if (error()) {
 	<div class="error" role="alert">{{ error() }}</div>
 }
 
@@ -8,29 +10,33 @@
 	<form (submit)="$event.preventDefault(); save()">
 		<section class="card">
 			<div class="field">
-				<label for="title">What are you planning?</label>
+				<label for="title">{{ t().titleLabel }}</label>
 				<input
 					id="title"
 					type="text"
 					maxlength="200"
-					placeholder="Team lunch"
+					[placeholder]="t().titlePlaceholder"
 					[value]="title()"
 					(input)="title.set($any($event.target).value)"
 				/>
 			</div>
 			<div class="field">
-				<label for="location">Where <span class="muted">(optional)</span></label>
+				<label for="location"
+					>{{ t().whereLabel }} <span class="muted">{{ t().optional }}</span></label
+				>
 				<input
 					id="location"
 					type="text"
 					maxlength="200"
-					placeholder="Café on the corner, or a video call link"
+					[placeholder]="t().wherePlaceholder"
 					[value]="location()"
 					(input)="location.set($any($event.target).value)"
 				/>
 			</div>
 			<div class="field">
-				<label for="description">Note for participants <span class="muted">(optional)</span></label>
+				<label for="description"
+					>{{ t().noteLabel }} <span class="muted">{{ t().optional }}</span></label
+				>
 				<textarea
 					id="description"
 					maxlength="2000"
@@ -41,28 +47,26 @@
 		</section>
 
 		<section class="card">
-			<h2>When could it happen?</h2>
-			<p class="muted small">Times are in your time zone ({{ timezone }}). Participants see them in theirs.</p>
+			<h2>{{ t().whenTitle }}</h2>
+			<p class="muted small">{{ t().tzHint(timezone) }}</p>
 			@if (id()) {
-				<p class="muted small">
-					Answers to times you keep stay as they are. Removing a time also removes the answers for it.
-				</p>
+				<p class="muted small">{{ t().editHint }}</p>
 			}
 			<app-slot-picker [(days)]="days" />
 		</section>
 
 		<div class="actions">
 			<span class="summary muted small">
-				{{ slotCount() }} time slot{{ slotCount() === 1 ? "" : "s" }}
+				{{ t().slotCount(slotCount()) }}
 				@if (problem() && (title() || slotCount())) {
 					· {{ problem() }}
 				}
 			</span>
 			@if (id()) {
-				<a class="button" [routerLink]="['/p', id()]">Cancel</a>
+				<a class="button" [routerLink]="['/p', id()]">{{ t().cancel }}</a>
 			}
 			<button class="primary" type="submit" [disabled]="!!problem() || saving()">
-				{{ saving() ? "Saving…" : id() ? "Save changes" : "Create poll" }}
+				{{ saving() ? t().saving : id() ? t().saveChanges : t().submitPoll }}
 			</button>
 		</div>
 	</form>

@@ -7,3 +7,4 @@
 - Admin/edit keys live only in the browser (`src/app/local-store.ts`); the DB stores SHA-256 hashes.
 - Hosted at https://apps.smallhill.cz/scheduler/.
 - Signature colour: blue `#3b5bdb` (manifest `theme_color`, icons, `--accent` in `src/styles.css`). Icons are rendered from `public/icon.svg`.
+- UI texts EN/CS in `src/app/i18n.ts` (`I18n` service: `t()` signal, auto-detected from `navigator.languages`, manual override in localStorage `scheduler.lang`). Every new UI string needs both languages.
