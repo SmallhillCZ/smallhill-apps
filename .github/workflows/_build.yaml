@@ -86,6 +86,7 @@ jobs:
             echo "com.centurylinklabs.watchtower.enable=true"
             echo "traefik.http.services.$ROUTER.loadbalancer.server.port=$PORT"
             echo "traefik.http.routers.$ROUTER.service=$ROUTER"
+            echo "traefik.http.routers.$ROUTER.tls=true"
             if [ -z "$prefix" ]; then
               echo "traefik.http.routers.$ROUTER.rule=Host(\`$HOST\`)"
             else
