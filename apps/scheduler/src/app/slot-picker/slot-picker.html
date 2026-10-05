@@ -1,0 +1,86 @@
+<div class="calendar" role="group" aria-label="Pick days">
+	<div class="cal-head">
+		<button
+			type="button"
+			class="icon"
+			(click)="shiftMonth(-1)"
+			[disabled]="!canGoBack()"
+			aria-label="Previous month"
+		>
+			‹
+		</button>
+		<strong>{{ monthLabel() }}</strong>
+		<button type="button" class="icon" (click)="shiftMonth(1)" aria-label="Next month">›</button>
+	</div>
+	<div class="grid">
+		@for (w of weekdays; track $index) {
+			<span class="wd muted small">{{ w }}</span>
+		}
+		@for (cell of cells(); track $index) {
+			@if (cell) {
+				<button
+					type="button"
+					class="day"
+					[class.on]="selected().has(cell.date)"
+					[disabled]="cell.past && !selected().has(cell.date)"
+					[attr.aria-pressed]="selected().has(cell.date)"
+					[attr.aria-label]="formatDay(cell.date)"
+					(click)="toggle(cell.date)"
+				>
+					{{ cell.label }}
+				</button>
+			} @else {
+				<span></span>
+			}
+		}
+	</div>
+</div>
+
+@if (days().length === 0) {
+	<p class="muted small hint">Tap the days that could work. You'll set the times next.</p>
+}
+
+<ul class="days">
+	@for (day of days(); track day.date) {
+		<li>
+			<div class="day-head">
+				<strong>{{ formatDay(day.date) }}</strong>
+				<span class="spacer"></span>
+				@if (days().length > 1) {
+					<button type="button" class="link small" (click)="copyToAll(day.date)">
+						Use these times for all days
+					</button>
+				}
+				<button
+					type="button"
+					class="icon"
+					(click)="removeDay(day.date)"
+					[attr.aria-label]="'Remove ' + formatDay(day.date)"
+				>
+					✕
+				</button>
+			</div>
+			@for (t of day.times; track $index; let i = $index) {
+				<div class="time-row" [class.bad]="invalid(t)">
+					<input
+						type="time"
+						[value]="t.start"
+						(change)="setTime(day.date, i, 'start', $any($event.target).value)"
+						aria-label="Start time"
+					/>
+					<span>–</span>
+					<input
+						type="time"
+						[value]="t.end"
+						(change)="setTime(day.date, i, 'end', $any($event.target).value)"
+						aria-label="End time"
+					/>
+					<button type="button" class="icon" (click)="removeTime(day.date, i)" aria-label="Remove time">
+						✕
+					</button>
+				</div>
+			}
+			<button type="button" class="link small" (click)="addTime(day.date)">+ Add time</button>
+		</li>
+	}
+</ul>
