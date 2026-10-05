@@ -10,7 +10,11 @@ import { Lang, lang, setLang, T } from "./i18n";
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: "./app.html",
 	styleUrl: "./app.scss",
-	host: { "(window:hashchange)": "syncFromHash()" },
+	host: {
+		"(window:hashchange)": "syncFromHash()",
+		"(document:keydown)": "keyboard = true",
+		"(document:pointerdown)": "keyboard = false",
+	},
 })
 export class App {
 	protected readonly t = T;
@@ -48,6 +52,13 @@ export class App {
 	protected close(): void {
 		history.replaceState(null, "", location.pathname + location.search);
 		this.selectedId.set(null);
+	}
+
+	protected keyboard = false;
+
+	protected onClose(): void {
+		if (!this.keyboard && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+		if (this.selected()) this.close();
 	}
 
 	protected onBackdropClick(event: MouseEvent): void {

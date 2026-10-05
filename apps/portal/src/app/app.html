@@ -28,7 +28,7 @@
 
 <footer>{{ t().footer }}</footer>
 
-<dialog #dialog (close)="selected() && close()" (click)="onBackdropClick($event)">
+<dialog #dialog (close)="onClose()" (click)="onBackdropClick($event)">
 	@if (selected(); as app) {
 		<app-detail [app]="app" (closed)="close()" />
 	}
