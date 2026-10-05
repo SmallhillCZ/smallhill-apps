@@ -2,6 +2,7 @@ import { DecimalPipe } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, effect, inject, OnDestroy, signal } from "@angular/core";
 import { Gauge } from "./gauge/gauge";
 import { T } from "./i18n";
+import { applyTheme, loadTheme, Theme, THEMES } from "./theme";
 import { analyze, InstrumentId, INSTRUMENTS, noteInfo } from "./tuning/notes";
 import { TunerService } from "./tuning/tuner.service";
 
@@ -37,6 +38,8 @@ export class App implements OnDestroy {
 	protected readonly tuner = inject(TunerService);
 	protected readonly t = T;
 	protected readonly instruments = INSTRUMENTS;
+	protected readonly themes = THEMES;
+	protected readonly theme = signal<Theme>(loadTheme());
 
 	private readonly initial = loadSettings();
 	protected readonly instrumentId = signal<InstrumentId>(this.initial.instrument);
@@ -71,6 +74,7 @@ export class App implements OnDestroy {
 	});
 
 	constructor() {
+		effect(() => applyTheme(this.theme()));
 		effect(() => {
 			const { minFrequency, maxFrequency } = this.instrument();
 			this.tuner.setRange(minFrequency, maxFrequency);
@@ -89,6 +93,10 @@ export class App implements OnDestroy {
 
 	protected toggleString(midi: number): void {
 		this.lockedString.update((current) => (current === midi ? null : midi));
+	}
+
+	protected setTheme(theme: Theme): void {
+		if (THEMES.includes(theme)) this.theme.set(theme);
 	}
 
 	protected changeA4(delta: number): void {

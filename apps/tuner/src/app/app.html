@@ -1,5 +1,17 @@
 <header>
-	<h1>Tuner</h1>
+	<div class="title">
+		<h1>Tuner</h1>
+		<select
+			class="theme"
+			[attr.aria-label]="t.theme"
+			[value]="theme()"
+			(change)="setTheme($any($event.target).value)"
+		>
+			@for (option of themes; track option) {
+				<option [value]="option" [selected]="option === theme()">{{ t.themes[option] }}</option>
+			}
+		</select>
+	</div>
 	<nav class="instruments" role="tablist">
 		@for (item of instruments; track item.id) {
 			<button

@@ -13,6 +13,8 @@ const en = {
 	auto: "Auto",
 	privacy: "Sound is analyzed on your device only. Nothing is recorded or sent anywhere.",
 	instruments: { guitar: "Guitar", bass: "Bass", violin: "Violin", chromatic: "Chromatic" },
+	theme: "Theme",
+	themes: { auto: "Auto theme", light: "Light", dark: "Dark", eink: "E-ink" },
 };
 
 const cs: typeof en = {
@@ -30,6 +32,8 @@ const cs: typeof en = {
 	auto: "Auto",
 	privacy: "Zvuk se zpracovává jen ve vašem zařízení. Nic se nenahrává ani neodesílá.",
 	instruments: { guitar: "Kytara", bass: "Baskytara", violin: "Housle", chromatic: "Chromatické" },
+	theme: "Vzhled",
+	themes: { auto: "Automatický vzhled", light: "Světlý", dark: "Tmavý", eink: "E-ink" },
 };
 
 export const LANG =

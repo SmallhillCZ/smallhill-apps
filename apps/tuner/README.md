@@ -7,6 +7,7 @@ Simple guitar, bass and violin tuner. Frontend-only Angular PWA, no ads, no trac
 - Instruments: guitar (EADGBE), bass (EADG), violin (GDAE), chromatic
 - Automatic string detection or a locked target string
 - Adjustable reference pitch A4 (415–466 Hz)
+- Auto, light, dark and E-ink themes (E-ink: white, high contrast, no animations except the needle)
 - English and Czech UI (by browser language)
 - Installable and works offline (Angular service worker)
 

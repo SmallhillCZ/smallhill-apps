@@ -14,6 +14,18 @@ header {
 	gap: 12px;
 }
 
+.title {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.theme {
+	color: var(--muted);
+	font-size: 0.85rem;
+	cursor: pointer;
+}
+
 h1 {
 	margin: 0;
 	font-size: 1.1rem;
@@ -28,6 +40,7 @@ h1 {
 	gap: 4px;
 	padding: 4px;
 	background: var(--surface-2);
+	border: 2px solid var(--border);
 	border-radius: var(--radius);
 
 	button {
@@ -38,7 +51,8 @@ h1 {
 		font-size: 0.85rem;
 
 		&.selected {
-			background: var(--surface);
+			background: var(--selected-bg);
+			color: var(--selected-text);
 			font-weight: 600;
 			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 		}
@@ -60,11 +74,12 @@ main {
 	padding: 24px 16px 16px;
 	background: var(--surface);
 	border-radius: calc(var(--radius) * 1.5);
-	transition: box-shadow 200ms;
+	border: 2px solid var(--border);
+	transition: outline-color 200ms;
 }
 
 .in-tune .display {
-	box-shadow: 0 0 0 3px var(--good);
+	outline: 3px solid var(--good);
 }
 
 .note {
@@ -221,4 +236,16 @@ footer p {
 	text-align: center;
 	font-size: 0.8rem;
 	color: var(--muted);
+}
+
+:host-context([data-theme="eink"]) {
+	.primary,
+	.reference button,
+	.strings button {
+		border: 2px solid var(--border);
+	}
+
+	.strings button.target {
+		border-width: 4px;
+	}
 }
