@@ -352,7 +352,11 @@ export class App {
 
 	private restoreSession(): void {
 		const session = this.session;
-		if (!session) return;
+		if (!session || !this.player.synced()) return;
+		if (this.player.remote()) {
+			this.session = null;
+			return;
+		}
 		const sources = this.sources();
 		const tracks = session.tracks.filter((track) => sources.some((s) => s.id === track.source));
 		const current = session.tracks[session.queue.order[session.queue.pos]];

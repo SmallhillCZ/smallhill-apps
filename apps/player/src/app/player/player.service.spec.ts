@@ -56,4 +56,25 @@ describe("PlayerService", () => {
 		player.removeSource("other");
 		expect(player.current()).toBeNull();
 	});
+
+	it("shares the queue with another tab and forwards its controls", async () => {
+		const first = TestBed.runInInjectionContext(() => new PlayerService());
+		const second = TestBed.runInInjectionContext(() => new PlayerService());
+		first.setResolver(downloadUrl);
+		second.setResolver(downloadUrl);
+		first.playList([track, { ...track, id: "t2" }], 0);
+		await vi.waitFor(() => expect(audio?.src).toBe("https://files.example/t1"));
+		const pause = vi.mocked(HTMLMediaElement.prototype.pause);
+		audio.dispatchEvent(new Event("playing"));
+		await vi.waitFor(() => expect(second.remote()).toBe(true));
+		await vi.waitFor(() => expect(second.current()?.id).toBe("t1"));
+		expect(second.playing()).toBe(true);
+		pause.mockClear();
+		Object.defineProperty(audio, "paused", { value: false, configurable: true });
+		second.toggle();
+		await vi.waitFor(() => expect(pause).toHaveBeenCalled());
+		second.next();
+		await vi.waitFor(() => expect(first.current()?.id).toBe("t2"));
+		await vi.waitFor(() => expect(second.current()?.id).toBe("t2"));
+	});
 });
