@@ -46,7 +46,6 @@ interface SharedState {
 const COMMANDS = [
 	"playList",
 	"enqueue",
-	"playNow",
 	"jump",
 	"removeAt",
 	"removeSource",
@@ -285,34 +284,6 @@ export class PlayerService {
 		this.tracks.update((list) => [...list, ...tracks]);
 		this.queue.update((queue) => ({ ...queue, order: [...queue.order, ...tracks.map((_, i) => offset + i)] }));
 		this.prefetchNext();
-	}
-
-	playNow(track: QueuedTrack): void {
-		if (this.forward("playNow", track)) return;
-		if (!this.current()) {
-			this.playList([track], 0);
-			return;
-		}
-		const tracks = this.tracks();
-		const queue = this.queue();
-		const same = (pos: number) =>
-			pos !== queue.pos &&
-			tracks[queue.order[pos]]?.id === track.id &&
-			tracks[queue.order[pos]]?.source === track.source;
-		const positions = queue.order.map((_, pos) => pos);
-		const existing = [...positions.slice(queue.pos + 1), ...positions.slice(0, queue.pos)].find(same);
-		const order = [...queue.order];
-		let pos = queue.pos;
-		let index = tracks.length;
-		if (existing === undefined) this.tracks.set([...tracks, track]);
-		else {
-			index = order[existing];
-			order.splice(existing, 1);
-			if (existing < pos) pos--;
-		}
-		order.splice(pos + 1, 0, index);
-		this.queue.set({ order, pos: pos + 1 });
-		void this.load();
 	}
 
 	jump(pos: number): void {

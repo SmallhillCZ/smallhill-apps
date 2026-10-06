@@ -444,7 +444,7 @@ export class App {
 			this.player.toggle();
 			return;
 		}
-		this.player.playNow(this.queued([track], this.path())[0]);
+		this.player.playList(this.queued([track], this.path()), 0);
 	}
 
 	protected playAll(shuffle: boolean): void {
