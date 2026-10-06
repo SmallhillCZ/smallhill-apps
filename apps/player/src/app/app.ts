@@ -20,6 +20,8 @@ import { OneDriveService } from "./onedrive/onedrive.service";
 import { PlayerService, QueuedTrack } from "./player/player.service";
 import {
 	loadLocation,
+	locationFromUrl,
+	locationToUrl,
 	loadSession,
 	loadSources,
 	rootLabel,
@@ -114,10 +116,15 @@ export class App {
 
 	constructor() {
 		const state: unknown = history.state;
-		if (isNavState(state)) this.show(state.path, !!state.picking);
+		const fromUrl = locationFromUrl(location.href);
+		if (fromUrl) this.show(fromUrl.path, fromUrl.picking);
+		else if (isNavState(state)) this.show(state.path, !!state.picking);
+		if (!location.hash) history.replaceState(this.navState(), "", this.navUrl());
 		const onPopState = (event: PopStateEvent) => {
 			const state: unknown = event.state;
-			if (isNavState(state)) this.show(state.path, !!state.picking);
+			const fromUrl = locationFromUrl(location.href);
+			if (fromUrl) this.show(fromUrl.path, fromUrl.picking);
+			else if (isNavState(state)) this.show(state.path, !!state.picking);
 			else this.show([]);
 		};
 		window.addEventListener("popstate", onPopState);
@@ -201,7 +208,11 @@ export class App {
 			const path = this.path();
 			const source = this.source();
 			if (path.length && !source && this.storedSources !== null) {
-				if (this.drive.status() !== "loading") untracked(() => this.show([]));
+				if (this.drive.status() !== "loading")
+					untracked(() => {
+						this.show([]);
+						if (!location.hash) history.replaceState(this.navState(), "", this.navUrl());
+					});
 				return;
 			}
 			if (source && this.state() === "ready") void this.load(source, this.folderId());
@@ -275,13 +286,17 @@ export class App {
 	}
 
 	private navigate(path: Folder[], picking = this.picking() && path.length > 0): void {
-		if (!isNavState(history.state)) history.replaceState(this.navState(), "");
+		if (!isNavState(history.state)) history.replaceState(this.navState(), "", this.navUrl());
 		this.show(path, picking);
-		history.pushState(this.navState(), "");
+		history.pushState(this.navState(), "", this.navUrl());
 	}
 
 	private navState(): NavState {
 		return { player: true, path: this.path(), picking: this.picking() };
+	}
+
+	private navUrl(): string {
+		return locationToUrl(location.href, { path: this.path(), picking: this.picking() });
 	}
 
 	private show(path: Folder[], picking = false): void {
@@ -406,7 +421,7 @@ export class App {
 			sources.map((s) => (s.id === root.id ? { ...s, root: folders.length ? folders : undefined } : s)),
 		);
 		this.show([root]);
-		history.replaceState(this.navState(), "");
+		history.replaceState(this.navState(), "", this.navUrl());
 	}
 
 	protected cancelPicking(): void {

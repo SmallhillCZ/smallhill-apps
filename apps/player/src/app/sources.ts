@@ -107,3 +107,32 @@ export function loadSession(): Session | null {
 export function saveSession(session: Session | null): void {
 	write(SESSION_KEY, session);
 }
+
+export interface NavLocation {
+	path: Folder[];
+	picking: boolean;
+}
+
+export function locationToUrl(href: string, { path, picking }: NavLocation): string {
+	const url = new URL(href);
+	url.hash = "";
+	url.searchParams.delete("path");
+	url.searchParams.delete("pick");
+	if (path.length) url.searchParams.set("path", JSON.stringify(path.map((folder) => [folder.id, folder.name])));
+	if (path.length && picking) url.searchParams.set("pick", "1");
+	return url.href;
+}
+
+export function locationFromUrl(href: string): NavLocation | null {
+	const value = new URL(href).searchParams.get("path");
+	if (!value) return null;
+	try {
+		const parsed: unknown = JSON.parse(value);
+		if (!Array.isArray(parsed)) return null;
+		const path = toFolders(parsed.map((item) => (Array.isArray(item) ? { id: item[0], name: item[1] } : null)));
+		if (!path?.length || path.length !== parsed.length) return null;
+		return { path, picking: new URL(href).searchParams.get("pick") === "1" };
+	} catch {
+		return null;
+	}
+}
