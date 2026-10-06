@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Player</string>
+    <string name="library">Library</string>
+    <string name="onedrive">OneDrive</string>
+    <string name="intro">Add your OneDrive account to play your music. Each account shows up in the library as a top-level folder.</string>
+    <string name="privacy">Music plays straight from OneDrive. The app only reads your files and nothing passes through our servers.</string>
+    <string name="add_onedrive">Add OneDrive</string>
+    <string name="sign_in_again">Sign in again</string>
+    <string name="sign_in_failed">Signing in to Microsoft failed. Try again.</string>
+    <string name="sign_in_expired">Your sign-in has expired.</string>
+    <string name="remove">Remove</string>
+    <string name="remove_confirm">Remove %1$s from the library? Your files stay where they are.</string>
+    <string name="cancel">Cancel</string>
+    <string name="reset_top">Show the whole OneDrive</string>
+    <string name="use_as_top">Use this folder as the top folder</string>
+    <string name="refresh">Refresh</string>
+    <string name="back">Back</string>
+    <string name="more">More</string>
+    <string name="empty">No folders or audio files here.</string>
+    <string name="folder_error">The folder could not be loaded.</string>
+    <string name="retry">Try again</string>
+    <string name="play_all">Play all</string>
+    <string name="shuffle_all">Shuffle</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="repeat_off">Repeat off</string>
+    <string name="repeat_all">Repeat all</string>
+    <string name="repeat_one">Repeat one</string>
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Přehrávač</string>
+    <string name="library">Knihovna</string>
+    <string name="onedrive">OneDrive</string>
+    <string name="intro">Přidejte svůj účet OneDrive a přehrávejte svou hudbu. Každý účet se v knihovně zobrazí jako samostatná složka.</string>
+    <string name="privacy">Hudba se přehrává přímo z OneDrivu. Aplikace vaše soubory jen čte a nic neprochází přes naše servery.</string>
+    <string name="add_onedrive">Přidat OneDrive</string>
+    <string name="sign_in_again">Přihlásit znovu</string>
+    <string name="sign_in_failed">Přihlášení k Microsoftu selhalo. Zkuste to znovu.</string>
+    <string name="sign_in_expired">Platnost přihlášení vypršela.</string>
+    <string name="remove">Odebrat</string>
+    <string name="remove_confirm">Odebrat %1$s z knihovny? Vaše soubory zůstanou, kde jsou.</string>
+    <string name="cancel">Zrušit</string>
+    <string name="reset_top">Zobrazit celý OneDrive</string>
+    <string name="use_as_top">Použít tuto složku jako hlavní</string>
+    <string name="refresh">Obnovit</string>
+    <string name="back">Zpět</string>
+    <string name="more">Další možnosti</string>
+    <string name="empty">Nejsou tu žádné složky ani zvukové soubory.</string>
+    <string name="folder_error">Složku se nepodařilo načíst.</string>
+    <string name="retry">Zkusit znovu</string>
+    <string name="play_all">Přehrát vše</string>
+    <string name="shuffle_all">Náhodně</string>
+    <string name="play">Přehrát</string>
+    <string name="pause">Pozastavit</string>
+    <string name="previous">Předchozí</string>
+    <string name="next">Další</string>
+    <string name="shuffle">Náhodné pořadí</string>
+    <string name="repeat_off">Neopakovat</string>
+    <string name="repeat_all">Opakovat vše</string>
+    <string name="repeat_one">Opakovat jednu</string>
+</resources>
