@@ -56,6 +56,13 @@ describe("PlayerService", () => {
 		player.playNow(other("t4"));
 		expect(player.upcoming().map((item) => item.track.id)).toEqual(["t1", "t3", "t4"]);
 		expect(player.current()?.id).toBe("t4");
+		player.enqueue([other("t5"), other("t6")]);
+		player.playNow(other("t6"));
+		expect(player.upcoming().map((item) => item.track.id)).toEqual(["t1", "t3", "t4", "t6", "t5"]);
+		expect(player.current()?.id).toBe("t6");
+		player.playNow(other("t3"));
+		expect(player.upcoming().map((item) => item.track.id)).toEqual(["t1", "t4", "t6", "t3", "t5"]);
+		expect(player.current()?.id).toBe("t3");
 		player.removeSource("other");
 		expect(player.current()).toBeNull();
 	});

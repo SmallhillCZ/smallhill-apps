@@ -294,13 +294,25 @@ export class PlayerService {
 			this.playList([track], 0);
 			return;
 		}
-		const index = this.tracks().length;
-		this.tracks.update((list) => [...list, track]);
-		this.queue.update((queue) => {
-			const order = [...queue.order];
-			order.splice(queue.pos + 1, 0, index);
-			return { order, pos: queue.pos + 1 };
-		});
+		const tracks = this.tracks();
+		const queue = this.queue();
+		const same = (pos: number) =>
+			pos !== queue.pos &&
+			tracks[queue.order[pos]]?.id === track.id &&
+			tracks[queue.order[pos]]?.source === track.source;
+		const positions = queue.order.map((_, pos) => pos);
+		const existing = [...positions.slice(queue.pos + 1), ...positions.slice(0, queue.pos)].find(same);
+		const order = [...queue.order];
+		let pos = queue.pos;
+		let index = tracks.length;
+		if (existing === undefined) this.tracks.set([...tracks, track]);
+		else {
+			index = order[existing];
+			order.splice(existing, 1);
+			if (existing < pos) pos--;
+		}
+		order.splice(pos + 1, 0, index);
+		this.queue.set({ order, pos: pos + 1 });
 		void this.load();
 	}
 
