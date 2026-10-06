@@ -10,7 +10,7 @@ Play music from your OneDrive. Frontend-only Angular PWA, no ads, no tracking, n
 - Set a music folder that opens on start; OneDrive folder listings are cached locally
 - Play a folder in order or shuffled, repeat all or one, seek
 - Lock screen, notification and headphone controls (Media Session API)
-- Auto, light and dark themes; English and Czech UI (by browser language, with a switch)
+- Auto, light, dark and E-ink themes (auto detects E-ink displays); English and Czech UI (by browser language, with a switch)
 - Installable (Angular service worker)
 
 ## Microsoft Entra app

@@ -7,4 +7,4 @@
 - Sources: OneDrive and device folder (`src/app/device/device.service.ts`: File System Access handle kept in IndexedDB `handles`, permission re-requested on start; fallback `webkitdirectory` input, session only). Both expose `children(folderId)` + `downloadUrl(id)`; device ids are relative paths. `npm run demo` swaps in `onedrive.service.demo.ts` (sample tree, generated tones) via angular.json `demo` configuration; used for screenshots.
 - Folder and source navigation is pushed to browser history (`history.state` only, URL untouched so MSAL redirect hashes are safe); popstate restores it.
 - Queue logic pure in `src/app/player/queue.ts`; audio + Media Session in `player.service.ts`.
-- Signature colour `#7048e8` (violet). Texts EN/CS in `src/app/i18n.ts`. Prettier: tabs, double quotes, width 120.
+- Signature colour `#7048e8` (violet). Themes auto/light/dark/eink (`theme.ts` copied from Tuner: auto switches to eink on `(update: slow), (monochrome)`); eink = white, black borders, no shadows or animations. Texts EN/CS in `src/app/i18n.ts`. Prettier: tabs, double quotes, width 120.

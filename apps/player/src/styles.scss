@@ -9,6 +9,7 @@
 	--accent-text: #ffffff;
 	--accent-soft: rgba(112, 72, 232, 0.12);
 	--danger: #d6336c;
+	--border: transparent;
 	--radius: 14px;
 	font-family:
 		system-ui,
@@ -43,6 +44,28 @@
 :root[data-theme="dark"] {
 	color-scheme: dark;
 	@include dark;
+}
+
+:root[data-theme="eink"] {
+	color-scheme: light;
+	--bg: #ffffff;
+	--surface: #ffffff;
+	--surface-2: #ffffff;
+	--text: #000000;
+	--muted: #3a3a3a;
+	--accent: #4c25c4;
+	--accent-text: #ffffff;
+	--accent-soft: #ffffff;
+	--danger: #b0003a;
+	--border: #000000;
+
+	*,
+	*::before,
+	*::after {
+		transition: none !important;
+		animation: none !important;
+		box-shadow: none !important;
+	}
 }
 
 * {

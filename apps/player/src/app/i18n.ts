@@ -44,7 +44,7 @@ const en = {
 	privacy:
 		"Music plays straight from OneDrive or from your device. The app only reads your files and nothing passes through our servers.",
 	theme: "Theme",
-	themes: { auto: "Auto theme", light: "Light", dark: "Dark" },
+	themes: { auto: "Auto theme", light: "Light", dark: "Dark", eink: "E-ink" },
 	language: "Language",
 };
 
@@ -90,7 +90,7 @@ const cs: typeof en = {
 	privacy:
 		"Hudba se přehrává přímo z OneDrivu nebo z vašeho zařízení. Aplikace soubory jen čte a nic neprochází našimi servery.",
 	theme: "Vzhled",
-	themes: { auto: "Automatický vzhled", light: "Světlý", dark: "Tmavý" },
+	themes: { auto: "Automatický vzhled", light: "Světlý", dark: "Tmavý", eink: "E-ink" },
 	language: "Jazyk",
 };
 
