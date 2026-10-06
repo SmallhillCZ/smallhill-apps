@@ -60,35 +60,36 @@
 
 	@if (!path().length) {
 		@if (sources().length) {
-			<ul class="list">
+			<ul class="sources">
 				@for (item of sources(); track item.id) {
 					@let itemState = stateOf(item);
-					<li class="source">
-						<button type="button" class="row" (click)="openSource(item, picker)">
-							<app-icon class="folder" [name]="item.kind === 'device' ? 'device' : 'cloud'" />
-							<span class="text">
-								<span class="name">{{ item.name }}</span>
-								<span class="meta" [class.attention]="itemState !== 'ready' && itemState !== 'loading'">
-									@switch (itemState) {
-										@case ("signin") {
-											{{ t().signInAgain }}
-										}
-										@case ("permission") {
-											{{ t().tapToAllow }}
-										}
-										@case ("missing") {
-											{{ t().chooseAgain }}
-										}
-										@default {
-											{{ item.kind === "device" ? t().deviceFolder : accountLabel(item) }}
-										}
+					<li class="source" [class.editing]="editing() === item.id">
+						<button type="button" class="card" (click)="openSource(item, picker)">
+							<app-icon class="kind" [name]="item.kind === 'device' ? 'device' : 'cloud'" />
+							<span class="name">{{ item.name }}</span>
+							<span class="meta" [class.attention]="itemState !== 'ready' && itemState !== 'loading'">
+								@switch (itemState) {
+									@case ("signin") {
+										{{ t().signInAgain }}
 									}
-								</span>
+									@case ("permission") {
+										{{ t().tapToAllow }}
+									}
+									@case ("missing") {
+										{{ t().chooseAgain }}
+									}
+									@default {
+										{{ item.kind === "device" ? t().deviceFolder : accountLabel(item) }}
+									}
+								}
 							</span>
+							@if (rootLabel(item); as root) {
+								<span class="meta root"><app-icon name="folder" />{{ root }}</span>
+							}
 						</button>
 						<button
 							type="button"
-							class="icon small"
+							class="icon small settings"
 							[class.on]="editing() === item.id"
 							[attr.aria-expanded]="editing() === item.id"
 							[attr.aria-label]="t().settings"
