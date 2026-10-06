@@ -44,6 +44,7 @@ const en = {
 	seek: "Position",
 	trackError: "This track could not be played.",
 	close: "Close player",
+	openFolder: "Open the folder of this track",
 	privacy:
 		"Music plays straight from OneDrive or from your device. The app only reads your files and nothing passes through our servers.",
 	theme: "Theme",
@@ -93,6 +94,7 @@ const cs: typeof en = {
 	seek: "Pozice",
 	trackError: "Tuto skladbu se nepodařilo přehrát.",
 	close: "Zavřít přehrávač",
+	openFolder: "Otevřít složku této skladby",
 	privacy:
 		"Hudba se přehrává přímo z OneDrivu nebo z vašeho zařízení. Aplikace soubory jen čte a nic neprochází našimi servery.",
 	theme: "Vzhled",

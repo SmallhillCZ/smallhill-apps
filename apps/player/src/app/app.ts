@@ -67,6 +67,7 @@ export class App {
 	protected readonly sources = signal<Source[]>(this.storedSources ?? []);
 	protected readonly path = signal<Folder[]>(loadLocation());
 	protected readonly picking = signal(false);
+	protected readonly playingPath = signal<Folder[]>([]);
 	protected readonly editing = signal<string | null>(null);
 	protected readonly rootLabel = rootLabel;
 	protected readonly items = signal<DriveItem[]>([]);
@@ -75,6 +76,7 @@ export class App {
 	private request = 0;
 	private pendingRepick: string | null = null;
 	private readonly trackSources = new Map<string, TrackSource>();
+	private revealTrack = false;
 	private readonly crumbs = viewChild<ElementRef<HTMLElement>>("crumbs");
 
 	protected readonly source = computed(() => this.sources().find((s) => s.id === this.path()[0]?.id) ?? null);
@@ -88,6 +90,13 @@ export class App {
 		const path = this.path();
 		if (path.length > 1) return path.at(-1)!.id;
 		return this.picking() ? null : (this.source()?.root?.at(-1)?.id ?? null);
+	});
+	protected readonly inPlayingFolder = computed(() => {
+		const playing = this.playingPath();
+		const path = this.path();
+		return (
+			!this.picking() && playing.length === path.length && playing.every((folder, i) => folder.id === path[i].id)
+		);
 	});
 	protected readonly progress = computed(() => {
 		const duration = this.player.duration();
@@ -137,6 +146,14 @@ export class App {
 					this.navigate([{ id: signedIn.id, name: "OneDrive" }]);
 				}
 			});
+		});
+		afterRenderEffect(() => {
+			this.tracks();
+			if (!this.revealTrack) return;
+			const active = document.querySelector(".row.active");
+			if (!active) return;
+			this.revealTrack = false;
+			active.scrollIntoView({ block: "center" });
 		});
 		afterRenderEffect(() => {
 			this.path();
@@ -342,6 +359,7 @@ export class App {
 			return;
 		}
 		this.player.playList(this.tracks(), index, this.trackSource(source));
+		this.playingPath.set(this.path());
 	}
 
 	protected playAll(shuffle: boolean): void {
@@ -350,6 +368,14 @@ export class App {
 		if (!source || !tracks.length) return;
 		if (this.player.shuffle() !== shuffle) this.player.toggleShuffle();
 		this.player.playList(tracks, shuffle ? Math.floor(Math.random() * tracks.length) : 0, this.trackSource(source));
+		this.playingPath.set(this.path());
+	}
+
+	protected goPlayingFolder(): void {
+		const path = this.playingPath();
+		if (!path.length || this.inPlayingFolder()) return;
+		this.revealTrack = true;
+		this.navigate(path, false);
 	}
 
 	protected seek(event: Event): void {

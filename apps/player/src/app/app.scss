@@ -185,18 +185,86 @@ footer {
 	}
 }
 
-.source {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
+.sources {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
 
-	.row {
-		flex: 1;
-		min-width: 0;
+.source {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	border-radius: var(--radius);
+	background: var(--surface);
+
+	&.editing {
+		outline: 2px solid var(--accent);
+		outline-offset: -2px;
 	}
 
-	.icon.small {
-		flex: none;
+	.settings {
+		position: absolute;
+		top: 6px;
+		right: 6px;
+	}
+}
+
+.card {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	width: 100%;
+	flex: 1;
+	min-height: 150px;
+	padding: 16px;
+	border: 0;
+	border-radius: var(--radius);
+	background: transparent;
+	text-align: left;
+
+	&:hover {
+		background: var(--accent-soft);
+	}
+
+	.kind {
+		width: 40px;
+		height: 40px;
+		margin-bottom: auto;
+		color: var(--accent);
+	}
+
+	.name {
+		max-width: 100%;
+		margin-top: 12px;
+		font-size: 1.05rem;
+		font-weight: 700;
+		overflow-wrap: anywhere;
+	}
+
+	.meta {
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 0.85rem;
+		color: var(--muted);
+	}
+
+	.root {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+
+		app-icon {
+			width: 16px;
+			height: 16px;
+		}
 	}
 }
 
@@ -218,10 +286,15 @@ footer {
 
 .options {
 	display: flex;
-	flex-wrap: wrap;
+	flex-direction: column;
+	align-items: flex-start;
 	gap: 6px;
-	width: 100%;
-	padding: 0 12px 12px 48px;
+	padding: 0 12px 14px;
+
+	.chip {
+		max-width: 100%;
+		text-align: left;
+	}
 }
 
 .pick {
@@ -509,6 +582,7 @@ footer {
 
 :host-context([data-theme="eink"]) {
 	.list,
+	.source,
 	.welcome,
 	.chip,
 	.pick,
