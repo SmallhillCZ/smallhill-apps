@@ -215,7 +215,7 @@
 					@for (track of tracks(); track track.id; let i = $index) {
 						@let active = player.current()?.id === track.id;
 						<li class="item">
-							<button type="button" class="row" [class.active]="active" (click)="addTrack(i)">
+							<div class="row static" [class.active]="active">
 								<span class="badge">
 									<app-icon
 										[name]="active && player.playing() ? 'pause' : active ? 'play' : 'note'"
@@ -230,6 +230,15 @@
 								@if (track.duration) {
 									<span class="duration">{{ formatTime(track.duration) }}</span>
 								}
+							</div>
+							<button
+								type="button"
+								class="icon small add-queue"
+								[attr.aria-label]="t().addToQueue"
+								[title]="t().addToQueue"
+								(click)="addTrack(i)"
+							>
+								<app-icon name="playlistAdd" />
 							</button>
 							<button
 								type="button"
