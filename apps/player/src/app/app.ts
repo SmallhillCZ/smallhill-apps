@@ -469,21 +469,34 @@ export class App {
 	}
 
 	protected async addFolderItem(folder: DriveItem): Promise<void> {
+		const tracks = await this.folderTracks(folder);
+		if (!tracks) return;
+		this.player.enqueue(tracks);
+		this.flash(T().addedToQueue(folder.name));
+	}
+
+	protected async playFolderItem(folder: DriveItem): Promise<void> {
+		const tracks = await this.folderTracks(folder);
+		if (!tracks) return;
+		this.player.playList(tracks, 0);
+	}
+
+	private async folderTracks(folder: DriveItem): Promise<QueuedTrack[] | null> {
 		const source = this.source();
-		if (!source) return;
+		if (!source) return null;
 		const path = [...this.path(), { id: folder.id, name: folder.name }];
 		try {
 			const items = await this.children(source, folder.id);
 			const tracks = sortTracks(items).map(toTrack);
 			if (!tracks.length) {
 				this.flash(T().noTracks(folder.name));
-				return;
+				return null;
 			}
-			this.player.enqueue(this.queued(tracks, path));
-			this.flash(T().addedToQueue(folder.name));
+			return this.queued(tracks, path);
 		} catch (error) {
 			console.error(error);
 			this.flash(T().folderError);
+			return null;
 		}
 	}
 

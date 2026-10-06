@@ -180,6 +180,15 @@
 								>
 									<app-icon name="playlistAdd" />
 								</button>
+								<button
+									type="button"
+									class="icon small play-now"
+									[attr.aria-label]="t().playFolder"
+									[title]="t().playFolder"
+									(click)="playFolderItem(folder)"
+								>
+									<app-icon name="play" />
+								</button>
 							}
 						</li>
 					}
