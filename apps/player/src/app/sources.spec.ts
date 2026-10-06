@@ -1,4 +1,4 @@
-import { loadMusicFolder, loadSources, samePath, saveMusicFolder, saveSources } from "./sources";
+import { loadSources, rootLabel, saveSources } from "./sources";
 
 describe("sources", () => {
 	afterEach(() => localStorage.clear());
@@ -17,21 +17,19 @@ describe("sources", () => {
 		expect(loadSources()).toBeNull();
 	});
 
-	it("stores the music folder path", () => {
-		saveMusicFolder([
-			{ id: "b", name: "Music" },
-			{ id: "Rock", name: "Rock" },
-		]);
-		expect(loadMusicFolder()).toEqual([
-			{ id: "b", name: "Music" },
-			{ id: "Rock", name: "Rock" },
-		]);
-		saveMusicFolder(null);
-		expect(loadMusicFolder()).toBeNull();
-	});
-
-	it("compares paths by id", () => {
-		expect(samePath([{ id: "a", name: "A" }], [{ id: "a", name: "renamed" }])).toBe(true);
-		expect(samePath([{ id: "a", name: "A" }], [])).toBe(false);
+	it("keeps the top folder of a source", () => {
+		const root = [
+			{ id: "1", name: "Music" },
+			{ id: "2", name: "Classical" },
+		];
+		saveSources([{ id: "a", kind: "onedrive", name: "OneDrive", account: "acc", root }]);
+		const [source] = loadSources()!;
+		expect(source.root).toEqual(root);
+		expect(rootLabel(source)).toBe("Music / Classical");
+		localStorage.setItem(
+			"player.sources",
+			JSON.stringify([{ id: "a", kind: "device", name: "x", root: [{ id: 1 }] }]),
+		);
+		expect(loadSources()).toEqual([]);
 	});
 });

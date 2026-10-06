@@ -7,10 +7,10 @@ export interface Source {
 	kind: SourceKind;
 	name: string;
 	account?: string;
+	root?: Folder[];
 }
 
 const SOURCES_KEY = "player.sources";
-const MUSIC_KEY = "player.music";
 const LOCATION_KEY = "player.location";
 
 function read(key: string): unknown {
@@ -39,7 +39,8 @@ function isSource(value: unknown): value is Source {
 		typeof source.id === "string" &&
 		typeof source.name === "string" &&
 		(source.kind === "onedrive" || source.kind === "device") &&
-		(source.account === undefined || typeof source.account === "string")
+		(source.account === undefined || typeof source.account === "string") &&
+		(source.root === undefined || toFolders(source.root)?.length === source.root.length)
 	);
 }
 
@@ -52,15 +53,6 @@ export function saveSources(sources: Source[]): void {
 	write(SOURCES_KEY, sources);
 }
 
-export function loadMusicFolder(): Folder[] | null {
-	const path = toFolders(read(MUSIC_KEY));
-	return path?.length ? path : null;
-}
-
-export function saveMusicFolder(path: Folder[] | null): void {
-	write(MUSIC_KEY, path);
-}
-
 export function loadLocation(): Folder[] {
 	return toFolders(read(LOCATION_KEY)) ?? [];
 }
@@ -69,10 +61,9 @@ export function saveLocation(path: Folder[]): void {
 	write(LOCATION_KEY, path);
 }
 
-export const samePath = (a: Folder[], b: Folder[]) =>
-	a.length === b.length && a.every((folder, i) => folder.id === b[i].id);
-
 export function withRenamedRoot(path: Folder[], sources: Source[]): Folder[] {
 	const source = sources.find((s) => s.id === path[0]?.id);
 	return source && path[0].name !== source.name ? [{ ...path[0], name: source.name }, ...path.slice(1)] : path;
 }
+
+export const rootLabel = (source: Source) => source.root?.map((folder) => folder.name).join(" / ") ?? "";

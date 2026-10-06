@@ -187,6 +187,7 @@ footer {
 
 .source {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 
 	.row {
@@ -215,10 +216,30 @@ footer {
 	}
 }
 
-.library {
+.options {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
+	width: 100%;
+	padding: 0 12px 12px 48px;
+}
+
+.pick {
+	display: grid;
+	gap: 10px;
+	padding: 14px 16px;
+	border-radius: 16px;
+	background: var(--accent-soft);
+
+	p {
+		margin: 0;
+	}
+}
+
+.pick-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
 }
 
 .chip {
@@ -241,6 +262,10 @@ footer {
 	&.on {
 		background: var(--accent-soft);
 		color: var(--accent);
+	}
+
+	&:disabled {
+		opacity: 0.5;
 	}
 }
 
@@ -486,6 +511,7 @@ footer {
 	.list,
 	.welcome,
 	.chip,
+	.pick,
 	.secondary,
 	.player,
 	.icon.play {

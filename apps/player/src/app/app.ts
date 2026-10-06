@@ -20,11 +20,9 @@ import { OneDriveService } from "./onedrive/onedrive.service";
 import { PlayerService, TrackSource } from "./player/player.service";
 import {
 	loadLocation,
-	loadMusicFolder,
 	loadSources,
-	samePath,
+	rootLabel,
 	saveLocation,
-	saveMusicFolder,
 	saveSources,
 	Source,
 	toFolders,
@@ -38,6 +36,7 @@ export type SourceState = "loading" | "ready" | "signin" | "permission" | "missi
 interface NavState {
 	player: true;
 	path: Folder[];
+	picking?: boolean;
 }
 
 function isNavState(value: unknown): value is NavState {
@@ -66,8 +65,10 @@ export class App {
 
 	private readonly storedSources = loadSources();
 	protected readonly sources = signal<Source[]>(this.storedSources ?? []);
-	protected readonly musicFolder = signal<Folder[] | null>(loadMusicFolder());
-	protected readonly path = signal<Folder[]>(this.musicFolder() ?? loadLocation());
+	protected readonly path = signal<Folder[]>(loadLocation());
+	protected readonly picking = signal(false);
+	protected readonly editing = signal<string | null>(null);
+	protected readonly rootLabel = rootLabel;
 	protected readonly items = signal<DriveItem[]>([]);
 	protected readonly loading = signal(false);
 	protected readonly failed = signal(false);
@@ -83,10 +84,10 @@ export class App {
 	});
 	protected readonly folders = computed(() => sortFolders(this.items()));
 	protected readonly tracks = computed<Track[]>(() => sortTracks(this.items()).map(toTrack));
-	protected readonly folderId = computed(() => (this.path().length > 1 ? this.path().at(-1)!.id : null));
-	protected readonly isMusicFolder = computed(() => {
-		const music = this.musicFolder();
-		return !!music && samePath(music, this.path());
+	protected readonly folderId = computed(() => {
+		const path = this.path();
+		if (path.length > 1) return path.at(-1)!.id;
+		return this.picking() ? null : (this.source()?.root?.at(-1)?.id ?? null);
 	});
 	protected readonly progress = computed(() => {
 		const duration = this.player.duration();
@@ -95,10 +96,11 @@ export class App {
 
 	constructor() {
 		const state: unknown = history.state;
-		if (isNavState(state)) this.show(state.path);
+		if (isNavState(state)) this.show(state.path, !!state.picking);
 		const onPopState = (event: PopStateEvent) => {
 			const state: unknown = event.state;
-			this.show(isNavState(state) ? state.path : []);
+			if (isNavState(state)) this.show(state.path, !!state.picking);
+			else this.show([]);
 		};
 		window.addEventListener("popstate", onPopState);
 		inject(DestroyRef).onDestroy(() => window.removeEventListener("popstate", onPopState));
@@ -114,8 +116,7 @@ export class App {
 		effect(() => (document.documentElement.lang = lang()));
 		effect(() => (document.title = T().title));
 		effect(() => saveSources(this.sources()));
-		effect(() => saveMusicFolder(this.musicFolder()));
-		effect(() => saveLocation(this.path()));
+		effect(() => saveLocation(this.picking() ? [] : this.path()));
 		effect(() => {
 			if (this.drive.status() !== "ready") return;
 			const accounts = this.drive.accounts();
@@ -216,18 +217,20 @@ export class App {
 		if (source) void this.load(source, this.folderId());
 	}
 
-	private navigate(path: Folder[]): void {
+	private navigate(path: Folder[], picking = this.picking() && path.length > 0): void {
 		if (!isNavState(history.state)) history.replaceState(this.navState(), "");
-		this.show(path);
+		this.show(path, picking);
 		history.pushState(this.navState(), "");
 	}
 
 	private navState(): NavState {
-		return { player: true, path: this.path() };
+		return { player: true, path: this.path(), picking: this.picking() };
 	}
 
-	private show(path: Folder[]): void {
+	private show(path: Folder[], picking = false): void {
 		this.items.set([]);
+		this.editing.set(null);
+		this.picking.set(picking && path.length > 0);
 		this.path.set(withRenamedRoot(path, this.sources()));
 	}
 
@@ -282,7 +285,7 @@ export class App {
 		if (trackSource && this.player.isFrom(trackSource)) this.player.stop();
 		this.trackSources.delete(source.id);
 		this.sources.update((sources) => sources.filter((s) => s.id !== source.id));
-		if (this.musicFolder()?.[0]?.id === source.id) this.musicFolder.set(null);
+		this.editing.set(null);
 		if (source.kind === "device") this.device.remove(source.id);
 		else {
 			void clearCache();
@@ -295,18 +298,30 @@ export class App {
 		const name = prompt(T().renamePrompt, source.name)?.trim();
 		if (!name || name === source.name) return;
 		this.sources.update((sources) => sources.map((s) => (s.id === source.id ? { ...s, name } : s)));
-		const rename = (path: Folder[] | null) => (path ? withRenamedRoot(path, this.sources()) : path);
-		this.musicFolder.update(rename);
-		this.path.update((path) => rename(path)!);
+		this.path.update((path) => withRenamedRoot(path, this.sources()));
 	}
 
-	protected toggleMusicFolder(): void {
-		this.musicFolder.set(this.isMusicFolder() ? null : this.path());
+	protected toggleSettings(source: Source): void {
+		this.editing.update((id) => (id === source.id ? null : source.id));
 	}
 
-	protected goMusicFolder(): void {
-		const music = this.musicFolder();
-		if (music) this.navigate(music);
+	protected chooseTop(source: Source): void {
+		if (this.stateOf(source) !== "ready") return;
+		this.navigate([{ id: source.id, name: source.name }], true);
+	}
+
+	protected useFolder(): void {
+		const [root, ...folders] = this.path();
+		if (!root) return;
+		this.sources.update((sources) =>
+			sources.map((s) => (s.id === root.id ? { ...s, root: folders.length ? folders : undefined } : s)),
+		);
+		this.show([root]);
+		history.replaceState(this.navState(), "");
+	}
+
+	protected cancelPicking(): void {
+		this.navigate([]);
 	}
 
 	protected open(folder: DriveItem): void {
