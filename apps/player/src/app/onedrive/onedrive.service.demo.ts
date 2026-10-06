@@ -1,6 +1,6 @@
 import { Injectable, signal } from "@angular/core";
 import { DriveItem } from "./items";
-import { AuthStatus } from "./auth-status";
+import { AuthStatus, DriveAccount } from "./auth-status";
 
 const folder = (id: string, name: string, childCount: number): DriveItem => ({ id, name, folder: { childCount } });
 
@@ -63,26 +63,53 @@ function tone(seconds: number): string {
 	return URL.createObjectURL(new Blob([buffer], { type: "audio/wav" }));
 }
 
+const DEMO_ACCOUNTS: DriveAccount[] = [
+	{ id: "demo-personal", name: "Jana Nováková", username: "jana@example.com" },
+	{ id: "demo-work", name: "Jana Nováková", username: "jana@work.example.com" },
+];
+const STORAGE_KEY = "player.demo.accounts";
+
+function storedAccounts(): DriveAccount[] {
+	try {
+		const ids = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as string[];
+		return DEMO_ACCOUNTS.filter((account) => ids.includes(account.id));
+	} catch {
+		return [];
+	}
+}
+
 @Injectable({ providedIn: "root" })
 export class OneDriveService {
-	readonly status = signal<AuthStatus>("signedOut");
-	readonly accountName = signal<string | null>(null);
+	readonly status = signal<AuthStatus>("ready");
+	readonly accounts = signal<DriveAccount[]>(storedAccounts());
+	readonly signedIn = signal<DriveAccount | null>(null);
 
-	async signIn(): Promise<void> {
-		this.accountName.set("Jana Nováková");
-		this.status.set("signedIn");
+	async addAccount(): Promise<void> {
+		const next = DEMO_ACCOUNTS.find((account) => !this.accounts().some((a) => a.id === account.id));
+		if (!next) return;
+		this.save([...this.accounts(), next]);
+		this.signedIn.set(next);
 	}
 
-	async signOut(): Promise<void> {
-		this.accountName.set(null);
-		this.status.set("signedOut");
+	async signIn(accountId: string): Promise<void> {
+		const account = DEMO_ACCOUNTS.find((a) => a.id === accountId);
+		if (account && !this.accounts().includes(account)) this.save([...this.accounts(), account]);
 	}
 
-	async children(folderId: string | null): Promise<DriveItem[]> {
+	async removeAccount(accountId: string): Promise<void> {
+		this.save(this.accounts().filter((account) => account.id !== accountId));
+	}
+
+	private save(accounts: DriveAccount[]): void {
+		this.accounts.set(accounts);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts.map((account) => account.id)));
+	}
+
+	async children(_accountId: string, folderId: string | null): Promise<DriveItem[]> {
 		return TREE[folderId ?? "root"] ?? [];
 	}
 
-	async downloadUrl(id: string): Promise<string> {
+	async downloadUrl(_accountId: string, id: string): Promise<string> {
 		const item = Object.values(TREE)
 			.flat()
 			.find((i) => i.id === id);

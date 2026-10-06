@@ -1,1 +1,7 @@
-export type AuthStatus = "loading" | "unconfigured" | "signedOut" | "signedIn" | "error";
+export type AuthStatus = "loading" | "unconfigured" | "ready" | "error";
+
+export interface DriveAccount {
+	id: string;
+	name: string;
+	username: string;
+}

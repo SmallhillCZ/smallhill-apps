@@ -26,84 +26,155 @@
 </header>
 
 <main [class.with-player]="player.current()">
-	<nav class="sources" role="tablist" [attr.aria-label]="t().sources">
-		<button
-			type="button"
-			role="tab"
-			[class.selected]="source() === 'onedrive'"
-			[attr.aria-selected]="source() === 'onedrive'"
-			(click)="setSource('onedrive')"
-		>
-			<app-icon name="cloud" />OneDrive
-		</button>
-		<button
-			type="button"
-			role="tab"
-			[class.selected]="source() === 'device'"
-			[attr.aria-selected]="source() === 'device'"
-			(click)="setSource('device')"
-		>
-			<app-icon name="device" />{{ t().device }}
-		</button>
-	</nav>
 	<input #picker type="file" webkitdirectory multiple hidden (change)="useFiles(picker)" />
 
-	@if (ready()) {
-		<div class="account">
-			@if (source() === "onedrive") {
-				<span>{{ drive.accountName() }}</span>
-				<button type="button" class="link" (click)="signOut()">{{ t().signOut }}</button>
-			} @else {
-				<span></span>
-				<button type="button" class="link" (click)="chooseFolder(picker)">{{ t().changeFolder }}</button>
-			}
-		</div>
-
-		<nav #crumbs class="crumbs" [attr.aria-label]="t().sources">
-			<button type="button" [class.current]="path().length === 0" (click)="goTo(0)">
-				@if (source() === "onedrive") {
-					<app-icon name="cloud" />
-					<span>OneDrive</span>
-				} @else {
-					<app-icon name="device" />
-					<span>{{ device.rootName() }}</span>
-				}
+	@if (path().length) {
+		<nav #crumbs class="crumbs" [attr.aria-label]="t().library">
+			<button type="button" (click)="goTo(0)">
+				<app-icon name="library" />
+				<span>{{ t().library }}</span>
 			</button>
 			@for (folder of path(); track folder.id; let i = $index) {
 				<span class="sep" aria-hidden="true">›</span>
 				<button type="button" [class.current]="i === path().length - 1" (click)="goTo(i + 1)">
-					{{ folder.name }}
+					@if (i === 0) {
+						<app-icon [name]="source()?.kind === 'device' ? 'device' : 'cloud'" />
+					}
+					<span>{{ folder.name }}</span>
 				</button>
 			}
 		</nav>
+	}
 
-		<div class="library">
-			@if (library() && !isLibrary()) {
-				<button type="button" class="chip" (click)="goLibrary()">
-					<app-icon name="library" />{{ t().goLibrary }}
+	@if (picking() && source(); as picked) {
+		<div class="pick">
+			<p>{{ t().chooseTop(picked.name) }}</p>
+			<div class="pick-actions">
+				<button type="button" class="secondary" (click)="cancelPicking()">{{ t().cancel }}</button>
+				<button type="button" class="primary" (click)="useFolder()">
+					<app-icon name="folder" />{{ t().useFolder }}
+				</button>
+			</div>
+		</div>
+	}
+
+	@if (!path().length) {
+		@if (sources().length) {
+			<ul class="list">
+				@for (item of sources(); track item.id) {
+					@let itemState = stateOf(item);
+					<li class="source">
+						<button type="button" class="row" (click)="openSource(item, picker)">
+							<app-icon class="folder" [name]="item.kind === 'device' ? 'device' : 'cloud'" />
+							<span class="text">
+								<span class="name">{{ item.name }}</span>
+								<span class="meta" [class.attention]="itemState !== 'ready' && itemState !== 'loading'">
+									@switch (itemState) {
+										@case ("signin") {
+											{{ t().signInAgain }}
+										}
+										@case ("permission") {
+											{{ t().tapToAllow }}
+										}
+										@case ("missing") {
+											{{ t().chooseAgain }}
+										}
+										@default {
+											{{ item.kind === "device" ? t().deviceFolder : accountLabel(item) }}
+										}
+									}
+								</span>
+							</span>
+						</button>
+						<button
+							type="button"
+							class="icon small"
+							[class.on]="editing() === item.id"
+							[attr.aria-expanded]="editing() === item.id"
+							[attr.aria-label]="t().settings"
+							[title]="t().settings"
+							(click)="toggleSettings(item)"
+						>
+							<app-icon name="tune" />
+						</button>
+						@if (editing() === item.id) {
+							<div class="options">
+								<button
+									type="button"
+									class="chip"
+									[disabled]="itemState !== 'ready'"
+									(click)="chooseTop(item)"
+								>
+									<app-icon name="folder" />{{ t().topFolder }}:
+									{{ rootLabel(item) || t().wholeDrive }}
+								</button>
+								<button type="button" class="chip" (click)="renameSource(item)">
+									<app-icon name="edit" />{{ t().rename }}
+								</button>
+								<button type="button" class="chip" (click)="removeSource(item)">
+									<app-icon name="close" />{{ t().remove }}
+								</button>
+							</div>
+						}
+					</li>
+				}
+			</ul>
+		} @else {
+			<section class="welcome">
+				<img src="icons/icon.svg" alt="" width="96" height="96" />
+				<h2>{{ t().heading }}</h2>
+				<p>{{ t().intro }}</p>
+			</section>
+		}
+
+		<div class="add">
+			@if (drive.status() === "ready") {
+				<button type="button" class="secondary" (click)="drive.addAccount()">
+					<app-icon name="cloud" />{{ t().addOneDrive }}
 				</button>
 			}
-			<button
-				type="button"
-				class="chip"
-				[class.on]="isLibrary()"
-				[attr.aria-pressed]="isLibrary()"
-				(click)="toggleLibrary()"
-			>
-				<app-icon [name]="isLibrary() ? 'star' : 'starOutline'" />{{
-					isLibrary() ? t().isLibrary : t().setLibrary
-				}}
+			<button type="button" class="secondary" (click)="addFolder(picker)">
+				<app-icon name="device" />{{ t().addFolder }}
 			</button>
 		</div>
-
+		@if (drive.status() === "unconfigured") {
+			<p class="status">{{ t().unconfigured }}</p>
+		} @else if (drive.status() === "error") {
+			<p class="status">{{ t().authError }}</p>
+		}
+		@if (!device.supported) {
+			<p class="status">{{ t().sessionOnly }}</p>
+		}
+	} @else if (!source() || state() === "loading") {
+		<p class="status">{{ t().loading }}</p>
+	} @else if (state() !== "ready") {
+		<div class="status">
+			<p>
+				@switch (state()) {
+					@case ("signin") {
+						{{ t().signInAgain }}
+					}
+					@case ("permission") {
+						{{ t().tapToAllow }}
+					}
+					@default {
+						{{ t().chooseAgain }}
+					}
+				}
+			</p>
+			<button type="button" class="primary" (click)="openSource(source()!, picker)">
+				{{ state() === "permission" ? t().allow : state() === "signin" ? t().signInAgain : t().addFolder }}
+			</button>
+		</div>
+	} @else {
 		@if (loading()) {
 			<p class="status">{{ t().loading }}</p>
 		} @else if (failed()) {
 			<div class="status">
 				<p>{{ t().folderError }}</p>
-				<button type="button" class="secondary" (click)="load(source(), folderId())">{{ t().retry }}</button>
+				<button type="button" class="secondary" (click)="retry()">{{ t().retry }}</button>
 			</div>
-		} @else if (!folders().length && !tracks().length) {
+		} @else if (!folders().length && (picking() || !tracks().length)) {
 			<p class="status">{{ t().empty }}</p>
 		} @else {
 			@if (folders().length) {
@@ -124,7 +195,7 @@
 				</ul>
 			}
 
-			@if (tracks().length) {
+			@if (tracks().length && !picking()) {
 				<div class="actions">
 					<span class="count">{{ t().tracks(tracks().length) }}</span>
 					<button type="button" class="secondary" (click)="playAll(true)">
@@ -159,41 +230,6 @@
 				</ul>
 			}
 		}
-	} @else if (source() === "onedrive") {
-		@if (drive.status() === "loading") {
-			<p class="status">{{ t().loading }}</p>
-		} @else {
-			<section class="welcome">
-				<img src="icons/icon.svg" alt="" width="96" height="96" />
-				<h2>{{ t().heading }}</h2>
-				<p>{{ t().intro }}</p>
-				@if (drive.status() === "signedOut") {
-					<button type="button" class="primary" (click)="drive.signIn()">{{ t().signIn }}</button>
-				} @else if (drive.status() === "unconfigured") {
-					<p class="notice">{{ t().unconfigured }}</p>
-				} @else {
-					<p class="notice">{{ t().authError }}</p>
-				}
-			</section>
-		}
-	} @else if (device.status() === "permission") {
-		<section class="welcome">
-			<img src="icons/icon.svg" alt="" width="96" height="96" />
-			<h2>{{ t().allowHeading(device.rootName() ?? "") }}</h2>
-			<p>{{ t().allowIntro }}</p>
-			<button type="button" class="primary" (click)="device.allow()">{{ t().allow }}</button>
-			<button type="button" class="link" (click)="chooseFolder(picker)">{{ t().changeFolder }}</button>
-		</section>
-	} @else if (device.status() === "empty") {
-		<section class="welcome">
-			<img src="icons/icon.svg" alt="" width="96" height="96" />
-			<h2>{{ t().deviceHeading }}</h2>
-			<p>{{ t().deviceIntro }}</p>
-			<button type="button" class="primary" (click)="chooseFolder(picker)">{{ t().chooseFolder }}</button>
-			@if (!device.supported) {
-				<p class="notice">{{ t().sessionOnly }}</p>
-			}
-		</section>
 	}
 
 	<footer>

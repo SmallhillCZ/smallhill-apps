@@ -150,59 +150,6 @@ footer {
 	font-weight: 600;
 }
 
-.sources {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 4px;
-	padding: 4px;
-	background: var(--surface-2);
-	border-radius: var(--radius);
-
-	button {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		padding: 8px;
-		border: 0;
-		border-radius: calc(var(--radius) - 4px);
-		background: transparent;
-		color: var(--muted);
-		font-size: 0.9rem;
-		font-weight: 600;
-
-		app-icon {
-			width: 20px;
-			height: 20px;
-		}
-
-		&.selected {
-			background: var(--surface);
-			color: var(--text);
-			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-
-			app-icon {
-				color: var(--accent);
-			}
-		}
-	}
-}
-
-.account {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 12px;
-	font-size: 0.9rem;
-	color: var(--muted);
-
-	span {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-}
-
 .crumbs {
 	display: flex;
 	align-items: center;
@@ -238,10 +185,61 @@ footer {
 	}
 }
 
-.library {
+.source {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+
+	.row {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.icon.small {
+		flex: none;
+	}
+}
+
+.meta.attention {
+	color: var(--accent);
+	font-weight: 600;
+}
+
+.add {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+
+	.secondary {
+		flex: 1 1 auto;
+		white-space: nowrap;
+	}
+}
+
+.options {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
+	width: 100%;
+	padding: 0 12px 12px 48px;
+}
+
+.pick {
+	display: grid;
+	gap: 10px;
+	padding: 14px 16px;
+	border-radius: 16px;
+	background: var(--accent-soft);
+
+	p {
+		margin: 0;
+	}
+}
+
+.pick-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
 }
 
 .chip {
@@ -264,6 +262,10 @@ footer {
 	&.on {
 		background: var(--accent-soft);
 		color: var(--accent);
+	}
+
+	&:disabled {
+		opacity: 0.5;
 	}
 }
 
@@ -506,23 +508,14 @@ footer {
 }
 
 :host-context([data-theme="eink"]) {
-	.sources,
 	.list,
 	.welcome,
 	.chip,
+	.pick,
 	.secondary,
 	.player,
 	.icon.play {
 		border: 2px solid var(--border);
-	}
-
-	.sources button.selected {
-		background: var(--text);
-		color: var(--bg);
-
-		app-icon {
-			color: var(--bg);
-		}
 	}
 
 	.chip.on,
