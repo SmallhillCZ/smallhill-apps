@@ -1,4 +1,4 @@
-import { computed, effect, Injectable, signal, untracked } from "@angular/core";
+import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from "@angular/core";
 import { Folder, Track } from "../onedrive/items";
 import { createQueue, nextPos, prevPos, Queue, Repeat, reshuffle } from "./queue";
 
@@ -108,6 +108,10 @@ export class PlayerService {
 
 	constructor() {
 		this.audio.preload = "auto";
+		inject(DestroyRef).onDestroy(() => {
+			this.channel?.close();
+			this.audio.pause();
+		});
 		this.audio.addEventListener("playing", () => {
 			this.playing.set(true);
 			this.loading.set(false);
@@ -303,10 +307,9 @@ export class PlayerService {
 		}
 		const tracks = this.tracks();
 		const queue = this.queue();
-		const same = (index: number) =>
-			added.some((track) => track.id === tracks[index]?.id && track.source === tracks[index]?.source);
+		const started = this.playing() || this.time() > 0;
 		const before = queue.order.slice(0, queue.pos);
-		const after = queue.order.slice(queue.pos + 1).filter((index) => !same(index));
+		const after = queue.order.slice(started ? queue.pos + 1 : queue.pos);
 		const inserted = added.map((_, i) => tracks.length + i);
 		this.tracks.set([...tracks, ...added]);
 		this.queue.set({ order: [...before, ...inserted, ...after], pos: before.length });
@@ -414,6 +417,10 @@ export class PlayerService {
 		this.error.set(false);
 		this.time.set(startAt);
 		this.duration.set(track.duration);
+		if (!retry) {
+			this.audio.pause();
+			this.audio.removeAttribute("src");
+		}
 		try {
 			const url = this.cached(track) ?? (await this.fetchUrl(track));
 			if (request !== this.request) return;
