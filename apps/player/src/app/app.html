@@ -63,7 +63,7 @@
 			<ul class="sources">
 				@for (item of sources(); track item.id) {
 					@let itemState = stateOf(item);
-					<li class="source" [class.editing]="editing() === item.id">
+					<li class="source">
 						<button type="button" class="card" (click)="openSource(item, picker)">
 							<app-icon class="kind" [name]="item.kind === 'device' ? 'device' : 'cloud'" />
 							<span class="name">{{ item.name }}</span>
@@ -90,33 +90,12 @@
 						<button
 							type="button"
 							class="icon small settings"
-							[class.on]="editing() === item.id"
-							[attr.aria-expanded]="editing() === item.id"
 							[attr.aria-label]="t().settings"
 							[title]="t().settings"
-							(click)="toggleSettings(item)"
+							(click)="openSettings(item)"
 						>
 							<app-icon name="tune" />
 						</button>
-						@if (editing() === item.id) {
-							<div class="options">
-								<button
-									type="button"
-									class="chip"
-									[disabled]="itemState !== 'ready'"
-									(click)="chooseTop(item)"
-								>
-									<app-icon name="folder" />{{ t().topFolder }}:
-									{{ rootLabel(item) || t().wholeDrive }}
-								</button>
-								<button type="button" class="chip" (click)="renameSource(item)">
-									<app-icon name="edit" />{{ t().rename }}
-								</button>
-								<button type="button" class="chip" (click)="removeSource(item)">
-									<app-icon name="close" />{{ t().remove }}
-								</button>
-							</div>
-						}
 					</li>
 				}
 			</ul>
@@ -236,6 +215,56 @@
 	<footer>
 		<p>{{ t().privacy }}</p>
 	</footer>
+
+	@if (editingSource(); as edited) {
+		@let editedState = stateOf(edited);
+		<dialog #settings class="settings-dialog" (close)="closeSettings()">
+			<form method="dialog">
+				<h2>
+					<app-icon [name]="edited.kind === 'device' ? 'device' : 'cloud'" />
+					{{ t().settings }}
+				</h2>
+				<label class="field">
+					<span>{{ t().name }}</span>
+					<input
+						type="text"
+						[value]="edited.name"
+						(change)="renameSource(edited, $any($event.target).value)"
+					/>
+				</label>
+				@if (edited.kind === "onedrive") {
+					<div class="field">
+						<span>{{ t().account }}</span>
+						<p>{{ accountLabel(edited) || t().signInAgain }}</p>
+					</div>
+					<div class="field">
+						<span>{{ t().topFolder }}</span>
+						<div class="field-row">
+							<p><app-icon name="folder" />{{ rootLabel(edited) || t().wholeDrive }}</p>
+							<button
+								type="button"
+								class="secondary"
+								[disabled]="editedState !== 'ready'"
+								(click)="chooseTop(edited)"
+							>
+								{{ t().change }}
+							</button>
+						</div>
+					</div>
+				} @else {
+					<div class="field">
+						<span>{{ t().deviceFolder }}</span>
+					</div>
+				}
+				<div class="dialog-actions">
+					<button type="button" class="danger" (click)="removeSource(edited)">
+						<app-icon name="close" />{{ t().remove }}
+					</button>
+					<button type="submit" class="primary" autofocus>{{ t().done }}</button>
+				</div>
+			</form>
+		</dialog>
+	}
 </main>
 
 @if (player.current(); as current) {
