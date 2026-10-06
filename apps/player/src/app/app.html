@@ -438,12 +438,7 @@
 				}
 			</ul>
 			<div class="dialog-actions">
-				<button
-					type="button"
-					class="danger"
-					[disabled]="player.queue().pos >= player.queue().order.length - 1"
-					(click)="player.clearUpcoming()"
-				>
+				<button type="button" class="danger" (click)="player.stop()">
 					{{ t().clearQueue }}
 				</button>
 				<button type="submit" class="primary" autofocus>{{ t().done }}</button>

@@ -49,7 +49,6 @@ const COMMANDS = [
 	"playNow",
 	"jump",
 	"removeAt",
-	"clearUpcoming",
 	"removeSource",
 	"toggle",
 	"next",
@@ -338,11 +337,6 @@ export class PlayerService {
 			return;
 		}
 		this.queue.set({ order, pos: pos < queue.pos ? queue.pos - 1 : queue.pos });
-	}
-
-	clearUpcoming(): void {
-		if (this.forward("clearUpcoming")) return;
-		this.queue.update((queue) => ({ ...queue, order: queue.order.slice(0, queue.pos + 1) }));
 	}
 
 	removeSource(source: string): void {
