@@ -2,7 +2,7 @@ import { Injectable, signal } from "@angular/core";
 import { DriveItem, isAudio } from "../onedrive/items";
 import { idbDelete, idbGet, idbSet } from "../storage/idb";
 
-export type DeviceStatus = "loading" | "empty" | "permission" | "ready";
+export type DeviceStatus = "missing" | "permission" | "ready";
 
 interface DirectoryHandle {
 	kind: "directory";
@@ -23,8 +23,6 @@ interface FileHandle {
 type PickerWindow = Window & {
 	showDirectoryPicker?: (options?: { id?: string; mode?: "read" }) => Promise<DirectoryHandle>;
 };
-
-const HANDLE_KEY = "device";
 
 export interface FileTree {
 	folders: Map<string, DriveItem[]>;
@@ -53,104 +51,121 @@ export function buildTree(files: Iterable<File>): FileTree {
 	return { folders: tree, files: audio };
 }
 
+export interface PickedFolder {
+	id: string;
+	name: string;
+}
+
+const newId = () =>
+	typeof crypto !== "undefined" && "randomUUID" in crypto
+		? crypto.randomUUID()
+		: `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 @Injectable({ providedIn: "root" })
 export class DeviceService {
 	readonly supported = typeof window !== "undefined" && "showDirectoryPicker" in window;
-	readonly status = signal<DeviceStatus>("loading");
-	readonly rootName = signal<string | null>(null);
+	readonly states = signal<Record<string, DeviceStatus>>({});
 
-	private handle: DirectoryHandle | null = null;
-	private tree: FileTree | null = null;
+	private readonly handles = new Map<string, DirectoryHandle>();
+	private readonly trees = new Map<string, FileTree>();
 
-	constructor() {
-		void this.init();
+	async init(ids: string[]): Promise<void> {
+		await Promise.all(
+			ids.map(async (id) => {
+				if (this.states()[id]) return;
+				const handle = this.supported ? await idbGet<DirectoryHandle>("handles", id) : null;
+				if (!handle) {
+					this.setState(id, "missing");
+					return;
+				}
+				this.handles.set(id, handle);
+				try {
+					this.setState(
+						id,
+						(await handle.queryPermission({ mode: "read" })) === "granted" ? "ready" : "permission",
+					);
+				} catch {
+					this.setState(id, "permission");
+				}
+			}),
+		);
 	}
 
-	private async init(): Promise<void> {
-		const handle = this.supported ? await idbGet<DirectoryHandle>("handles", HANDLE_KEY) : null;
-		if (!handle) {
-			this.status.set("empty");
-			return;
-		}
-		this.handle = handle;
-		this.rootName.set(handle.name);
-		try {
-			this.status.set((await handle.queryPermission({ mode: "read" })) === "granted" ? "ready" : "permission");
-		} catch {
-			this.status.set("permission");
-		}
-	}
-
-	async choose(): Promise<boolean> {
+	async pick(): Promise<PickedFolder | null> {
 		const picker = (window as PickerWindow).showDirectoryPicker;
-		if (!picker) return false;
+		if (!picker) return null;
 		try {
 			const handle = await picker({ id: "player", mode: "read" });
-			this.handle = handle;
-			this.tree = null;
-			this.rootName.set(handle.name);
-			this.status.set("ready");
-			await idbSet("handles", HANDLE_KEY, handle);
-			return true;
+			const id = newId();
+			this.handles.set(id, handle);
+			this.setState(id, "ready");
+			await idbSet("handles", id, handle);
+			return { id, name: handle.name };
 		} catch {
-			return false;
+			return null;
 		}
 	}
 
-	async allow(): Promise<void> {
-		if (!this.handle) return;
+	useFiles(files: FileList | null, id = newId()): PickedFolder | null {
+		if (!files?.length) return null;
+		this.trees.set(id, buildTree(Array.from(files)));
+		this.setState(id, "ready");
+		return { id, name: files[0].webkitRelativePath.split("/")[0] || "Folder" };
+	}
+
+	async allow(id: string): Promise<boolean> {
+		const handle = this.handles.get(id);
+		if (!handle) return false;
 		try {
-			if ((await this.handle.requestPermission({ mode: "read" })) === "granted") this.status.set("ready");
+			if ((await handle.requestPermission({ mode: "read" })) === "granted") {
+				this.setState(id, "ready");
+				return true;
+			}
 		} catch {}
+		return false;
 	}
 
-	useFiles(files: FileList | null): boolean {
-		if (!files?.length) return false;
-		const first = files[0].webkitRelativePath.split("/")[0] || null;
-		this.handle = null;
-		this.tree = buildTree(Array.from(files));
-		this.rootName.set(first);
-		this.status.set("ready");
-		void idbDelete("handles", HANDLE_KEY);
-		return true;
+	remove(id: string): void {
+		this.handles.delete(id);
+		this.trees.delete(id);
+		this.states.update(({ [id]: _, ...rest }) => rest);
+		void idbDelete("handles", id);
 	}
 
-	forget(): void {
-		this.handle = null;
-		this.tree = null;
-		this.rootName.set(null);
-		this.status.set("empty");
-		void idbDelete("handles", HANDLE_KEY);
-	}
-
-	async children(folderId: string | null): Promise<DriveItem[]> {
-		if (this.tree) return this.tree.folders.get(folderId ?? "") ?? [];
-		const dir = await this.directory(folderId);
+	async children(id: string, folderId: string | null): Promise<DriveItem[]> {
+		const tree = this.trees.get(id);
+		if (tree) return tree.folders.get(folderId ?? "") ?? [];
+		const dir = await this.directory(id, folderId);
 		const items: DriveItem[] = [];
 		for await (const [name, entry] of dir.entries()) {
 			if (name.startsWith(".")) continue;
-			const id = folderId ? `${folderId}/${name}` : name;
-			if (entry.kind === "directory") items.push({ id, name, folder: {} });
-			else items.push({ id, name, file: {} });
+			const itemId = folderId ? `${folderId}/${name}` : name;
+			if (entry.kind === "directory") items.push({ id: itemId, name, folder: {} });
+			else items.push({ id: itemId, name, file: {} });
 		}
 		return items;
 	}
 
-	async downloadUrl(id: string): Promise<string> {
-		if (this.tree) {
-			const file = this.tree.files.get(id);
+	async downloadUrl(id: string, fileId: string): Promise<string> {
+		const tree = this.trees.get(id);
+		if (tree) {
+			const file = tree.files.get(fileId);
 			if (!file) throw new Error("File not found");
 			return URL.createObjectURL(file);
 		}
-		const parts = id.split("/");
-		const dir = await this.directory(parts.slice(0, -1).join("/") || null);
+		const parts = fileId.split("/");
+		const dir = await this.directory(id, parts.slice(0, -1).join("/") || null);
 		const file = await (await dir.getFileHandle(parts.at(-1)!)).getFile();
 		return URL.createObjectURL(file);
 	}
 
-	private async directory(folderId: string | null): Promise<DirectoryHandle> {
-		if (!this.handle) throw new Error("No folder");
-		let dir = this.handle;
+	private setState(id: string, state: DeviceStatus): void {
+		this.states.update((states) => ({ ...states, [id]: state }));
+	}
+
+	private async directory(id: string, folderId: string | null): Promise<DirectoryHandle> {
+		let dir = this.handles.get(id);
+		if (!dir) throw new Error("No folder");
 		for (const name of folderId ? folderId.split("/") : []) dir = await dir.getDirectoryHandle(name);
 		return dir;
 	}
