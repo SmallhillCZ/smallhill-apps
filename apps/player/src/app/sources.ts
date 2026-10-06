@@ -1,4 +1,5 @@
-import { Folder, Track } from "./onedrive/items";
+import { Folder } from "./onedrive/items";
+import { QueuedTrack } from "./player/player.service";
 import { Queue } from "./player/queue";
 
 export type SourceKind = "onedrive" | "device";
@@ -72,29 +73,31 @@ export const rootLabel = (source: Source) =>
 	source.kind !== "onedrive" ? "" : (source.root?.map((folder) => folder.name).join(" / ") ?? "");
 
 export interface Session {
-	source: string;
-	path: Folder[];
-	tracks: Track[];
+	tracks: QueuedTrack[];
 	queue: Queue;
 	time: number;
+}
+
+function isQueuedTrack(value: unknown): value is QueuedTrack {
+	const track = value as Partial<QueuedTrack> | null;
+	return (
+		!!track && typeof track.id === "string" && typeof track.source === "string" && !!toFolders(track.path)?.length
+	);
 }
 
 export function loadSession(): Session | null {
 	const session = read(SESSION_KEY) as Partial<Session> | null;
 	if (
 		!session ||
-		typeof session.source !== "string" ||
-		!toFolders(session.path)?.length ||
 		!Array.isArray(session.tracks) ||
 		!session.tracks.length ||
+		!session.tracks.every(isQueuedTrack) ||
 		!Array.isArray(session.queue?.order) ||
 		typeof session.queue.pos !== "number" ||
-		session.queue.order[session.queue.pos] === undefined
+		session.tracks[session.queue.order[session.queue.pos]] === undefined
 	)
 		return null;
 	return {
-		source: session.source,
-		path: toFolders(session.path)!,
 		tracks: session.tracks,
 		queue: session.queue,
 		time: typeof session.time === "number" ? session.time : 0,

@@ -17,7 +17,7 @@ import { Icon } from "./icon";
 import { cacheChildren, cachedChildren, clearCache } from "./onedrive/folder-cache";
 import { DriveItem, Folder, formatTime, sortFolders, sortTracks, toTrack, Track } from "./onedrive/items";
 import { OneDriveService } from "./onedrive/onedrive.service";
-import { PlayerService, TrackSource } from "./player/player.service";
+import { PlayerService, QueuedTrack } from "./player/player.service";
 import {
 	loadLocation,
 	loadSession,
@@ -69,7 +69,11 @@ export class App {
 	protected readonly sources = signal<Source[]>(this.storedSources ?? []);
 	protected readonly path = signal<Folder[]>(loadLocation());
 	protected readonly picking = signal(false);
-	protected readonly playingPath = signal<Folder[]>([]);
+	protected readonly playingPath = computed(() => this.player.current()?.path ?? []);
+	protected readonly queueOpen = signal(false);
+	private readonly queueDialog = viewChild<ElementRef<HTMLDialogElement>>("queue");
+	protected readonly added = signal<string | null>(null);
+	private addedTimer = 0;
 	protected readonly editing = signal<string | null>(null);
 	protected readonly editingSource = computed(() => this.sources().find((s) => s.id === this.editing()) ?? null);
 	private readonly settingsDialog = viewChild<ElementRef<HTMLDialogElement>>("settings");
@@ -80,7 +84,6 @@ export class App {
 	protected readonly failed = signal(false);
 	private request = 0;
 	private pendingRepick: string | null = null;
-	private readonly trackSources = new Map<string, TrackSource>();
 	private revealTrack = false;
 	private readonly crumbs = viewChild<ElementRef<HTMLElement>>("crumbs");
 
@@ -101,7 +104,7 @@ export class App {
 		const playing = this.playingPath();
 		const path = this.path();
 		return (
-			!this.picking() && playing.length === path.length && playing.every((folder, i) => folder.id === path[i].id)
+			!this.picking() && playing.length === path.length && playing.every((folder, i) => folder.id === path[i]?.id)
 		);
 	});
 	protected readonly progress = computed(() => {
@@ -127,6 +130,7 @@ export class App {
 		);
 		if (!this.storedSources) void this.migrateDevice();
 
+		this.player.setResolver((track) => this.downloadUrl(track));
 		effect(() => applyTheme(this.theme()));
 		effect(() => (document.documentElement.lang = lang()));
 		effect(() => (document.title = T().title));
@@ -157,16 +161,27 @@ export class App {
 			const dialog = this.settingsDialog()?.nativeElement;
 			if (dialog && !dialog.open) dialog.showModal();
 		});
+		afterRenderEffect(() => {
+			const dialog = this.queueDialog()?.nativeElement;
+			if (dialog && !dialog.open) {
+				dialog.showModal();
+				dialog.querySelector(".row.active")?.scrollIntoView({ block: "center" });
+			}
+		});
+		effect(() => {
+			if (!this.player.current()) untracked(() => this.queueOpen.set(false));
+		});
 		effect(() => this.restoreSession());
 		effect(() => {
 			const tracks = this.player.tracks();
 			const queue = this.player.queue();
-			const path = this.playingPath();
 			const time = Math.floor(this.player.time() / 5) * 5;
 			untracked(() => {
-				const source = this.sources().find((s) => s.id === path[0]?.id);
-				if (this.session) return;
-				saveSession(tracks.length && source ? { source: source.id, path, tracks, queue, time } : null);
+				if (this.session) {
+					if (!tracks.length) return;
+					this.session = null;
+				}
+				saveSession(tracks.length && queue.order.length ? { tracks, queue, time } : null);
 			});
 		});
 		afterRenderEffect(() => {
@@ -211,16 +226,22 @@ export class App {
 		return this.drive.accounts().find((account) => account.id === source.account)?.username ?? "";
 	}
 
-	private trackSource(source: Source): TrackSource {
-		let trackSource = this.trackSources.get(source.id);
-		if (!trackSource) {
-			trackSource =
-				source.kind === "onedrive"
-					? { downloadUrl: (id) => this.drive.downloadUrl(source.account!, id) }
-					: { downloadUrl: (id) => this.device.downloadUrl(source.id, id) };
-			this.trackSources.set(source.id, trackSource);
-		}
-		return trackSource;
+	private downloadUrl(track: QueuedTrack): Promise<string> {
+		const source = this.sources().find((s) => s.id === track.source);
+		if (!source) return Promise.reject(new Error("Unknown source"));
+		return source.kind === "onedrive"
+			? this.drive.downloadUrl(source.account!, track.id)
+			: this.device.downloadUrl(source.id, track.id);
+	}
+
+	private children(source: Source, folderId: string | null): Promise<DriveItem[]> {
+		return source.kind === "onedrive"
+			? this.drive.children(source.account!, folderId)
+			: this.device.children(source.id, folderId);
+	}
+
+	private queued(tracks: Track[], path: Folder[]): QueuedTrack[] {
+		return tracks.map((track) => ({ ...track, source: path[0].id, path }));
 	}
 
 	protected async load(source: Source, folderId: string | null): Promise<void> {
@@ -232,10 +253,7 @@ export class App {
 		if (cached) this.items.set(cached);
 		this.loading.set(!cached);
 		try {
-			const items =
-				source.kind === "onedrive"
-					? await this.drive.children(source.account!, folderId)
-					: await this.device.children(source.id, folderId);
+			const items = await this.children(source, folderId);
 			if (request !== this.request) return;
 			this.items.set(items);
 			if (source.kind === "onedrive") void cacheChildren(cacheKey, items);
@@ -321,9 +339,7 @@ export class App {
 	protected removeSource(source: Source): void {
 		if (!confirm(T().removeConfirm(source.name))) return;
 		this.closeSettings();
-		const trackSource = this.trackSources.get(source.id);
-		if (trackSource && this.player.isFrom(trackSource)) this.player.stop();
-		this.trackSources.delete(source.id);
+		this.player.removeSource(source.id);
 		this.sources.update((sources) => sources.filter((s) => s.id !== source.id));
 		this.editing.set(null);
 		if (source.kind === "device") this.device.remove(source.id);
@@ -337,17 +353,24 @@ export class App {
 	private restoreSession(): void {
 		const session = this.session;
 		if (!session) return;
-		const source = this.sources().find((s) => s.id === session.source);
+		const sources = this.sources();
+		const tracks = session.tracks.filter((track) => sources.some((s) => s.id === track.source));
+		const current = session.tracks[session.queue.order[session.queue.pos]];
+		const source = sources.find((s) => s.id === current.source);
 		if (!source) {
 			if (this.drive.status() !== "loading" && this.storedSources !== null) this.session = null;
 			return;
 		}
 		if (this.stateOf(source) !== "ready") return;
 		this.session = null;
-		untracked(() => {
-			this.playingPath.set(withRenamedRoot(session.path, this.sources()));
-			this.player.restore(session.tracks, session.queue, session.time, this.trackSource(source));
-		});
+		if (tracks.length !== session.tracks.length) return;
+		untracked(() =>
+			this.player.restore(
+				tracks.map((track) => ({ ...track, path: withRenamedRoot(track.path, sources) })),
+				session.queue,
+				session.time,
+			),
+		);
 	}
 
 	protected renameSource(source: Source, value: string): void {
@@ -403,8 +426,7 @@ export class App {
 			this.player.toggle();
 			return;
 		}
-		this.player.playList(this.tracks(), index, this.trackSource(source));
-		this.playingPath.set(this.path());
+		this.player.playList(this.queued(this.tracks(), this.path()), index);
 	}
 
 	protected playAll(shuffle: boolean): void {
@@ -412,8 +434,54 @@ export class App {
 		const tracks = this.tracks();
 		if (!source || !tracks.length) return;
 		if (this.player.shuffle() !== shuffle) this.player.toggleShuffle();
-		this.player.playList(tracks, shuffle ? Math.floor(Math.random() * tracks.length) : 0, this.trackSource(source));
-		this.playingPath.set(this.path());
+		this.player.playList(this.queued(tracks, this.path()), shuffle ? Math.floor(Math.random() * tracks.length) : 0);
+	}
+
+	protected addTrack(index: number): void {
+		const track = this.tracks()[index];
+		if (!track || !this.source()) return;
+		this.player.enqueue(this.queued([track], this.path()));
+		this.flash(T().addedToQueue(track.title));
+	}
+
+	protected addAll(): void {
+		if (!this.source() || !this.tracks().length) return;
+		this.player.enqueue(this.queued(this.tracks(), this.path()));
+		this.flash(T().addedToQueue(this.path().at(-1)!.name));
+	}
+
+	protected async addFolderItem(folder: DriveItem): Promise<void> {
+		const source = this.source();
+		if (!source) return;
+		const path = [...this.path(), { id: folder.id, name: folder.name }];
+		try {
+			const items = await this.children(source, folder.id);
+			const tracks = sortTracks(items).map(toTrack);
+			if (!tracks.length) {
+				this.flash(T().noTracks(folder.name));
+				return;
+			}
+			this.player.enqueue(this.queued(tracks, path));
+			this.flash(T().addedToQueue(folder.name));
+		} catch (error) {
+			console.error(error);
+			this.flash(T().folderError);
+		}
+	}
+
+	private flash(message: string): void {
+		this.added.set(message);
+		clearTimeout(this.addedTimer);
+		this.addedTimer = window.setTimeout(() => this.added.set(null), 2500);
+	}
+
+	protected openQueue(): void {
+		this.queueOpen.set(true);
+	}
+
+	protected closeQueue(): void {
+		this.queueDialog()?.nativeElement.close();
+		this.queueOpen.set(false);
 	}
 
 	protected goPlayingFolder(): void {

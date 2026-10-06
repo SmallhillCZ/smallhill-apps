@@ -148,6 +148,63 @@ footer {
 	padding-inline: 8px;
 }
 
+.item {
+	display: flex;
+	align-items: center;
+
+	.row {
+		flex: 1;
+		min-width: 0;
+	}
+
+	> .icon.small {
+		flex: none;
+		color: var(--muted);
+	}
+}
+
+.toast {
+	position: fixed;
+	left: 50%;
+	bottom: 24px;
+	z-index: 20;
+	max-width: calc(100% - 32px);
+	margin: 0;
+	padding: 10px 16px;
+	border-radius: 999px;
+	background: var(--text);
+	color: var(--bg);
+	font-size: 0.9rem;
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	transform: translateX(-50%);
+	pointer-events: none;
+
+	&.with-player {
+		bottom: 190px;
+	}
+}
+
+.queue-dialog {
+	max-height: calc(100dvh - 48px);
+
+	form {
+		max-height: calc(100dvh - 88px);
+		grid-template-rows: auto minmax(0, 1fr) auto;
+	}
+
+	.list {
+		overflow-y: auto;
+		padding: 0;
+	}
+}
+
+.danger:disabled {
+	opacity: 0.4;
+}
+
 .settings-dialog {
 	width: min(420px, calc(100% - 32px));
 	padding: 20px;

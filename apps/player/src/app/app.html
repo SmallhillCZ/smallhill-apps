@@ -160,7 +160,7 @@
 			@if (folders().length) {
 				<ul class="list">
 					@for (folder of folders(); track folder.id) {
-						<li>
+						<li class="item">
 							<button type="button" class="row" (click)="open(folder)">
 								<app-icon class="folder" name="folder" />
 								<span class="text">
@@ -170,6 +170,17 @@
 									}
 								</span>
 							</button>
+							@if (!picking()) {
+								<button
+									type="button"
+									class="icon small add-queue"
+									[attr.aria-label]="t().addToQueue"
+									[title]="t().addToQueue"
+									(click)="addFolderItem(folder)"
+								>
+									<app-icon name="playlistAdd" />
+								</button>
+							}
 						</li>
 					}
 				</ul>
@@ -178,6 +189,15 @@
 			@if (tracks().length && !picking()) {
 				<div class="actions">
 					<span class="count">{{ t().tracks(tracks().length) }}</span>
+					<button
+						type="button"
+						class="icon small"
+						[attr.aria-label]="t().addToQueue"
+						[title]="t().addToQueue"
+						(click)="addAll()"
+					>
+						<app-icon name="playlistAdd" />
+					</button>
 					<button type="button" class="secondary" (click)="playAll(true)">
 						<app-icon name="shuffle" />{{ t().shuffleAll }}
 					</button>
@@ -188,7 +208,7 @@
 				<ul class="list">
 					@for (track of tracks(); track track.id; let i = $index) {
 						@let active = player.current()?.id === track.id;
-						<li>
+						<li class="item">
 							<button type="button" class="row" [class.active]="active" (click)="play(i)">
 								<span class="badge">
 									<app-icon
@@ -204,6 +224,15 @@
 								@if (track.duration) {
 									<span class="duration">{{ formatTime(track.duration) }}</span>
 								}
+							</button>
+							<button
+								type="button"
+								class="icon small add-queue"
+								[attr.aria-label]="t().addToQueue"
+								[title]="t().addToQueue"
+								(click)="addTrack(i)"
+							>
+								<app-icon name="playlistAdd" />
 							</button>
 						</li>
 					}
@@ -291,6 +320,15 @@
 					<app-icon name="folder" />
 				</button>
 			}
+			<button
+				type="button"
+				class="icon small"
+				[attr.aria-label]="t().queue"
+				[title]="t().queue"
+				(click)="openQueue()"
+			>
+				<app-icon name="queue" />
+			</button>
 			<button type="button" class="icon small" [attr.aria-label]="t().close" (click)="player.stop()">
 				<app-icon name="close" />
 			</button>
@@ -349,4 +387,52 @@
 			</button>
 		</div>
 	</section>
+}
+
+@if (added(); as message) {
+	<p class="toast" [class.with-player]="player.current()" role="status">{{ message }}</p>
+}
+
+@if (queueOpen()) {
+	<dialog #queue class="settings-dialog queue-dialog" (close)="closeQueue()">
+		<form method="dialog">
+			<h2><app-icon name="queue" />{{ t().queue }}</h2>
+			<ul class="list">
+				@for (item of player.upcoming(); track item.pos) {
+					@let active = item.pos === player.queue().pos;
+					<li class="item">
+						<button type="button" class="row" [class.active]="active" (click)="player.jump(item.pos)">
+							<span class="badge">
+								<app-icon [name]="active && player.playing() ? 'pause' : active ? 'play' : 'note'" />
+							</span>
+							<span class="text">
+								<span class="name">{{ item.track.title }}</span>
+								<span class="meta">{{ item.track.artist || item.track.path.at(-1)?.name }}</span>
+							</span>
+						</button>
+						<button
+							type="button"
+							class="icon small"
+							[attr.aria-label]="t().removeFromQueue"
+							[title]="t().removeFromQueue"
+							(click)="player.removeAt(item.pos)"
+						>
+							<app-icon name="close" />
+						</button>
+					</li>
+				}
+			</ul>
+			<div class="dialog-actions">
+				<button
+					type="button"
+					class="danger"
+					[disabled]="player.queue().pos >= player.queue().order.length - 1"
+					(click)="player.clearUpcoming()"
+				>
+					{{ t().clearQueue }}
+				</button>
+				<button type="submit" class="primary" autofocus>{{ t().done }}</button>
+			</div>
+		</form>
+	</dialog>
 }
