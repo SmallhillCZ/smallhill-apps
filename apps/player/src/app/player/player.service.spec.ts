@@ -78,6 +78,10 @@ describe("PlayerService", () => {
 		expect(audio.getAttribute("src")).toBeNull();
 		resolve("https://files.example/t4");
 		await vi.waitFor(() => expect(audio.src).toBe("https://files.example/t4"));
+		player.clearQueue();
+		expect(ids()).toEqual(["t4"]);
+		expect(player.current()?.id).toBe("t4");
+		expect(audio.src).toBe("https://files.example/t4");
 	});
 
 	it("shares the queue with another tab and forwards its controls", async () => {

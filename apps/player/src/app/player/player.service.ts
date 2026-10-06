@@ -57,6 +57,7 @@ const COMMANDS = [
 	"toggleShuffle",
 	"cycleRepeat",
 	"stop",
+	"clearQueue",
 ] as const;
 
 type Command = (typeof COMMANDS)[number];
@@ -391,6 +392,14 @@ export class PlayerService {
 	cycleRepeat(): void {
 		if (this.forward("cycleRepeat")) return;
 		this.repeat.update((value) => REPEATS[(REPEATS.indexOf(value) + 1) % REPEATS.length]);
+	}
+
+	clearQueue(): void {
+		if (this.forward("clearQueue")) return;
+		const current = this.current();
+		if (!current) return;
+		this.tracks.set([current]);
+		this.queue.set({ order: [0], pos: 0 });
 	}
 
 	stop(): void {
