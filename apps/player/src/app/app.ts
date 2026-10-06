@@ -444,7 +444,7 @@ export class App {
 			this.player.toggle();
 			return;
 		}
-		this.player.playList(this.queued([track], this.path()), 0);
+		this.player.playNow(this.queued([track], this.path()));
 	}
 
 	protected playAll(shuffle: boolean): void {
@@ -478,7 +478,7 @@ export class App {
 	protected async playFolderItem(folder: DriveItem): Promise<void> {
 		const tracks = await this.folderTracks(folder);
 		if (!tracks) return;
-		this.player.playList(tracks, 0);
+		this.player.playNow(tracks);
 	}
 
 	private async folderTracks(folder: DriveItem): Promise<QueuedTrack[] | null> {

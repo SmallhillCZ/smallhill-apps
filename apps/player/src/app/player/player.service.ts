@@ -46,6 +46,7 @@ interface SharedState {
 const COMMANDS = [
 	"playList",
 	"enqueue",
+	"playNow",
 	"jump",
 	"removeAt",
 	"removeSource",
@@ -290,6 +291,25 @@ export class PlayerService {
 		if (this.forward("jump", pos)) return;
 		if (pos === this.queue().pos || pos < 0 || pos >= this.queue().order.length) return;
 		this.queue.update((queue) => ({ ...queue, pos }));
+		void this.load();
+	}
+
+	playNow(added: QueuedTrack[]): void {
+		if (this.forward("playNow", added)) return;
+		if (!added.length) return;
+		if (!this.current()) {
+			this.playList(added, 0);
+			return;
+		}
+		const tracks = this.tracks();
+		const queue = this.queue();
+		const same = (index: number) =>
+			added.some((track) => track.id === tracks[index]?.id && track.source === tracks[index]?.source);
+		const before = queue.order.slice(0, queue.pos);
+		const after = queue.order.slice(queue.pos + 1).filter((index) => !same(index));
+		const inserted = added.map((_, i) => tracks.length + i);
+		this.tracks.set([...tracks, ...added]);
+		this.queue.set({ order: [...before, ...inserted, ...after], pos: before.length });
 		void this.load();
 	}
 
