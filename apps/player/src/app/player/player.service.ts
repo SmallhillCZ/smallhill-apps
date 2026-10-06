@@ -102,6 +102,14 @@ export class PlayerService {
 		void this.load();
 	}
 
+	restore(tracks: Track[], queue: Queue, time: number, source: TrackSource): void {
+		if (this.current()) return;
+		this.source = source;
+		this.tracks.set(tracks);
+		this.queue.set(queue);
+		void this.load(time);
+	}
+
 	toggle(): void {
 		if (!this.current()) return;
 		if (this.audio.paused) {

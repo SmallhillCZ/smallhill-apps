@@ -20,9 +20,11 @@ import { OneDriveService } from "./onedrive/onedrive.service";
 import { PlayerService, TrackSource } from "./player/player.service";
 import {
 	loadLocation,
+	loadSession,
 	loadSources,
 	rootLabel,
 	saveLocation,
+	saveSession,
 	saveSources,
 	Source,
 	toFolders,
@@ -69,6 +71,9 @@ export class App {
 	protected readonly picking = signal(false);
 	protected readonly playingPath = signal<Folder[]>([]);
 	protected readonly editing = signal<string | null>(null);
+	protected readonly editingSource = computed(() => this.sources().find((s) => s.id === this.editing()) ?? null);
+	private readonly settingsDialog = viewChild<ElementRef<HTMLDialogElement>>("settings");
+	private session = loadSession();
 	protected readonly rootLabel = rootLabel;
 	protected readonly items = signal<DriveItem[]>([]);
 	protected readonly loading = signal(false);
@@ -89,7 +94,8 @@ export class App {
 	protected readonly folderId = computed(() => {
 		const path = this.path();
 		if (path.length > 1) return path.at(-1)!.id;
-		return this.picking() ? null : (this.source()?.root?.at(-1)?.id ?? null);
+		const source = this.source();
+		return this.picking() || source?.kind !== "onedrive" ? null : (source.root?.at(-1)?.id ?? null);
 	});
 	protected readonly inPlayingFolder = computed(() => {
 		const playing = this.playingPath();
@@ -145,6 +151,22 @@ export class App {
 				if (signedIn && added.some((s) => s.account === signedIn.id)) {
 					this.navigate([{ id: signedIn.id, name: "OneDrive" }]);
 				}
+			});
+		});
+		afterRenderEffect(() => {
+			const dialog = this.settingsDialog()?.nativeElement;
+			if (dialog && !dialog.open) dialog.showModal();
+		});
+		effect(() => this.restoreSession());
+		effect(() => {
+			const tracks = this.player.tracks();
+			const queue = this.player.queue();
+			const path = this.playingPath();
+			const time = Math.floor(this.player.time() / 5) * 5;
+			untracked(() => {
+				const source = this.sources().find((s) => s.id === path[0]?.id);
+				if (this.session) return;
+				saveSession(tracks.length && source ? { source: source.id, path, tracks, queue, time } : null);
 			});
 		});
 		afterRenderEffect(() => {
@@ -298,6 +320,7 @@ export class App {
 
 	protected removeSource(source: Source): void {
 		if (!confirm(T().removeConfirm(source.name))) return;
+		this.closeSettings();
 		const trackSource = this.trackSources.get(source.id);
 		if (trackSource && this.player.isFrom(trackSource)) this.player.stop();
 		this.trackSources.delete(source.id);
@@ -311,19 +334,41 @@ export class App {
 		}
 	}
 
-	protected renameSource(source: Source): void {
-		const name = prompt(T().renamePrompt, source.name)?.trim();
+	private restoreSession(): void {
+		const session = this.session;
+		if (!session) return;
+		const source = this.sources().find((s) => s.id === session.source);
+		if (!source) {
+			if (this.drive.status() !== "loading" && this.storedSources !== null) this.session = null;
+			return;
+		}
+		if (this.stateOf(source) !== "ready") return;
+		this.session = null;
+		untracked(() => {
+			this.playingPath.set(withRenamedRoot(session.path, this.sources()));
+			this.player.restore(session.tracks, session.queue, session.time, this.trackSource(source));
+		});
+	}
+
+	protected renameSource(source: Source, value: string): void {
+		const name = value.trim();
 		if (!name || name === source.name) return;
 		this.sources.update((sources) => sources.map((s) => (s.id === source.id ? { ...s, name } : s)));
 		this.path.update((path) => withRenamedRoot(path, this.sources()));
 	}
 
-	protected toggleSettings(source: Source): void {
-		this.editing.update((id) => (id === source.id ? null : source.id));
+	protected openSettings(source: Source): void {
+		this.editing.set(source.id);
+	}
+
+	protected closeSettings(): void {
+		this.settingsDialog()?.nativeElement.close();
+		this.editing.set(null);
 	}
 
 	protected chooseTop(source: Source): void {
-		if (this.stateOf(source) !== "ready") return;
+		if (source.kind !== "onedrive" || this.stateOf(source) !== "ready") return;
+		this.closeSettings();
 		this.navigate([{ id: source.id, name: source.name }], true);
 	}
 

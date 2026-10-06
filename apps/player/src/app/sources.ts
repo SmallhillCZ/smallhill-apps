@@ -1,4 +1,5 @@
-import { Folder } from "./onedrive/items";
+import { Folder, Track } from "./onedrive/items";
+import { Queue } from "./player/queue";
 
 export type SourceKind = "onedrive" | "device";
 
@@ -12,6 +13,7 @@ export interface Source {
 
 const SOURCES_KEY = "player.sources";
 const LOCATION_KEY = "player.location";
+const SESSION_KEY = "player.session";
 
 function read(key: string): unknown {
 	try {
@@ -66,4 +68,39 @@ export function withRenamedRoot(path: Folder[], sources: Source[]): Folder[] {
 	return source && path[0].name !== source.name ? [{ ...path[0], name: source.name }, ...path.slice(1)] : path;
 }
 
-export const rootLabel = (source: Source) => source.root?.map((folder) => folder.name).join(" / ") ?? "";
+export const rootLabel = (source: Source) =>
+	source.kind !== "onedrive" ? "" : (source.root?.map((folder) => folder.name).join(" / ") ?? "");
+
+export interface Session {
+	source: string;
+	path: Folder[];
+	tracks: Track[];
+	queue: Queue;
+	time: number;
+}
+
+export function loadSession(): Session | null {
+	const session = read(SESSION_KEY) as Partial<Session> | null;
+	if (
+		!session ||
+		typeof session.source !== "string" ||
+		!toFolders(session.path)?.length ||
+		!Array.isArray(session.tracks) ||
+		!session.tracks.length ||
+		!Array.isArray(session.queue?.order) ||
+		typeof session.queue.pos !== "number" ||
+		session.queue.order[session.queue.pos] === undefined
+	)
+		return null;
+	return {
+		source: session.source,
+		path: toFolders(session.path)!,
+		tracks: session.tracks,
+		queue: session.queue,
+		time: typeof session.time === "number" ? session.time : 0,
+	};
+}
+
+export function saveSession(session: Session | null): void {
+	write(SESSION_KEY, session);
+}
