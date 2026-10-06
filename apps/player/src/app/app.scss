@@ -504,3 +504,43 @@ footer {
 		opacity: 0.6;
 	}
 }
+
+:host-context([data-theme="eink"]) {
+	.sources,
+	.list,
+	.welcome,
+	.chip,
+	.secondary,
+	.player,
+	.icon.play {
+		border: 2px solid var(--border);
+	}
+
+	.sources button.selected {
+		background: var(--text);
+		color: var(--bg);
+
+		app-icon {
+			color: var(--bg);
+		}
+	}
+
+	.chip.on,
+	.row.active {
+		outline: 3px solid var(--accent);
+		outline-offset: -3px;
+	}
+
+	.player {
+		border-width: 2px 0 0;
+		border-radius: 0;
+	}
+
+	.seek input::-webkit-slider-runnable-track {
+		background: linear-gradient(to right, var(--accent) var(--progress, 0%), #c8c8c8 var(--progress, 0%));
+	}
+
+	.seek input::-moz-range-track {
+		background: #c8c8c8;
+	}
+}
