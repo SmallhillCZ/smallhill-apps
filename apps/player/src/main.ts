@@ -13,4 +13,12 @@ if (matchMedia("(display-mode: standalone)").matches) {
 	} catch {}
 }
 
-bootstrapApplication(App, appConfig).catch((err) => console.error(err));
+const authFrame = (window !== window.top || !!window.opener) && /[#?&]state=/.test(location.hash + location.search);
+
+if (authFrame) {
+	import("@azure/msal-browser/redirect-bridge")
+		.then(({ broadcastResponseToMainFrame }) => broadcastResponseToMainFrame())
+		.catch((err) => console.error(err));
+} else {
+	bootstrapApplication(App, appConfig).catch((err) => console.error(err));
+}
