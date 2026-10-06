@@ -6,6 +6,8 @@ on:
       - master
     paths-ignore:
       - "**.md"
+      - "android/**"
+      - ".github/workflows/android.*"
   workflow_dispatch:
     inputs:
       semver:
