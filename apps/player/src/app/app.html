@@ -251,6 +251,17 @@
 					}
 				</span>
 			</div>
+			@if (playingPath().length && !inPlayingFolder()) {
+				<button
+					type="button"
+					class="icon small"
+					[attr.aria-label]="t().openFolder"
+					[title]="t().openFolder"
+					(click)="goPlayingFolder()"
+				>
+					<app-icon name="folder" />
+				</button>
+			}
 			<button type="button" class="icon small" [attr.aria-label]="t().close" (click)="player.stop()">
 				<app-icon name="close" />
 			</button>
