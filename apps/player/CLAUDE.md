@@ -5,5 +5,6 @@
 - Graph calls in `src/app/onedrive/onedrive.service.ts`; playback uses `@microsoft.graph.downloadUrl` from a plain item GET (`$select` drops it on personal OneDrive; fallback: `/content` blob), cached 45 min, next track prefetched, one retry on audio error.
 - Folder listings cached in IndexedDB (`folder-cache.ts`, shown first, refreshed in background, cleared on sign-out); music folder `{source, path, root}` in localStorage `player.library`, opened on start.
 - Sources: OneDrive and device folder (`src/app/device/device.service.ts`: File System Access handle kept in IndexedDB `handles`, permission re-requested on start; fallback `webkitdirectory` input, session only). Both expose `children(folderId)` + `downloadUrl(id)`; device ids are relative paths. `npm run demo` swaps in `onedrive.service.demo.ts` (sample tree, generated tones) via angular.json `demo` configuration; used for screenshots.
+- Folder and source navigation is pushed to browser history (`history.state` only, URL untouched so MSAL redirect hashes are safe); popstate restores it.
 - Queue logic pure in `src/app/player/queue.ts`; audio + Media Session in `player.service.ts`.
 - Signature colour `#7048e8` (violet). Texts EN/CS in `src/app/i18n.ts`. Prettier: tabs, double quotes, width 120.
