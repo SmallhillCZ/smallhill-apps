@@ -3,6 +3,7 @@ import {
 	ChangeDetectionStrategy,
 	Component,
 	computed,
+	DestroyRef,
 	effect,
 	ElementRef,
 	inject,
@@ -23,11 +24,24 @@ import {
 	savePaths,
 	saveSource,
 	SourceId,
+	SOURCES,
+	toFolders,
 } from "./library";
 import { DriveItem, Folder, formatTime, sortFolders, sortTracks, toTrack, Track } from "./onedrive/items";
 import { OneDriveService } from "./onedrive/onedrive.service";
 import { PlayerService } from "./player/player.service";
 import { applyTheme, loadTheme, Theme, THEMES } from "./theme";
+
+interface NavState {
+	player: true;
+	source: SourceId;
+	path: Folder[];
+}
+
+function isNavState(value: unknown): value is NavState {
+	const state = value as Partial<NavState> | null;
+	return !!state && state.player === true && SOURCES.includes(state.source!) && !!toFolders(state.path);
+}
 
 @Component({
 	selector: "app-root",
@@ -74,6 +88,15 @@ export class App {
 	});
 
 	constructor() {
+		const state: unknown = history.state;
+		if (isNavState(state)) this.show(state.source, state.path);
+		const onPopState = (event: PopStateEvent) => {
+			const state: unknown = event.state;
+			if (isNavState(state)) this.show(state.source, state.path);
+			else this.show(this.source(), []);
+		};
+		window.addEventListener("popstate", onPopState);
+		inject(DestroyRef).onDestroy(() => window.removeEventListener("popstate", onPopState));
 		effect(() => applyTheme(this.theme()));
 		effect(() => (document.documentElement.lang = lang()));
 		effect(() => (document.title = T().title));
@@ -128,8 +151,23 @@ export class App {
 
 	protected setSource(source: SourceId): void {
 		if (source === this.source()) return;
+		this.navigate(source, this.paths()[source]);
+	}
+
+	private navigate(source: SourceId, path: Folder[]): void {
+		if (!isNavState(history.state)) history.replaceState(this.navState(), "");
+		this.show(source, path);
+		history.pushState(this.navState(), "");
+	}
+
+	private navState(): NavState {
+		return { player: true, source: this.source(), path: this.path() };
+	}
+
+	private show(source: SourceId, path: Folder[]): void {
 		this.items.set([]);
 		this.source.set(source);
+		this.paths.update((paths) => ({ ...paths, [source]: path }));
 	}
 
 	protected toggleLibrary(): void {
@@ -145,17 +183,16 @@ export class App {
 	protected goLibrary(): void {
 		const library = this.library();
 		if (!library) return;
-		this.setSource(library.source);
-		this.setPath(library.path);
+		this.navigate(library.source, library.path);
 	}
 
 	protected open(folder: DriveItem): void {
-		this.setPath([...this.path(), { id: folder.id, name: folder.name }]);
+		this.navigate(this.source(), [...this.path(), { id: folder.id, name: folder.name }]);
 	}
 
 	protected goTo(depth: number): void {
 		if (depth === this.path().length) return;
-		this.setPath(this.path().slice(0, depth));
+		this.navigate(this.source(), this.path().slice(0, depth));
 	}
 
 	protected async chooseFolder(input: HTMLInputElement): Promise<void> {
