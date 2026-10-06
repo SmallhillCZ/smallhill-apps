@@ -1,4 +1,4 @@
-import { computed, effect, Injectable, signal } from "@angular/core";
+import { computed, effect, Injectable, signal, untracked } from "@angular/core";
 import { Folder, Track } from "../onedrive/items";
 import { createQueue, nextPos, prevPos, Queue, Repeat, reshuffle } from "./queue";
 
@@ -27,6 +27,48 @@ export interface QueuedTrack extends Track {
 
 export type UrlResolver = (track: QueuedTrack) => Promise<string>;
 
+interface Leader {
+	id: string;
+	at: number;
+}
+
+interface SharedState {
+	tracks: QueuedTrack[];
+	queue: Queue;
+	playing: boolean;
+	loading: boolean;
+	error: boolean;
+	duration: number | null;
+	shuffle: boolean;
+	repeat: Repeat;
+}
+
+const COMMANDS = [
+	"playList",
+	"enqueue",
+	"jump",
+	"removeAt",
+	"clearUpcoming",
+	"removeSource",
+	"toggle",
+	"next",
+	"prev",
+	"seek",
+	"toggleShuffle",
+	"cycleRepeat",
+	"stop",
+] as const;
+
+type Command = (typeof COMMANDS)[number];
+
+type Message =
+	| { type: "hello"; from: string }
+	| { type: "claim"; leader: Leader }
+	| { type: "state"; from: string; state: SharedState }
+	| { type: "time"; from: string; time: number }
+	| { type: "bye"; from: string }
+	| { type: "command"; to: string; name: Command; args: unknown[] };
+
 @Injectable({ providedIn: "root" })
 export class PlayerService {
 	private resolver: UrlResolver | null = null;
@@ -34,6 +76,12 @@ export class PlayerService {
 	private readonly urls = new Map<string, { url: string; at: number }>();
 	private request = 0;
 	private retried = false;
+	private readonly id = Math.random().toString(36).slice(2);
+	private readonly channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("player");
+	private leader: Leader | null = null;
+	private readonly leaderId = signal<string | null>(null);
+	readonly remote = computed(() => !!this.leaderId() && this.leaderId() !== this.id);
+	readonly synced = signal(!this.channel);
 
 	private readonly settings = loadSettings();
 	readonly tracks = signal<QueuedTrack[]>([]);
@@ -63,12 +111,14 @@ export class PlayerService {
 		this.audio.addEventListener("playing", () => {
 			this.playing.set(true);
 			this.loading.set(false);
+			this.claim({ id: this.id, at: Date.now() });
 		});
 		this.audio.addEventListener("pause", () => this.playing.set(false));
 		this.audio.addEventListener("waiting", () => this.loading.set(true));
 		this.audio.addEventListener("timeupdate", () => {
 			this.time.set(this.audio.currentTime);
 			this.updatePosition();
+			if (this.isLeader()) this.post({ type: "time", from: this.id, time: this.audio.currentTime });
 		});
 		this.audio.addEventListener("durationchange", () => {
 			const duration = this.audio.duration;
@@ -101,6 +151,107 @@ export class PlayerService {
 				navigator.mediaSession.playbackState = this.playing() ? "playing" : "paused";
 		});
 		this.setupMediaSession();
+		this.setupSync();
+	}
+
+	private setupSync(): void {
+		const channel = this.channel;
+		if (!channel) return;
+		channel.onmessage = (event: MessageEvent<Message>) => this.receive(event.data);
+		effect(() => {
+			const state = this.snapshot();
+			if (this.leaderId() === this.id) this.post({ type: "state", from: this.id, state });
+		});
+		window.addEventListener("pagehide", () => {
+			if (this.isLeader()) this.post({ type: "bye", from: this.id });
+		});
+		this.post({ type: "hello", from: this.id });
+		setTimeout(() => this.synced.set(true), 300);
+	}
+
+	private snapshot(): SharedState {
+		return {
+			tracks: this.tracks(),
+			queue: this.queue(),
+			playing: this.playing(),
+			loading: this.loading(),
+			error: this.error(),
+			duration: this.duration(),
+			shuffle: this.shuffle(),
+			repeat: this.repeat(),
+		};
+	}
+
+	private post(message: Message): void {
+		this.channel?.postMessage(message);
+	}
+
+	private isLeader(): boolean {
+		return this.leaderId() === this.id;
+	}
+
+	private claim(leader: Leader): void {
+		this.leader = leader;
+		this.leaderId.set(leader.id);
+		if (leader.id === this.id) this.post({ type: "claim", leader });
+		else if (this.audio.getAttribute("src")) this.release();
+	}
+
+	private release(): void {
+		this.request++;
+		this.audio.pause();
+		this.audio.removeAttribute("src");
+		this.audio.load();
+		this.clearUrls();
+	}
+
+	private receive(message: Message): void {
+		switch (message.type) {
+			case "hello":
+				if (!this.isLeader() || !this.leader) return;
+				this.post({ type: "claim", leader: this.leader });
+				this.post({ type: "state", from: this.id, state: untracked(() => this.snapshot()) });
+				this.post({ type: "time", from: this.id, time: this.audio.currentTime });
+				return;
+			case "claim":
+				if (!this.leader || message.leader.at >= this.leader.at) this.claim(message.leader);
+				this.synced.set(true);
+				return;
+			case "state": {
+				if (message.from !== this.leaderId()) return;
+				const state = message.state;
+				this.tracks.set(state.tracks);
+				this.queue.set(state.queue);
+				this.playing.set(state.playing);
+				this.loading.set(state.loading);
+				this.error.set(state.error);
+				this.duration.set(state.duration);
+				this.shuffle.set(state.shuffle);
+				this.repeat.set(state.repeat);
+				return;
+			}
+			case "time":
+				if (message.from === this.leaderId()) this.time.set(message.time);
+				return;
+			case "bye":
+				if (message.from !== this.leaderId()) return;
+				this.leader = null;
+				this.leaderId.set(null);
+				this.playing.set(false);
+				this.loading.set(false);
+				return;
+			case "command":
+				if (message.to !== this.id || !this.isLeader() || !COMMANDS.includes(message.name)) return;
+				(this[message.name] as (...args: unknown[]) => void)(...message.args);
+				return;
+		}
+	}
+
+	private forward(name: Command, ...args: unknown[]): boolean {
+		const leader = this.leaderId();
+		if (!leader || leader === this.id) return false;
+		this.post({ type: "command", to: leader, name, args });
+		return true;
 	}
 
 	setResolver(resolver: UrlResolver): void {
@@ -108,19 +259,21 @@ export class PlayerService {
 	}
 
 	playList(tracks: QueuedTrack[], start: number): void {
+		if (this.forward("playList", tracks, start)) return;
 		this.tracks.set(tracks);
 		this.queue.set(createQueue(tracks.length, start, this.shuffle()));
 		void this.load();
 	}
 
 	restore(tracks: QueuedTrack[], queue: Queue, time: number): void {
-		if (this.current()) return;
+		if (this.current() || this.remote()) return;
 		this.tracks.set(tracks);
 		this.queue.set(queue);
 		void this.load(time);
 	}
 
 	enqueue(tracks: QueuedTrack[]): void {
+		if (this.forward("enqueue", tracks)) return;
 		if (!tracks.length) return;
 		if (!this.current()) {
 			this.tracks.set(tracks);
@@ -135,12 +288,14 @@ export class PlayerService {
 	}
 
 	jump(pos: number): void {
+		if (this.forward("jump", pos)) return;
 		if (pos === this.queue().pos || pos < 0 || pos >= this.queue().order.length) return;
 		this.queue.update((queue) => ({ ...queue, pos }));
 		void this.load();
 	}
 
 	removeAt(pos: number): void {
+		if (this.forward("removeAt", pos)) return;
 		const queue = this.queue();
 		if (pos < 0 || pos >= queue.order.length) return;
 		if (queue.order.length === 1) {
@@ -157,14 +312,17 @@ export class PlayerService {
 	}
 
 	clearUpcoming(): void {
+		if (this.forward("clearUpcoming")) return;
 		this.queue.update((queue) => ({ ...queue, order: queue.order.slice(0, queue.pos + 1) }));
 	}
 
 	removeSource(source: string): void {
+		if (this.forward("removeSource", source)) return;
 		if (this.tracks().some((track) => track.source === source)) this.stop();
 	}
 
 	toggle(): void {
+		if (this.forward("toggle")) return;
 		if (!this.current()) return;
 		if (this.audio.paused) {
 			if (this.error() || !this.audio.getAttribute("src")) void this.load(this.time());
@@ -175,6 +333,7 @@ export class PlayerService {
 	}
 
 	next(auto = false): void {
+		if (!auto && this.forward("next")) return;
 		const pos = nextPos(this.queue(), this.repeat(), auto);
 		if (pos === null) {
 			if (auto) this.playing.set(false);
@@ -185,6 +344,7 @@ export class PlayerService {
 	}
 
 	prev(): void {
+		if (this.forward("prev")) return;
 		if (this.audio.currentTime > 3) {
 			this.seek(0);
 			return;
@@ -199,21 +359,25 @@ export class PlayerService {
 	}
 
 	seek(seconds: number): void {
+		if (this.forward("seek", seconds)) return;
 		if (!this.audio.getAttribute("src")) return;
 		this.audio.currentTime = Math.max(0, seconds);
 		this.time.set(this.audio.currentTime);
 	}
 
 	toggleShuffle(): void {
+		if (this.forward("toggleShuffle")) return;
 		this.shuffle.update((value) => !value);
 		if (this.current()) this.queue.update((queue) => reshuffle(queue, this.shuffle()));
 	}
 
 	cycleRepeat(): void {
+		if (this.forward("cycleRepeat")) return;
 		this.repeat.update((value) => REPEATS[(REPEATS.indexOf(value) + 1) % REPEATS.length]);
 	}
 
 	stop(): void {
+		if (this.forward("stop")) return;
 		this.request++;
 		this.audio.pause();
 		this.audio.removeAttribute("src");

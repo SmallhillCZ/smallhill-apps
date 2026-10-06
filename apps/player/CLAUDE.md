@@ -7,5 +7,5 @@
 - OneDrive listings cached in IndexedDB `folders` keyed `sourceId/folderId` (`folder-cache.ts`).
 - Device folders (`src/app/device/device.service.ts`): File System Access handles in IndexedDB `handles` keyed by source id, permission re-requested on tap; fallback `webkitdirectory` input, session only. Both services expose `children(sourceId, folderId)` + `downloadUrl(sourceId, id)`. `npm run demo` swaps in `onedrive.service.demo.ts` (two demo accounts, sample tree, generated tones) via angular.json `demo` configuration.
 - Folder and source navigation is pushed to browser history (`history.state` only, URL untouched so MSAL redirect hashes are safe); popstate restores it.
-- Queue logic pure in `src/app/player/queue.ts`; audio + Media Session in `player.service.ts`.
+- Queue logic pure in `src/app/player/queue.ts`; audio + Media Session in `player.service.ts`. Tabs sync over BroadcastChannel `player`: the tab that last started playing is leader (claim with timestamp), others mirror its state/time and forward controls as commands; leader sends `bye` on pagehide.
 - Signature colour `#7048e8` (violet). Themes auto/light/dark/eink (`theme.ts` copied from Tuner: auto switches to eink on `(update: slow), (monochrome)`); eink = white, black borders, no shadows or animations. Texts EN/CS in `src/app/i18n.ts`. Prettier: tabs, double quotes, width 120.
