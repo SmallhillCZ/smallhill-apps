@@ -53,6 +53,9 @@ describe("PlayerService", () => {
 		expect(player.upcoming().map((item) => item.track.id)).toEqual(["t1", "t3"]);
 		player.jump(1);
 		await vi.waitFor(() => expect(audio?.src).toBe("https://files.example/t3"));
+		player.playNow(other("t4"));
+		expect(player.upcoming().map((item) => item.track.id)).toEqual(["t1", "t3", "t4"]);
+		expect(player.current()?.id).toBe("t4");
 		player.removeSource("other");
 		expect(player.current()).toBeNull();
 	});

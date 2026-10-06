@@ -198,8 +198,14 @@
 					>
 						<app-icon name="playlistAdd" />
 					</button>
-					<button type="button" class="secondary" (click)="playAll(true)">
-						<app-icon name="shuffle" />{{ t().shuffleAll }}
+					<button
+						type="button"
+						class="secondary"
+						[attr.aria-label]="t().shuffleAll"
+						[title]="t().shuffleAll"
+						(click)="playAll(true)"
+					>
+						<app-icon name="shuffle" />
 					</button>
 					<button type="button" class="primary" (click)="playAll(false)">
 						<app-icon name="play" />{{ t().playAll }}
@@ -209,7 +215,7 @@
 					@for (track of tracks(); track track.id; let i = $index) {
 						@let active = player.current()?.id === track.id;
 						<li class="item">
-							<button type="button" class="row" [class.active]="active" (click)="play(i)">
+							<button type="button" class="row" [class.active]="active" (click)="addTrack(i)">
 								<span class="badge">
 									<app-icon
 										[name]="active && player.playing() ? 'pause' : active ? 'play' : 'note'"
@@ -227,12 +233,12 @@
 							</button>
 							<button
 								type="button"
-								class="icon small add-queue"
-								[attr.aria-label]="t().addToQueue"
-								[title]="t().addToQueue"
-								(click)="addTrack(i)"
+								class="icon small play-now"
+								[attr.aria-label]="active && player.playing() ? t().pause : t().playNow"
+								[title]="active && player.playing() ? t().pause : t().playNow"
+								(click)="play(i)"
 							>
-								<app-icon name="playlistAdd" />
+								<app-icon [name]="active && player.playing() ? 'pause' : 'play'" />
 							</button>
 						</li>
 					}

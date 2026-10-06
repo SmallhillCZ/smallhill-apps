@@ -423,14 +423,13 @@ export class App {
 	}
 
 	protected play(index: number): void {
-		const source = this.source();
-		if (!source) return;
 		const track = this.tracks()[index];
+		if (!track || !this.source()) return;
 		if (this.player.current()?.id === track.id) {
 			this.player.toggle();
 			return;
 		}
-		this.player.playList(this.queued(this.tracks(), this.path()), index);
+		this.player.playNow(this.queued([track], this.path())[0]);
 	}
 
 	protected playAll(shuffle: boolean): void {

@@ -161,6 +161,10 @@ footer {
 		flex: none;
 		color: var(--muted);
 	}
+
+	> .play-now {
+		color: var(--accent);
+	}
 }
 
 .toast {
