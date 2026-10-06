@@ -51,9 +51,10 @@ const en = {
 	queue: "Queue",
 	addToQueue: "Add to queue",
 	playNow: "Play now",
+	playFolder: "Play folder",
 	addedToQueue: (name: string) => `Added to queue: ${name}`,
 	noTracks: (name: string) => `No tracks in ${name}`,
-	clearQueue: "Clear upcoming",
+	clearQueue: "Clear queue",
 	removeFromQueue: "Remove from queue",
 	privacy:
 		"Music plays straight from OneDrive or from your device. The app only reads your files and nothing passes through our servers.",
@@ -111,9 +112,10 @@ const cs: typeof en = {
 	queue: "Fronta",
 	addToQueue: "Přidat do fronty",
 	playNow: "Přehrát hned",
+	playFolder: "Přehrát složku",
 	addedToQueue: (name: string) => `Přidáno do fronty: ${name}`,
 	noTracks: (name: string) => `Ve složce ${name} nejsou skladby`,
-	clearQueue: "Vymazat další",
+	clearQueue: "Vymazat frontu",
 	removeFromQueue: "Odebrat z fronty",
 	privacy:
 		"Hudba se přehrává přímo z OneDrivu nebo z vašeho zařízení. Aplikace soubory jen čte a nic neprochází našimi servery.",

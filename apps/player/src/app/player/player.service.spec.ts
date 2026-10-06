@@ -53,11 +53,35 @@ describe("PlayerService", () => {
 		expect(player.upcoming().map((item) => item.track.id)).toEqual(["t1", "t3"]);
 		player.jump(1);
 		await vi.waitFor(() => expect(audio?.src).toBe("https://files.example/t3"));
-		player.playNow(other("t4"));
-		expect(player.upcoming().map((item) => item.track.id)).toEqual(["t1", "t3", "t4"]);
-		expect(player.current()?.id).toBe("t4");
 		player.removeSource("other");
 		expect(player.current()).toBeNull();
+	});
+
+	it("puts played tracks first, replacing the current one once it has started", async () => {
+		const player = TestBed.inject(PlayerService);
+		player.setResolver(downloadUrl);
+		const ids = () => player.upcoming().map((item) => item.track.id);
+		player.enqueue([track, { ...track, id: "t2" }, { ...track, id: "t3" }]);
+		await vi.waitFor(() => expect(player.current()?.id).toBe("t1"));
+		player.playNow([{ ...track, id: "t3" }]);
+		expect(ids()).toEqual(["t3", "t1", "t2", "t3"]);
+		expect(player.current()?.id).toBe("t3");
+		await vi.waitFor(() => expect(audio?.src).toBe("https://files.example/t3"));
+		audio.dispatchEvent(new Event("playing"));
+		let resolve: (url: string) => void = () => {};
+		downloadUrl.mockImplementationOnce(() => new Promise((r) => (resolve = r)));
+		player.playNow([
+			{ ...track, id: "t4" },
+			{ ...track, id: "t5" },
+		]);
+		expect(ids()).toEqual(["t4", "t5", "t1", "t2", "t3"]);
+		expect(audio.getAttribute("src")).toBeNull();
+		resolve("https://files.example/t4");
+		await vi.waitFor(() => expect(audio.src).toBe("https://files.example/t4"));
+		player.clearQueue();
+		expect(ids()).toEqual(["t4"]);
+		expect(player.current()?.id).toBe("t4");
+		expect(audio.src).toBe("https://files.example/t4");
 	});
 
 	it("shares the queue with another tab and forwards its controls", async () => {

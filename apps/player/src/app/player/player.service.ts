@@ -1,4 +1,4 @@
-import { computed, effect, Injectable, signal, untracked } from "@angular/core";
+import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from "@angular/core";
 import { Folder, Track } from "../onedrive/items";
 import { createQueue, nextPos, prevPos, Queue, Repeat, reshuffle } from "./queue";
 
@@ -49,7 +49,6 @@ const COMMANDS = [
 	"playNow",
 	"jump",
 	"removeAt",
-	"clearUpcoming",
 	"removeSource",
 	"toggle",
 	"next",
@@ -58,6 +57,7 @@ const COMMANDS = [
 	"toggleShuffle",
 	"cycleRepeat",
 	"stop",
+	"clearQueue",
 ] as const;
 
 type Command = (typeof COMMANDS)[number];
@@ -109,6 +109,10 @@ export class PlayerService {
 
 	constructor() {
 		this.audio.preload = "auto";
+		inject(DestroyRef).onDestroy(() => {
+			this.channel?.close();
+			this.audio.pause();
+		});
 		this.audio.addEventListener("playing", () => {
 			this.playing.set(true);
 			this.loading.set(false);
@@ -288,26 +292,28 @@ export class PlayerService {
 		this.prefetchNext();
 	}
 
-	playNow(track: QueuedTrack): void {
-		if (this.forward("playNow", track)) return;
-		if (!this.current()) {
-			this.playList([track], 0);
-			return;
-		}
-		const index = this.tracks().length;
-		this.tracks.update((list) => [...list, track]);
-		this.queue.update((queue) => {
-			const order = [...queue.order];
-			order.splice(queue.pos + 1, 0, index);
-			return { order, pos: queue.pos + 1 };
-		});
-		void this.load();
-	}
-
 	jump(pos: number): void {
 		if (this.forward("jump", pos)) return;
 		if (pos === this.queue().pos || pos < 0 || pos >= this.queue().order.length) return;
 		this.queue.update((queue) => ({ ...queue, pos }));
+		void this.load();
+	}
+
+	playNow(added: QueuedTrack[]): void {
+		if (this.forward("playNow", added)) return;
+		if (!added.length) return;
+		if (!this.current()) {
+			this.playList(added, 0);
+			return;
+		}
+		const tracks = this.tracks();
+		const queue = this.queue();
+		const started = this.playing() || this.time() > 0;
+		const before = queue.order.slice(0, queue.pos);
+		const after = queue.order.slice(started ? queue.pos + 1 : queue.pos);
+		const inserted = added.map((_, i) => tracks.length + i);
+		this.tracks.set([...tracks, ...added]);
+		this.queue.set({ order: [...before, ...inserted, ...after], pos: before.length });
 		void this.load();
 	}
 
@@ -326,11 +332,6 @@ export class PlayerService {
 			return;
 		}
 		this.queue.set({ order, pos: pos < queue.pos ? queue.pos - 1 : queue.pos });
-	}
-
-	clearUpcoming(): void {
-		if (this.forward("clearUpcoming")) return;
-		this.queue.update((queue) => ({ ...queue, order: queue.order.slice(0, queue.pos + 1) }));
 	}
 
 	removeSource(source: string): void {
@@ -393,6 +394,14 @@ export class PlayerService {
 		this.repeat.update((value) => REPEATS[(REPEATS.indexOf(value) + 1) % REPEATS.length]);
 	}
 
+	clearQueue(): void {
+		if (this.forward("clearQueue")) return;
+		const current = this.current();
+		if (!current) return;
+		this.tracks.set([current]);
+		this.queue.set({ order: [0], pos: 0 });
+	}
+
 	stop(): void {
 		if (this.forward("stop")) return;
 		this.request++;
@@ -417,6 +426,10 @@ export class PlayerService {
 		this.error.set(false);
 		this.time.set(startAt);
 		this.duration.set(track.duration);
+		if (!retry) {
+			this.audio.pause();
+			this.audio.removeAttribute("src");
+		}
 		try {
 			const url = this.cached(track) ?? (await this.fetchUrl(track));
 			if (request !== this.request) return;

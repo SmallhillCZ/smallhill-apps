@@ -20,6 +20,8 @@ import { OneDriveService } from "./onedrive/onedrive.service";
 import { PlayerService, QueuedTrack } from "./player/player.service";
 import {
 	loadLocation,
+	locationFromUrl,
+	locationToUrl,
 	loadSession,
 	loadSources,
 	rootLabel,
@@ -114,10 +116,15 @@ export class App {
 
 	constructor() {
 		const state: unknown = history.state;
-		if (isNavState(state)) this.show(state.path, !!state.picking);
+		const fromUrl = locationFromUrl(location.href);
+		if (fromUrl) this.show(fromUrl.path, fromUrl.picking);
+		else if (isNavState(state)) this.show(state.path, !!state.picking);
+		if (!location.hash) history.replaceState(this.navState(), "", this.navUrl());
 		const onPopState = (event: PopStateEvent) => {
 			const state: unknown = event.state;
-			if (isNavState(state)) this.show(state.path, !!state.picking);
+			const fromUrl = locationFromUrl(location.href);
+			if (fromUrl) this.show(fromUrl.path, fromUrl.picking);
+			else if (isNavState(state)) this.show(state.path, !!state.picking);
 			else this.show([]);
 		};
 		window.addEventListener("popstate", onPopState);
@@ -201,7 +208,11 @@ export class App {
 			const path = this.path();
 			const source = this.source();
 			if (path.length && !source && this.storedSources !== null) {
-				if (this.drive.status() !== "loading") untracked(() => this.show([]));
+				if (this.drive.status() !== "loading")
+					untracked(() => {
+						this.show([]);
+						if (!location.hash) history.replaceState(this.navState(), "", this.navUrl());
+					});
 				return;
 			}
 			if (source && this.state() === "ready") void this.load(source, this.folderId());
@@ -275,13 +286,17 @@ export class App {
 	}
 
 	private navigate(path: Folder[], picking = this.picking() && path.length > 0): void {
-		if (!isNavState(history.state)) history.replaceState(this.navState(), "");
+		if (!isNavState(history.state)) history.replaceState(this.navState(), "", this.navUrl());
 		this.show(path, picking);
-		history.pushState(this.navState(), "");
+		history.pushState(this.navState(), "", this.navUrl());
 	}
 
 	private navState(): NavState {
 		return { player: true, path: this.path(), picking: this.picking() };
+	}
+
+	private navUrl(): string {
+		return locationToUrl(location.href, { path: this.path(), picking: this.picking() });
 	}
 
 	private show(path: Folder[], picking = false): void {
@@ -406,7 +421,7 @@ export class App {
 			sources.map((s) => (s.id === root.id ? { ...s, root: folders.length ? folders : undefined } : s)),
 		);
 		this.show([root]);
-		history.replaceState(this.navState(), "");
+		history.replaceState(this.navState(), "", this.navUrl());
 	}
 
 	protected cancelPicking(): void {
@@ -429,7 +444,7 @@ export class App {
 			this.player.toggle();
 			return;
 		}
-		this.player.playNow(this.queued([track], this.path())[0]);
+		this.player.playNow(this.queued([track], this.path()));
 	}
 
 	protected playAll(shuffle: boolean): void {
@@ -454,21 +469,34 @@ export class App {
 	}
 
 	protected async addFolderItem(folder: DriveItem): Promise<void> {
+		const tracks = await this.folderTracks(folder);
+		if (!tracks) return;
+		this.player.enqueue(tracks);
+		this.flash(T().addedToQueue(folder.name));
+	}
+
+	protected async playFolderItem(folder: DriveItem): Promise<void> {
+		const tracks = await this.folderTracks(folder);
+		if (!tracks) return;
+		this.player.playNow(tracks);
+	}
+
+	private async folderTracks(folder: DriveItem): Promise<QueuedTrack[] | null> {
 		const source = this.source();
-		if (!source) return;
+		if (!source) return null;
 		const path = [...this.path(), { id: folder.id, name: folder.name }];
 		try {
 			const items = await this.children(source, folder.id);
 			const tracks = sortTracks(items).map(toTrack);
 			if (!tracks.length) {
 				this.flash(T().noTracks(folder.name));
-				return;
+				return null;
 			}
-			this.player.enqueue(this.queued(tracks, path));
-			this.flash(T().addedToQueue(folder.name));
+			return this.queued(tracks, path);
 		} catch (error) {
 			console.error(error);
 			this.flash(T().folderError);
+			return null;
 		}
 	}
 
