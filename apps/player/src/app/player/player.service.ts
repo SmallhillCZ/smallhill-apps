@@ -46,6 +46,7 @@ interface SharedState {
 const COMMANDS = [
 	"playList",
 	"enqueue",
+	"playNow",
 	"jump",
 	"removeAt",
 	"clearUpcoming",
@@ -285,6 +286,22 @@ export class PlayerService {
 		this.tracks.update((list) => [...list, ...tracks]);
 		this.queue.update((queue) => ({ ...queue, order: [...queue.order, ...tracks.map((_, i) => offset + i)] }));
 		this.prefetchNext();
+	}
+
+	playNow(track: QueuedTrack): void {
+		if (this.forward("playNow", track)) return;
+		if (!this.current()) {
+			this.playList([track], 0);
+			return;
+		}
+		const index = this.tracks().length;
+		this.tracks.update((list) => [...list, track]);
+		this.queue.update((queue) => {
+			const order = [...queue.order];
+			order.splice(queue.pos + 1, 0, index);
+			return { order, pos: queue.pos + 1 };
+		});
+		void this.load();
 	}
 
 	jump(pos: number): void {
