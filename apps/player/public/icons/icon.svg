@@ -1,5 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-	<rect width="512" height="512" fill="#7048e8"/>
-	<path transform="translate(88 82) scale(14)" fill="#ffffff" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
-	<path transform="translate(170 180) scale(7)" fill="#7048e8" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+	<rect width="512" height="512" rx="112" fill="#7048e8"/>
+	<g fill="#ffffff" transform="translate(256 256) scale(0.9) translate(-266 -268)">
+		<path d="M218 172 400 132v44L218 216z"/>
+		<rect x="218" y="190" width="28" height="170"/>
+		<rect x="372" y="150" width="28" height="180"/>
+		<ellipse cx="190" cy="360" rx="58" ry="44" transform="rotate(-20 190 360)"/>
+		<ellipse cx="344" cy="330" rx="58" ry="44" transform="rotate(-20 344 330)"/>
+	</g>
 </svg>
