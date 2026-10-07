@@ -12,6 +12,35 @@ header {
 	margin-bottom: 16px;
 }
 
+@media (display-mode: window-controls-overlay) {
+	:host {
+		padding-top: calc(env(titlebar-area-height, 33px) + 16px);
+	}
+
+	header {
+		position: fixed;
+		z-index: 10;
+		top: env(titlebar-area-y, 0);
+		left: env(titlebar-area-x, 0);
+		width: env(titlebar-area-width, 100%);
+		height: env(titlebar-area-height, 33px);
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0 8px 0 12px;
+		background: var(--bg);
+		app-region: drag;
+
+		h1 {
+			font-size: 0.9rem;
+		}
+
+		button,
+		select {
+			app-region: no-drag;
+		}
+	}
+}
+
 h1 {
 	margin: 0 auto 0 0;
 	font-size: 1.1rem;
