@@ -1,28 +1,54 @@
 <header>
 	<h1>{{ t().title }}</h1>
-	<div class="langs" role="group" [attr.aria-label]="t().language">
-		@for (l of langs; track l) {
-			<button
-				type="button"
-				[class.selected]="lang() === l"
-				[attr.aria-pressed]="lang() === l"
-				[attr.lang]="l"
-				(click)="setLang(l)"
+	<button type="button" class="icon small" popovertarget="menu" [attr.aria-label]="t().menu" [title]="t().menu">
+		<app-icon name="more" />
+	</button>
+	<div id="menu" class="menu" popover>
+		<div class="menu-row">
+			<span>{{ t().language }}</span>
+			<div class="langs" role="group" [attr.aria-label]="t().language">
+				@for (l of langs; track l) {
+					<button
+						type="button"
+						[class.selected]="lang() === l"
+						[attr.aria-pressed]="lang() === l"
+						[attr.lang]="l"
+						(click)="setLang(l)"
+					>
+						{{ l.toUpperCase() }}
+					</button>
+				}
+			</div>
+		</div>
+		<div class="menu-row">
+			<span>{{ t().theme }}</span>
+			<select
+				class="theme"
+				[attr.aria-label]="t().theme"
+				[value]="theme()"
+				(change)="setTheme($any($event.target).value)"
 			>
-				{{ l.toUpperCase() }}
-			</button>
+				@for (option of themes; track option) {
+					<option [value]="option" [selected]="option === theme()">{{ t().themes[option] }}</option>
+				}
+			</select>
+		</div>
+		@if (sonos.enabled()) {
+			<div class="menu-row">
+				<span><app-icon name="speaker" />{{ t().sonos }}</span>
+				@if (sonos.connected()) {
+					<span class="menu-actions">
+						<span class="muted">{{ t().sonosConnected }}</span>
+						<button type="button" class="link" (click)="sonos.disconnect()">
+							{{ t().disconnectSonos }}
+						</button>
+					</span>
+				} @else {
+					<button type="button" class="link" (click)="sonos.connect()">{{ t().connectSonos }}</button>
+				}
+			</div>
 		}
 	</div>
-	<select
-		class="theme"
-		[attr.aria-label]="t().theme"
-		[value]="theme()"
-		(change)="setTheme($any($event.target).value)"
-	>
-		@for (option of themes; track option) {
-			<option [value]="option" [selected]="option === theme()">{{ t().themes[option] }}</option>
-		}
-	</select>
 </header>
 
 <main [class.with-player]="player.current()">
@@ -328,11 +354,25 @@
 				<span class="meta">
 					@if (player.error()) {
 						<span class="error">{{ t().trackError }}</span>
+					} @else if (sonos.group(); as group) {
+						<span class="on-sonos"><app-icon name="speaker" />{{ t().onSonos(group.name) }}</span>
 					} @else {
 						{{ current.artist }}
 					}
 				</span>
 			</div>
+			@if (sonos.enabled() && sonos.connected()) {
+				<button
+					type="button"
+					class="icon small"
+					[class.on]="sonos.group()"
+					[attr.aria-label]="t().playOnSonos"
+					[title]="t().playOnSonos"
+					(click)="openCast()"
+				>
+					<app-icon name="speaker" />
+				</button>
+			}
 			@if (playingPath().length && !inPlayingFolder()) {
 				<button
 					type="button"
@@ -411,6 +451,48 @@
 			</button>
 		</div>
 	</section>
+}
+
+@if (castOpen()) {
+	<dialog #cast class="settings-dialog queue-dialog" (close)="closeCast()">
+		<form method="dialog">
+			<h2><app-icon name="speaker" />{{ t().playOnSonos }}</h2>
+			@if (sonos.groupsFailed()) {
+				<p class="muted">{{ t().roomsError }}</p>
+			} @else if (sonos.groups(); as groups) {
+				@if (groups.length) {
+					<ul class="list">
+						@for (group of groups; track group.id) {
+							@let active = sonos.group()?.id === group.id;
+							<li class="item">
+								<button type="button" class="row" [class.active]="active" (click)="castTo(group)">
+									<span class="badge"><app-icon name="speaker" /></span>
+									<span class="text">
+										<span class="name">{{ group.name }}</span>
+									</span>
+								</button>
+							</li>
+						}
+					</ul>
+				} @else {
+					<p class="muted">{{ t().noRooms }}</p>
+				}
+			} @else {
+				<p class="muted">{{ t().loading }}</p>
+			}
+			<p class="muted small">{{ t().sonosNote }}</p>
+			<div class="dialog-actions">
+				@if (sonos.group()) {
+					<button type="button" class="secondary" (click)="playHere()">
+						<app-icon name="device" />{{ t().playHere }}
+					</button>
+				} @else {
+					<span></span>
+				}
+				<button type="submit" class="primary" autofocus>{{ t().done }}</button>
+			</div>
+		</form>
+	</dialog>
 }
 
 @if (added(); as message) {

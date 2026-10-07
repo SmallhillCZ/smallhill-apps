@@ -99,6 +99,14 @@ export class OneDriveService {
 		return URL.createObjectURL(await response.blob());
 	}
 
+	async streamUrl(accountId: string, id: string): Promise<string | null> {
+		const item = await this.get<Record<string, string | undefined>>(
+			accountId,
+			`${GRAPH}/me/drive/items/${encodeURIComponent(id)}`,
+		);
+		return item["@microsoft.graph.downloadUrl"] ?? null;
+	}
+
 	private account(accountId: string): AccountInfo | null {
 		return this.msal?.getAccount({ homeAccountId: accountId }) ?? null;
 	}

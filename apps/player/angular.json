@@ -80,7 +80,10 @@
 							"buildTarget": "player:build:demo"
 						}
 					},
-					"defaultConfiguration": "development"
+					"defaultConfiguration": "development",
+					"options": {
+						"proxyConfig": "proxy.conf.json"
+					}
 				},
 				"test": {
 					"builder": "@angular/build:unit-test"

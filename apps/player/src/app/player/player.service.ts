@@ -27,6 +27,21 @@ export interface QueuedTrack extends Track {
 
 export type UrlResolver = (track: QueuedTrack) => Promise<string>;
 
+export interface ExternalOutput {
+	load(pos: number, startAt: number, play: boolean): Promise<void>;
+	play(): void;
+	pause(): void;
+	seek(seconds: number): void;
+	stop(): void;
+}
+
+export interface ExternalState {
+	pos: number;
+	time: number;
+	playing: boolean;
+	loading: boolean;
+}
+
 interface Leader {
 	id: string;
 	at: number;
@@ -73,6 +88,8 @@ type Message =
 @Injectable({ providedIn: "root" })
 export class PlayerService {
 	private resolver: UrlResolver | null = null;
+	private external: ExternalOutput | null = null;
+	readonly externalActive = signal(false);
 	private readonly audio = new Audio();
 	private readonly urls = new Map<string, { url: string; at: number }>();
 	private request = 0;
@@ -263,6 +280,34 @@ export class PlayerService {
 		this.resolver = resolver;
 	}
 
+	setExternal(output: ExternalOutput | null): void {
+		if (output) {
+			this.release();
+			this.claim({ id: this.id, at: Date.now() });
+		}
+		this.external = output;
+		this.externalActive.set(!!output);
+		this.playing.set(false);
+		this.loading.set(false);
+	}
+
+	updateExternal(state: ExternalState): void {
+		if (!this.external) return;
+		if (state.pos !== this.queue().pos && state.pos >= 0 && state.pos < this.queue().order.length) {
+			this.queue.update((queue) => ({ ...queue, pos: state.pos }));
+			this.duration.set(this.current()?.duration ?? null);
+		}
+		this.time.set(state.time);
+		this.playing.set(state.playing);
+		this.loading.set(state.loading);
+		this.error.set(false);
+		if (this.isLeader()) this.post({ type: "time", from: this.id, time: state.time });
+	}
+
+	externalEnded(): void {
+		if (this.external) this.next(true);
+	}
+
 	playList(tracks: QueuedTrack[], start: number): void {
 		if (this.forward("playList", tracks, start)) return;
 		this.tracks.set(tracks);
@@ -343,6 +388,11 @@ export class PlayerService {
 	toggle(): void {
 		if (this.forward("toggle")) return;
 		if (!this.current()) return;
+		if (this.external) {
+			if (this.playing()) this.external.pause();
+			else this.external.play();
+			return;
+		}
 		if (this.audio.paused) {
 			if (this.error() || !this.audio.getAttribute("src")) void this.load(this.time());
 			else void this.audio.play().catch(() => this.playing.set(false));
@@ -364,7 +414,7 @@ export class PlayerService {
 
 	prev(): void {
 		if (this.forward("prev")) return;
-		if (this.audio.currentTime > 3) {
+		if (this.time() > 3) {
 			this.seek(0);
 			return;
 		}
@@ -380,6 +430,11 @@ export class PlayerService {
 	seek(seconds: number): void {
 		if (this.forward("seek", seconds)) return;
 		if (!this.current()) return;
+		if (this.external) {
+			this.time.set(Math.max(0, seconds));
+			this.external.seek(Math.max(0, seconds));
+			return;
+		}
 		if (!this.audio.getAttribute("src")) {
 			this.time.set(Math.max(0, seconds));
 			return;
@@ -409,6 +464,7 @@ export class PlayerService {
 
 	stop(): void {
 		if (this.forward("stop")) return;
+		this.external?.stop();
 		this.request++;
 		this.audio.pause();
 		this.audio.removeAttribute("src");
@@ -431,6 +487,16 @@ export class PlayerService {
 		this.error.set(false);
 		this.time.set(startAt);
 		this.duration.set(track.duration);
+		if (this.external) {
+			try {
+				await this.external.load(this.queue().pos, startAt, play);
+			} catch {
+				if (request === this.request) this.error.set(true);
+			} finally {
+				if (request === this.request) this.loading.set(false);
+			}
+			return;
+		}
 		if (!retry) {
 			this.audio.pause();
 			this.audio.removeAttribute("src");
@@ -484,11 +550,11 @@ export class PlayerService {
 		if (!("mediaSession" in navigator)) return;
 		const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
 			["play", () => this.toggle()],
-			["pause", () => this.audio.pause()],
+			["pause", () => (this.external ? this.external.pause() : this.audio.pause())],
 			["previoustrack", () => this.prev()],
 			["nexttrack", () => this.next()],
-			["seekbackward", (details) => this.seek(this.audio.currentTime - (details.seekOffset ?? 10))],
-			["seekforward", (details) => this.seek(this.audio.currentTime + (details.seekOffset ?? 10))],
+			["seekbackward", (details) => this.seek(this.time() - (details.seekOffset ?? 10))],
+			["seekforward", (details) => this.seek(this.time() + (details.seekOffset ?? 10))],
 			["seekto", (details) => this.seek(details.seekTime ?? 0)],
 		];
 		for (const [action, handler] of handlers) {

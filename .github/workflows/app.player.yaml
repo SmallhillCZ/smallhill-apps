@@ -22,4 +22,4 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       app: player
-      postgres: false
+      postgres: true

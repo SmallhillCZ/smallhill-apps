@@ -117,4 +117,40 @@ describe("PlayerService", () => {
 		await vi.waitFor(() => expect(first.current()?.id).toBe("t2"));
 		await vi.waitFor(() => expect(second.current()?.id).toBe("t2"));
 	});
+	it("hands playback to an external output and back", async () => {
+		const player = TestBed.inject(PlayerService);
+		player.setResolver(downloadUrl);
+		const output = {
+			load: vi.fn(async () => {}),
+			play: vi.fn(),
+			pause: vi.fn(),
+			seek: vi.fn(),
+			stop: vi.fn(),
+		};
+		player.enqueue([track, { ...track, id: "t2" }]);
+		await vi.waitFor(() => expect(player.current()?.id).toBe("t1"));
+		player.setExternal(output);
+		expect(player.externalActive()).toBe(true);
+
+		player.next();
+		await vi.waitFor(() => expect(output.load).toHaveBeenCalledWith(1, 0, true));
+		expect(downloadUrl).toHaveBeenCalledTimes(1);
+
+		player.updateExternal({ pos: 1, time: 12, playing: true, loading: false });
+		expect(player.playing()).toBe(true);
+		expect(player.time()).toBe(12);
+		player.toggle();
+		expect(output.pause).toHaveBeenCalled();
+		player.seek(30);
+		expect(output.seek).toHaveBeenCalledWith(30);
+
+		player.updateExternal({ pos: 0, time: 3, playing: true, loading: false });
+		expect(player.current()?.id).toBe("t1");
+
+		player.setExternal(null);
+		expect(player.playing()).toBe(false);
+		player.toggle();
+		await vi.waitFor(() => expect(audio?.src).toBe("https://files.example/t1"));
+		expect(audio.currentTime).toBe(3);
+	});
 });

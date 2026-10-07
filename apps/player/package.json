@@ -4,13 +4,16 @@
 	"scripts": {
 		"ng": "ng",
 		"start": "ng serve",
-		"build": "ng build",
+		"build": "tsc -p server && ng build",
 		"watch": "ng build --watch --configuration development",
-		"test": "ng test --watch=false",
+		"test": "ng test --watch=false && node --test test/*.test.ts",
 		"dev": "ng serve",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"demo": "ng serve --configuration demo"
+		"demo": "ng serve --configuration demo",
+		"typecheck": "tsc -p server",
+		"serve": "WEB_ROOT=dist/player/browser node server/server.ts",
+		"dev:server": "node --watch server/server.ts"
 	},
 	"private": true,
 	"dependencies": {
@@ -22,6 +25,9 @@
 		"@angular/router": "^22.2.0",
 		"@angular/service-worker": "^22.2.0",
 		"@azure/msal-browser": "^5.24.0",
+		"@fastify/static": "^10.1.5",
+		"fastify": "^5.12.5",
+		"pg": "^8.23.1",
 		"rxjs": "~7.8.0",
 		"tslib": "^2.3.0"
 	},
@@ -29,6 +35,8 @@
 		"@angular/build": "^22.2.1",
 		"@angular/cli": "^22.2.1",
 		"@angular/compiler-cli": "^22.2.0",
+		"@types/node": "^24.19.1",
+		"@types/pg": "^8.23.1",
 		"jsdom": "^30.0.0",
 		"prettier": "^3.8.1",
 		"typescript": "~6.0.2",
@@ -36,5 +44,6 @@
 	},
 	"engines": {
 		"node": ">=22.22.3"
-	}
+	},
+	"type": "module"
 }

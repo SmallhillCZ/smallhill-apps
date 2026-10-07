@@ -20,6 +20,76 @@ h1 {
 	color: var(--muted);
 }
 
+.menu {
+	position: fixed;
+	inset: auto;
+	top: calc(max(16px, env(safe-area-inset-top)) + 40px);
+	right: max(16px, calc((100vw - 640px) / 2 + 16px));
+	margin: 0;
+	min-width: 240px;
+	padding: 8px 16px;
+	border: 0;
+	border-radius: 16px;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+
+	&:popover-open {
+		display: grid;
+	}
+}
+
+.menu-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	min-height: 44px;
+
+	& + & {
+		border-top: 1px solid var(--surface-2);
+	}
+
+	> span:first-child {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-weight: 600;
+
+		app-icon {
+			width: 20px;
+			height: 20px;
+			color: var(--accent);
+		}
+	}
+}
+
+.menu-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.small {
+	font-size: 0.85rem;
+}
+
+.on-sonos {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: var(--accent);
+
+	app-icon {
+		width: 16px;
+		height: 16px;
+	}
+}
+
 .langs {
 	display: flex;
 	gap: 2px;
@@ -722,6 +792,7 @@ footer {
 :host-context([data-theme="eink"]) {
 	.list,
 	.source,
+	.menu,
 	.settings-dialog,
 	.welcome,
 	.chip,

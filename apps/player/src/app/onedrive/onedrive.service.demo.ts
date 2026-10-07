@@ -115,4 +115,8 @@ export class OneDriveService {
 			.find((i) => i.id === id);
 		return tone(Math.round((item?.audio?.duration ?? 30000) / 1000));
 	}
+
+	async streamUrl(_accountId: string, id: string): Promise<string | null> {
+		return `https://example.com/demo/${encodeURIComponent(id)}.wav`;
+	}
 }
