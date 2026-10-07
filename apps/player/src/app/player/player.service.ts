@@ -274,7 +274,8 @@ export class PlayerService {
 		if (this.current() || this.remote()) return;
 		this.tracks.set(tracks);
 		this.queue.set(queue);
-		void this.load(time);
+		this.time.set(time);
+		this.duration.set(this.current()?.duration ?? null);
 	}
 
 	enqueue(tracks: QueuedTrack[]): void {
@@ -378,7 +379,11 @@ export class PlayerService {
 
 	seek(seconds: number): void {
 		if (this.forward("seek", seconds)) return;
-		if (!this.audio.getAttribute("src")) return;
+		if (!this.current()) return;
+		if (!this.audio.getAttribute("src")) {
+			this.time.set(Math.max(0, seconds));
+			return;
+		}
 		this.audio.currentTime = Math.max(0, seconds);
 		this.time.set(this.audio.currentTime);
 	}

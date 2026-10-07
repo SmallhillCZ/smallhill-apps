@@ -84,6 +84,19 @@ describe("PlayerService", () => {
 		expect(audio.src).toBe("https://files.example/t4");
 	});
 
+	it("restores a session paused without loading the audio", async () => {
+		const player = TestBed.inject(PlayerService);
+		player.setResolver(downloadUrl);
+		player.restore([track, { ...track, id: "t2" }], { order: [0, 1], pos: 1 }, 42);
+		expect(player.current()?.id).toBe("t2");
+		expect(player.time()).toBe(42);
+		expect(player.playing()).toBe(false);
+		expect(downloadUrl).not.toHaveBeenCalled();
+		player.toggle();
+		await vi.waitFor(() => expect(downloadUrl).toHaveBeenCalledTimes(1));
+		expect(player.time()).toBe(42);
+	});
+
 	it("shares the queue with another tab and forwards its controls", async () => {
 		const first = TestBed.runInInjectionContext(() => new PlayerService());
 		const second = TestBed.runInInjectionContext(() => new PlayerService());
