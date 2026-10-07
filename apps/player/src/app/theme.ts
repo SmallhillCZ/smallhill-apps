@@ -3,9 +3,12 @@ export type Theme = (typeof THEMES)[number];
 
 const STORAGE_KEY = "player.theme";
 const EINK_QUERY = "(update: slow), (monochrome)";
+const OVERLAY_QUERY = "(display-mode: window-controls-overlay)";
+const BRAND_COLOR = "#7048e8";
 
 let current: Theme = "auto";
 let einkMedia: MediaQueryList | null = null;
+let watching = false;
 
 export function loadTheme(): Theme {
 	try {
@@ -41,4 +44,17 @@ function render(): void {
 	const resolved = current === "auto" && isEinkDisplay() ? "eink" : current;
 	if (resolved === "auto") document.documentElement.removeAttribute("data-theme");
 	else document.documentElement.setAttribute("data-theme", resolved);
+	syncTitleBar();
+}
+
+function syncTitleBar(): void {
+	if (typeof matchMedia !== "function") return;
+	if (!watching) {
+		watching = true;
+		matchMedia(OVERLAY_QUERY).addEventListener?.("change", syncTitleBar);
+		matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", syncTitleBar);
+	}
+	const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+	if (!meta) return;
+	meta.content = matchMedia(OVERLAY_QUERY).matches ? getComputedStyle(document.body).backgroundColor : BRAND_COLOR;
 }

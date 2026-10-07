@@ -3,6 +3,7 @@
 	"short_name": "Player",
 	"description": "Play music from your OneDrive. No ads, no tracking.",
 	"display": "standalone",
+	"display_override": ["window-controls-overlay"],
 	"scope": "./",
 	"start_url": "./",
 	"background_color": "#121117",
