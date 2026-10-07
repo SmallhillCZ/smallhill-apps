@@ -39,6 +39,12 @@ header {
 			app-region: no-drag;
 		}
 	}
+
+	.menu {
+		top: calc(env(titlebar-area-y, 0px) + env(titlebar-area-height, 33px) + 4px);
+		right: 8px;
+		app-region: no-drag;
+	}
 }
 
 h1 {
