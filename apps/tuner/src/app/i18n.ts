@@ -15,11 +15,11 @@ const en = {
 	error: "The microphone could not be started.",
 	reference: "Reference A4",
 	auto: "Auto",
-	privacy: "Sound is analyzed on your device only. Nothing is recorded or sent anywhere.",
 	instruments: { guitar: "Guitar", bass: "Bass", violin: "Violin", chromatic: "Chromatic" },
 	theme: "Theme",
-	themes: { auto: "Auto theme", light: "Light", dark: "Dark", eink: "E-ink" },
+	themes: { auto: "Auto", light: "Light", dark: "Dark", eink: "E-ink" },
 	language: "Language",
+	menu: "Menu",
 };
 
 const cs: typeof en = {
@@ -35,11 +35,11 @@ const cs: typeof en = {
 	error: "Mikrofon se nepodařilo spustit.",
 	reference: "Ladění A4",
 	auto: "Auto",
-	privacy: "Zvuk se zpracovává jen ve vašem zařízení. Nic se nenahrává ani neodesílá.",
 	instruments: { guitar: "Kytara", bass: "Baskytara", violin: "Housle", chromatic: "Chromatické" },
 	theme: "Vzhled",
-	themes: { auto: "Automatický vzhled", light: "Světlý", dark: "Tmavý", eink: "E-ink" },
+	themes: { auto: "Automatický", light: "Světlý", dark: "Tmavý", eink: "E-ink" },
 	language: "Jazyk",
+	menu: "Nabídka",
 };
 
 const STORAGE_KEY = "tuner.lang";
