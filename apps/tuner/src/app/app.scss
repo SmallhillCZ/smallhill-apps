@@ -23,18 +23,70 @@ header {
 	align-items: center;
 }
 
+.more {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	margin-right: -8px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--muted);
+
+	svg {
+		width: 20px;
+		height: 20px;
+		fill: currentColor;
+	}
+}
+
+.menu {
+	position: fixed;
+	inset: auto;
+	top: calc(max(16px, env(safe-area-inset-top)) + 36px);
+	right: max(16px, env(safe-area-inset-right), calc((100vw - 560px) / 2 + 16px));
+	margin: 0;
+	min-width: 240px;
+	padding: 8px 16px;
+	border: 2px solid var(--border);
+	border-radius: 16px;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+
+	&:popover-open {
+		display: grid;
+	}
+}
+
+.menu-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	min-height: 44px;
+
+	& + & {
+		border-top: 1px solid var(--surface-2);
+	}
+
+	> span {
+		font-weight: 600;
+	}
+}
+
 .langs {
 	display: flex;
 	gap: 2px;
-	margin-left: auto;
-	margin-right: 8px;
 
 	button {
 		border: 0;
 		background: transparent;
 		padding: 4px 6px;
 		color: var(--muted);
-		font-size: 0.85rem;
+		font-size: 0.9rem;
 		cursor: pointer;
 
 		&.selected {
@@ -45,8 +97,8 @@ header {
 }
 
 .theme {
-	color: var(--muted);
-	font-size: 0.85rem;
+	color: var(--text);
+	font-size: 0.9rem;
 	cursor: pointer;
 }
 
