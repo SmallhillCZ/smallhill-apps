@@ -22,7 +22,10 @@ const en = {
 	features: ["Free", "No ads", "No tracking"],
 	installHelp:
 		"Your browser can't install apps from this page. Open the app and install it from the browser menu: Install app in Chrome, Edge or Vivaldi, Share → Add to Home Screen in Safari.",
+	menu: "Menu",
 	language: "Language",
+	theme: "Theme",
+	themes: { auto: "Auto", light: "Light", dark: "Dark" },
 	footer: "Made with care by Smallhill. No ads, no tracking, no accounts unless an app truly needs one.",
 };
 
@@ -45,7 +48,10 @@ const cs: typeof en = {
 	features: ["Zdarma", "Bez reklam", "Bez sledování"],
 	installHelp:
 		"Váš prohlížeč neumí instalovat aplikace z této stránky. Otevřete aplikaci a nainstalujte ji z nabídky prohlížeče: Instalovat aplikaci v Chrome, Edge nebo Vivaldi, Sdílet → Přidat na plochu v Safari.",
+	menu: "Nabídka",
 	language: "Jazyk",
+	theme: "Vzhled",
+	themes: { auto: "Automatický", light: "Světlý", dark: "Tmavý" },
 	footer: "S péčí vytváří Smallhill. Bez reklam, bez sledování a bez účtů, pokud je aplikace opravdu nepotřebuje.",
 };
 

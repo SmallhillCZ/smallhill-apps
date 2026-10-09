@@ -35,31 +35,87 @@
 	}
 }
 
-.lang {
-	display: flex;
+.more {
 	flex: none;
 	align-self: flex-start;
-	padding: 3px;
-	border-radius: 999px;
-	background: var(--surface-2);
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	margin-right: -8px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--muted);
+
+	svg {
+		width: 20px;
+		height: 20px;
+		fill: currentColor;
+	}
+}
+
+.menu {
+	position: fixed;
+	inset: auto;
+	top: calc(max(16px, env(safe-area-inset-top)) + 40px + 36px);
+	right: max(16px, env(safe-area-inset-right), calc((100vw - 1080px) / 2 + 16px));
+	margin: 0;
+	min-width: 240px;
+	padding: 8px 16px;
+	border: 2px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow-hover);
+
+	&:popover-open {
+		display: grid;
+	}
+}
+
+.menu-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	min-height: 44px;
+
+	& + & {
+		border-top: 1px solid var(--surface-2);
+	}
+
+	> span {
+		font-weight: 600;
+	}
+}
+
+.langs {
+	display: flex;
+	gap: 2px;
 
 	button {
-		min-width: 40px;
-		height: 30px;
-		padding: 0 10px;
 		border: 0;
-		border-radius: 999px;
-		background: none;
+		background: transparent;
+		padding: 4px 6px;
 		color: var(--muted);
-		font-size: 0.8rem;
-		font-weight: 700;
+		font-size: 0.9rem;
 
-		&[aria-pressed="true"] {
-			background: var(--surface);
+		&.selected {
 			color: var(--text);
-			box-shadow: var(--shadow);
+			font-weight: 700;
 		}
 	}
+}
+
+.theme {
+	border: 0;
+	background: transparent;
+	color: var(--text);
+	font: inherit;
+	font-size: 0.9rem;
+	cursor: pointer;
 }
 
 main {
@@ -113,6 +169,10 @@ dialog {
 		p {
 			font-size: 0.9rem;
 		}
+	}
+
+	.menu {
+		top: calc(max(16px, env(safe-area-inset-top)) + 8px + 36px);
 	}
 
 	.grid {
