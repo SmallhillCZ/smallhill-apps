@@ -4,17 +4,43 @@
 		<h1>{{ t().title }}</h1>
 		<p>{{ t().subtitle }}</p>
 	</div>
-	<div class="lang" role="group" [attr.aria-label]="t().language">
-		@for (option of langs; track option) {
-			<button
-				type="button"
-				[attr.aria-pressed]="lang() === option"
-				[attr.lang]="option"
-				(click)="setLang(option)"
+	<button type="button" class="more" popovertarget="menu" [attr.aria-label]="t().menu" [title]="t().menu">
+		<svg viewBox="0 0 24 24" aria-hidden="true">
+			<circle cx="12" cy="5" r="2" />
+			<circle cx="12" cy="12" r="2" />
+			<circle cx="12" cy="19" r="2" />
+		</svg>
+	</button>
+	<div id="menu" class="menu" popover>
+		<div class="menu-row">
+			<span>{{ t().language }}</span>
+			<div class="langs" role="group" [attr.aria-label]="t().language">
+				@for (option of langs; track option) {
+					<button
+						type="button"
+						[class.selected]="lang() === option"
+						[attr.aria-pressed]="lang() === option"
+						[attr.lang]="option"
+						(click)="setLang(option)"
+					>
+						{{ option.toUpperCase() }}
+					</button>
+				}
+			</div>
+		</div>
+		<div class="menu-row">
+			<span>{{ t().theme }}</span>
+			<select
+				class="theme"
+				[attr.aria-label]="t().theme"
+				[value]="theme()"
+				(change)="setTheme($any($event.target).value)"
 			>
-				{{ option.toUpperCase() }}
-			</button>
-		}
+				@for (option of themes; track option) {
+					<option [value]="option" [selected]="option === theme()">{{ t().themes[option] }}</option>
+				}
+			</select>
+		</div>
 	</div>
 </header>
 

@@ -24,8 +24,10 @@ import { CsvService } from './services/csv.service';
 import { HistoryService } from './services/history.service';
 import { SelectionState } from './models/selection.model';
 import { lang, T } from './i18n';
+import { Theme } from './theme';
 
-const DARK_MODE_KEY = 'csveditor.darkMode';
+const THEME_KEY = 'csveditor.theme';
+const LEGACY_DARK_MODE_KEY = 'csveditor.darkMode';
 
 @Component({
   selector: 'app-root',
@@ -56,6 +58,7 @@ export class App {
   readonly hasHeader = signal(true);
   readonly delimiter = signal(',');
   readonly filename = signal('');
+  readonly theme = signal<Theme>('auto');
   readonly isDarkMode = signal(false);
   private readonly darkMedia =
     typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
@@ -63,9 +66,10 @@ export class App {
   readonly selection = signal<SelectionState>({ activeCell: null, ranges: [] });
 
   constructor() {
-    this.applyDarkMode(this.loadDarkMode() ?? this.darkMedia?.matches ?? false);
-    this.darkMedia?.addEventListener?.('change', (e) => {
-      if (this.loadDarkMode() === null) this.applyDarkMode(e.matches);
+    this.theme.set(this.loadTheme());
+    this.applyDarkMode(this.resolveDark());
+    this.darkMedia?.addEventListener?.('change', () => {
+      if (this.theme() === 'auto') this.applyDarkMode(this.resolveDark());
     });
     effect(() => {
       const current = lang();
@@ -289,20 +293,33 @@ export class App {
     instance?.setData(data, headers);
   }
 
-  toggleDarkMode(val: boolean): void {
+  setTheme(val: Theme): void {
+    this.theme.set(val);
     try {
-      if (val === (this.darkMedia?.matches ?? false)) localStorage.removeItem(DARK_MODE_KEY);
-      else localStorage.setItem(DARK_MODE_KEY, String(val));
+      if (val === 'auto') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, val);
     } catch {}
-    this.applyDarkMode(val);
+    this.applyDarkMode(this.resolveDark());
   }
 
-  private loadDarkMode(): boolean | null {
+  private resolveDark(): boolean {
+    const theme = this.theme();
+    return theme === 'auto' ? (this.darkMedia?.matches ?? false) : theme === 'dark';
+  }
+
+  private loadTheme(): Theme {
     try {
-      const stored = localStorage.getItem(DARK_MODE_KEY);
-      return stored === null ? null : stored === 'true';
+      const legacy = localStorage.getItem(LEGACY_DARK_MODE_KEY);
+      if (legacy !== null) {
+        localStorage.removeItem(LEGACY_DARK_MODE_KEY);
+        const migrated: Theme = legacy === 'true' ? 'dark' : 'light';
+        localStorage.setItem(THEME_KEY, migrated);
+        return migrated;
+      }
+      const stored = localStorage.getItem(THEME_KEY);
+      return stored === 'light' || stored === 'dark' ? stored : 'auto';
     } catch {
-      return null;
+      return 'auto';
     }
   }
 

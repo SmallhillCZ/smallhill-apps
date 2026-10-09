@@ -52,6 +52,105 @@
   flex: 1;
 }
 
-.langs button.active {
-  font-weight: 700;
+.more {
+  margin-right: -8px;
+  anchor-name: --more;
+}
+
+.more-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  vertical-align: middle;
+}
+
+.menu {
+  position: fixed;
+  inset: auto;
+  top: 52px;
+  right: 16px;
+  margin: 0;
+  min-width: 240px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 16px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #fff;
+  color: #262626;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  position-anchor: --more;
+  top: anchor(bottom);
+  right: 16px;
+
+  &:popover-open {
+    display: grid;
+  }
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+
+  & + & {
+    border-top: 1px solid #f0f0f0;
+  }
+
+  > span {
+    font-weight: 600;
+  }
+}
+
+.langs {
+  display: flex;
+  gap: 2px;
+
+  button {
+    border: 0;
+    background: transparent;
+    padding: 4px 6px;
+    color: #8c8c8c;
+    font-size: 14px;
+    cursor: pointer;
+
+    &.selected {
+      color: #262626;
+      font-weight: 700;
+    }
+  }
+}
+
+.theme {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+:host-context(body[data-theme='dark']) {
+  .menu {
+    border-color: #424242;
+    background: #1f1f1f;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .menu-row + .menu-row {
+    border-top-color: #303030;
+  }
+
+  .langs button {
+    color: #8c8c8c;
+
+    &.selected {
+      color: #fff;
+    }
+  }
+
+  .theme option {
+    background: #141414;
+  }
 }

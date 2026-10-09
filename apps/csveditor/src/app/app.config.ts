@@ -23,8 +23,6 @@ import {
   PlusOutline,
   DeleteOutline,
   MenuOutline,
-  MoonOutline,
-  SunOutline,
 } from '@ant-design/icons-angular/icons';
 
 export const appConfig: ApplicationConfig = {
@@ -47,8 +45,6 @@ export const appConfig: ApplicationConfig = {
       PlusOutline,
       DeleteOutline,
       MenuOutline,
-      MoonOutline,
-      SunOutline,
     ]),
     provideAnimationsAsync(),
     importProvidersFrom(NzModalModule),

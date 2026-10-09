@@ -3,6 +3,7 @@ import { AppDetail } from "./app-detail/app-detail";
 import { AppTile } from "./app-tile/app-tile";
 import { APPS } from "./apps";
 import { Lang, lang, setLang, T } from "./i18n";
+import { applyTheme, Theme, theme, THEMES } from "./theme";
 
 @Component({
 	selector: "app-root",
@@ -21,6 +22,9 @@ export class App {
 	protected readonly lang = lang;
 	protected readonly langs: Lang[] = ["cs", "en"];
 	protected readonly setLang = setLang;
+	protected readonly theme = theme;
+	protected readonly themes = THEMES;
+	protected readonly setTheme = (value: string) => applyTheme(value as Theme);
 	protected readonly apps = APPS.filter((app) => app.listed);
 
 	private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>("dialog");

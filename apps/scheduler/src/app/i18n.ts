@@ -8,6 +8,9 @@ export const LANGS: Lang[] = ["en", "cs"];
 const en = {
 	footer: "No sign-up, no ads, no tracking. Polls are deleted 60 days after their last time slot.",
 	language: "Language",
+	menu: "Menu",
+	theme: "Theme",
+	themes: { auto: "Auto", light: "Light", dark: "Dark" },
 
 	// Home
 	heroTitle: "Find a time that works for everyone",
@@ -119,6 +122,9 @@ export type Texts = typeof en;
 const cs: Texts = {
 	footer: "Bez registrace, bez reklam, bez sledování. Ankety se mažou 60 dní po posledním termínu.",
 	language: "Jazyk",
+	menu: "Nabídka",
+	theme: "Vzhled",
+	themes: { auto: "Automatický", light: "Světlý", dark: "Tmavý" },
 
 	heroTitle: "Najděte termín, který vyhovuje všem",
 	heroText:
