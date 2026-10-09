@@ -18,6 +18,7 @@ import { cacheChildren, cachedChildren, clearCache } from "./onedrive/folder-cac
 import { DriveItem, Folder, formatTime, sortFolders, sortTracks, toTrack, Track } from "./onedrive/items";
 import { OneDriveService } from "./onedrive/onedrive.service";
 import { PlayerService, QueuedTrack } from "./player/player.service";
+import { SonosGroup, SonosService } from "./sonos/sonos.service";
 import {
 	loadLocation,
 	locationFromUrl,
@@ -59,6 +60,7 @@ export class App {
 	protected readonly drive = inject(OneDriveService);
 	protected readonly device = inject(DeviceService);
 	protected readonly player = inject(PlayerService);
+	protected readonly sonos = inject(SonosService);
 	protected readonly t = T;
 	protected readonly lang = lang;
 	protected readonly langs = LANGS;
@@ -74,6 +76,8 @@ export class App {
 	protected readonly playingPath = computed(() => this.player.current()?.path ?? []);
 	protected readonly queueOpen = signal(false);
 	private readonly queueDialog = viewChild<ElementRef<HTMLDialogElement>>("queue");
+	protected readonly castOpen = signal(false);
+	private readonly castDialog = viewChild<ElementRef<HTMLDialogElement>>("cast");
 	protected readonly added = signal<string | null>(null);
 	private addedTimer = 0;
 	protected readonly editing = signal<string | null>(null);
@@ -138,6 +142,28 @@ export class App {
 		if (!this.storedSources) void this.migrateDevice();
 
 		this.player.setResolver((track) => this.downloadUrl(track));
+		this.sonos.setSource({
+			canPlay: (track) => this.sources().find((s) => s.id === track.source)?.kind === "onedrive",
+			streamUrl: (track) => {
+				const source = this.sources().find((s) => s.id === track.source);
+				return source?.kind === "onedrive"
+					? this.drive.streamUrl(source.account!, track.id)
+					: Promise.resolve(null);
+			},
+		});
+		void this.sonos.init();
+		effect(() => {
+			const notice = this.sonos.notice();
+			if (!notice) return;
+			untracked(() => {
+				this.flash(T().sonosNotices[notice]);
+				this.sonos.notice.set(null);
+			});
+		});
+		afterRenderEffect(() => {
+			const dialog = this.castDialog()?.nativeElement;
+			if (dialog && !dialog.open) dialog.showModal();
+		});
 		effect(() => applyTheme(this.theme()));
 		effect(() => (document.documentElement.lang = lang()));
 		effect(() => (document.title = T().title));
@@ -513,6 +539,29 @@ export class App {
 	protected closeQueue(): void {
 		this.queueDialog()?.nativeElement.close();
 		this.queueOpen.set(false);
+	}
+
+	protected openCast(): void {
+		this.castOpen.set(true);
+		void this.sonos.loadGroups();
+	}
+
+	protected closeCast(): void {
+		this.castDialog()?.nativeElement.close();
+		this.castOpen.set(false);
+	}
+
+	protected async castTo(group: SonosGroup): Promise<void> {
+		if (this.sonos.group()?.id === group.id) {
+			this.closeCast();
+			return;
+		}
+		if (await this.sonos.start(group)) this.closeCast();
+	}
+
+	protected async playHere(): Promise<void> {
+		this.closeCast();
+		await this.sonos.playHere();
 	}
 
 	protected goPlayingFolder(): void {

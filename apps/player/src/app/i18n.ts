@@ -57,11 +57,31 @@ const en = {
 	clearQueue: "Clear queue",
 	removeFromQueue: "Remove from queue",
 	privacy:
-		"Music plays straight from OneDrive or from your device. The app only reads your files and nothing passes through our servers.",
+		"Music plays straight from OneDrive or from your device. The app only reads your files and nothing passes through our servers, except temporary track links when you play on Sonos.",
 	theme: "Theme",
 	themes: { auto: "Auto", light: "Light", dark: "Dark", eink: "E-ink" },
 	language: "Language",
 	menu: "Menu",
+	sonos: "Sonos",
+	connectSonos: "Connect Sonos",
+	disconnectSonos: "Disconnect",
+	sonosConnected: "Connected",
+	playOnSonos: "Play on Sonos",
+	onSonos: (name: string) => `Playing on ${name}`,
+	playHere: "Play on this device",
+	noRooms: "No Sonos speakers found.",
+	roomsError: "Your Sonos speakers could not be loaded.",
+	sonosNote:
+		"Only tracks from OneDrive can play on Sonos. Sonos streams them straight from OneDrive; our server only passes on temporary links to them.",
+	sonosNotices: {
+		connected: "Sonos is connected",
+		connectError: "Connecting Sonos failed",
+		reconnect: "Connect Sonos again in the menu",
+		evicted: "Sonos is now playing something else",
+		lost: "The connection to Sonos was lost",
+		error: "Sonos did not respond, try again",
+		nothingPlayable: "Only tracks from OneDrive can play on Sonos",
+	},
 };
 
 const cs: typeof en = {
@@ -119,11 +139,31 @@ const cs: typeof en = {
 	clearQueue: "Vymazat frontu",
 	removeFromQueue: "Odebrat z fronty",
 	privacy:
-		"Hudba se přehrává přímo z OneDrivu nebo z vašeho zařízení. Aplikace soubory jen čte a nic neprochází našimi servery.",
+		"Hudba se přehrává přímo z OneDrivu nebo z vašeho zařízení. Aplikace soubory jen čte a nic neprochází našimi servery, kromě dočasných odkazů na skladby při přehrávání na Sonosu.",
 	theme: "Vzhled",
 	themes: { auto: "Automatický", light: "Světlý", dark: "Tmavý", eink: "E-ink" },
 	language: "Jazyk",
 	menu: "Nabídka",
+	sonos: "Sonos",
+	connectSonos: "Připojit Sonos",
+	disconnectSonos: "Odpojit",
+	sonosConnected: "Připojeno",
+	playOnSonos: "Přehrát na Sonosu",
+	onSonos: (name: string) => `Hraje na: ${name}`,
+	playHere: "Přehrát v tomto zařízení",
+	noRooms: "Nenašli jsme žádné reproduktory Sonos.",
+	roomsError: "Reproduktory Sonos se nepodařilo načíst.",
+	sonosNote:
+		"Na Sonosu lze přehrát jen skladby z OneDrivu. Sonos si je stahuje přímo z OneDrivu, náš server mu jen předává dočasné odkazy.",
+	sonosNotices: {
+		connected: "Sonos je připojený",
+		connectError: "Připojení Sonosu se nezdařilo",
+		reconnect: "Připojte Sonos znovu v nabídce",
+		evicted: "Sonos teď hraje něco jiného",
+		lost: "Spojení se Sonosem se přerušilo",
+		error: "Sonos neodpověděl, zkuste to znovu",
+		nothingPlayable: "Na Sonosu lze přehrát jen skladby z OneDrivu",
+	},
 };
 
 const STORAGE_KEY = "player.lang";
