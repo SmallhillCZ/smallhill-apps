@@ -38,6 +38,12 @@ header {
 		select {
 			app-region: no-drag;
 		}
+
+		.menu {
+			top: calc(env(titlebar-area-y, 0px) + env(titlebar-area-height, 33px) + 4px);
+			right: 8px;
+			app-region: no-drag;
+		}
 	}
 }
 
@@ -49,6 +55,45 @@ h1 {
 	color: var(--muted);
 }
 
+.more {
+	margin-right: -8px;
+}
+
+.menu {
+	position: fixed;
+	inset: auto;
+	top: calc(max(16px, env(safe-area-inset-top)) + 40px);
+	right: max(16px, env(safe-area-inset-right), calc((100vw - 640px) / 2 + 16px));
+	margin: 0;
+	min-width: 240px;
+	padding: 8px 16px;
+	border: 2px solid var(--border);
+	border-radius: calc(var(--radius) + 2px);
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+
+	&:popover-open {
+		display: grid;
+	}
+}
+
+.menu-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	min-height: 44px;
+
+	& + & {
+		border-top: 1px solid var(--surface-2);
+	}
+
+	> span {
+		font-weight: 600;
+	}
+}
+
 .langs {
 	display: flex;
 	gap: 2px;
@@ -58,7 +103,8 @@ h1 {
 		background: transparent;
 		padding: 4px 6px;
 		color: var(--muted);
-		font-size: 0.85rem;
+		font-size: 0.9rem;
+		cursor: pointer;
 
 		&.selected {
 			color: var(--text);
@@ -68,8 +114,8 @@ h1 {
 }
 
 .theme {
-	color: var(--muted);
-	font-size: 0.85rem;
+	color: var(--text);
+	font-size: 0.9rem;
 	cursor: pointer;
 }
 

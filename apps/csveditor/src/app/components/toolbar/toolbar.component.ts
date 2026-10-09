@@ -8,6 +8,7 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { lang, LANGS, setLang, T } from '../../i18n';
+import { Theme, THEMES } from '../../theme';
 
 @Component({
   selector: 'app-toolbar',
@@ -32,7 +33,7 @@ export class ToolbarComponent {
   delimiter = input<string>(',');
   filename = input<string>('');
   hasData = input<boolean>(false);
-  darkMode = input<boolean>(false);
+  theme = input<Theme>('auto');
 
   openFile = output<void>();
   saveFile = output<string>();
@@ -40,7 +41,7 @@ export class ToolbarComponent {
   redo = output<void>();
   hasHeaderChange = output<boolean>();
   delimiterChange = output<string>();
-  darkModeChange = output<boolean>();
+  themeChange = output<Theme>();
   transformNumber = output<void>();
   transformDate = output<void>();
   transformMarkup = output<void>();
@@ -50,6 +51,7 @@ export class ToolbarComponent {
   protected readonly lang = lang;
   protected readonly langs = LANGS;
   protected readonly setLang = setLang;
+  protected readonly themes = THEMES;
 
   delimiterOptions = computed(() => [
     { value: ',', label: T().comma },
@@ -76,7 +78,7 @@ export class ToolbarComponent {
   onDelimiterChange(val: string): void {
     this.delimiterChange.emit(val);
   }
-  onDarkModeChange(val: boolean): void {
-    this.darkModeChange.emit(val);
+  onThemeChange(val: Theme): void {
+    this.themeChange.emit(val);
   }
 }
