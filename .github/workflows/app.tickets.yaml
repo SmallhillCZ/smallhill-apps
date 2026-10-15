@@ -1,0 +1,24 @@
+name: Tickets
+
+on:
+  pull_request:
+    paths:
+      - "apps/tickets/**"
+      - ".github/workflows/app.tickets.yaml"
+  push:
+    branches:
+      - master
+    paths:
+      - "apps/tickets/**"
+      - ".github/workflows/app.tickets.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/_test.yaml
+    with:
+      app: tickets

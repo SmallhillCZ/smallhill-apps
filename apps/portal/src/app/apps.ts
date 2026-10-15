@@ -70,6 +70,20 @@ export const APPS: AppInfo[] = [
 		listed: true,
 	},
 	{
+		id: "tickets",
+		name: { en: "Tickets", cs: "Vstupenky" },
+		tagline: { en: "Your GoOut tickets on Android too", cs: "Vstupenky z GoOut i na Androidu" },
+		description: {
+			en: "Sign in with your GoOut account and see the tickets you bought, with today's event on top. Tap a ticket to show its QR code at the door. Tickets are saved on your device, so they open even without signal, and the high-contrast look suits e-ink readers. Your password goes straight to GoOut and is never saved.",
+			cs: "Přihlaste se účtem GoOut a uvidíte vstupenky, které jste koupili, dnešní akci nahoře. Klepnutím ukážete QR kód vstupenky u vchodu. Vstupenky se ukládají do zařízení, takže se otevřou i bez signálu, a kontrastní vzhled se hodí i pro e-ink čtečky. Heslo jde rovnou do GoOut a nikde se neukládá.",
+		},
+		color: "#c2255c",
+		icon: "apps/tickets/icon.svg",
+		screenshots: ["apps/tickets/screenshot-1.webp", "apps/tickets/screenshot-2.webp"],
+		url: "/tickets/",
+		listed: true,
+	},
+	{
 		id: "jachtarskaknizka",
 		name: { en: "Jachtařská knížka", cs: "Jachtařská knížka" },
 		tagline: { en: "Your sailing logbook online", cs: "Online jachtařská knížka" },
