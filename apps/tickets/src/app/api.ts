@@ -13,6 +13,12 @@ export interface Ticket {
 	mobile: string | null;
 }
 
+export interface TicketImage {
+	src: string;
+	code?: string;
+	qr?: boolean;
+}
+
 export type ApiError = "credentials" | "login" | "goout" | "offline" | "emailed" | "failed";
 
 export class ApiFailure extends Error {
@@ -89,19 +95,39 @@ export class Api {
 		return this.cached()?.tickets.find((t) => t.id === id);
 	}
 
-	savedImages(id: string): string[] | null {
-		return read<string[]>(IMAGE_PREFIX + id);
+	savedImages(id: string): TicketImage[] | null {
+		const saved = read<(string | TicketImage)[]>(IMAGE_PREFIX + id);
+		return saved?.map((i) => (typeof i === "string" ? { src: i } : i)) ?? null;
 	}
 
-	async loadImages(ticket: Ticket): Promise<string[]> {
-		if (!ticket.pdf) throw new ApiFailure("failed");
-		const res = await this.authed(`api/ticket?url=${encodeURIComponent(ticket.pdf)}`);
+	async loadImages(ticket: Ticket): Promise<TicketImage[]> {
+		const urls = [ticket.mobile, ticket.pdf].filter((u): u is string => !!u);
+		if (!urls.length) throw new ApiFailure("failed");
+		let failure: unknown = null;
+		for (const url of urls) {
+			try {
+				const images = await this.fetchImages(url);
+				write(IMAGE_PREFIX + ticket.id, images);
+				return images;
+			} catch (e) {
+				if (e instanceof ApiFailure && (e.kind === "login" || e.kind === "offline")) throw e;
+				failure ??= e;
+			}
+		}
+		throw failure;
+	}
+
+	private async fetchImages(url: string): Promise<TicketImage[]> {
+		const res = await this.authed(`api/ticket?url=${encodeURIComponent(url)}`);
 		if (res.status === 202) throw new ApiFailure("emailed");
 		const type = res.headers.get("content-type") ?? "";
+		if (type.includes("json")) {
+			const { codes } = (await res.json()) as { codes: { image: string; code: string }[] };
+			return codes.map((c) => ({ src: c.image, code: c.code, qr: true }));
+		}
 		const data = new Uint8Array(await res.arrayBuffer());
-		const images = type.includes("pdf") ? await renderPdf(data) : [await toDataUrl(new Blob([data], { type }))];
-		write(IMAGE_PREFIX + ticket.id, images);
-		return images;
+		if (type.includes("pdf")) return (await renderPdf(data)).map((src) => ({ src }));
+		return [{ src: await toDataUrl(new Blob([data], { type })) }];
 	}
 
 	private async authed(url: string) {
