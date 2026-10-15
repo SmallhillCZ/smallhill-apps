@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, signal } from "@angular/core";
 import { Router, RouterLink } from "@angular/router";
-import { Api, ApiFailure, type ApiError } from "../api";
+import { Api, ApiFailure, type ApiError, type TicketImage } from "../api";
 import { when } from "../format";
 import { I18n } from "../i18n";
 
@@ -19,8 +19,20 @@ import { I18n } from "../i18n";
 				<p class="error" role="alert">{{ message(error()!) }}</p>
 			}
 			@if (images(); as images) {
-				@for (src of images; track $index) {
-					<img class="page" [src]="src" [alt]="ticket.name" />
+				@for (image of images; track $index) {
+					@if (image.qr) {
+						<figure class="qr">
+							@if (images.length > 1) {
+								<figcaption>{{ $index + 1 }} / {{ images.length }}</figcaption>
+							}
+							<img [src]="image.src" [alt]="ticket.name" />
+							@if (image.code) {
+								<figcaption class="code">{{ image.code }}</figcaption>
+							}
+						</figure>
+					} @else {
+						<img class="page" [src]="image.src" [alt]="ticket.name" />
+					}
 				}
 				<p class="muted small">{{ t().savedOffline }}</p>
 			} @else if (busy()) {
@@ -49,6 +61,31 @@ import { I18n } from "../i18n";
 			margin-bottom: 1rem;
 			image-rendering: pixelated;
 		}
+		.qr {
+			margin: 0 0 1rem;
+			padding: 1rem;
+			background: #fff;
+			color: #000;
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			text-align: center;
+		}
+		.qr img {
+			display: block;
+			width: 100%;
+			max-width: 480px;
+			height: auto;
+			margin: 0 auto;
+			image-rendering: pixelated;
+		}
+		.qr figcaption {
+			font-weight: 600;
+		}
+		.qr .code {
+			font-size: 1.4rem;
+			letter-spacing: 0.08em;
+			font-variant-numeric: tabular-nums;
+		}
 		.actions {
 			display: flex;
 			flex-wrap: wrap;
@@ -67,7 +104,7 @@ export class TicketPage {
 		const ticket = this.ticket();
 		return ticket ? when(ticket, this.i18n.locale()) : "";
 	});
-	protected readonly images = signal<string[] | null>(null);
+	protected readonly images = signal<TicketImage[] | null>(null);
 	protected readonly busy = signal(false);
 	protected readonly error = signal<ApiError | null>(null);
 

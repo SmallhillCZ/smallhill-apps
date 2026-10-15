@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildApp, decodeSession, encodeSession, toTickets } from "../server/app.ts";
+import { buildApp, decodeSession, encodeSession, parseMobileTicket, toTickets } from "../server/app.ts";
 
 type Call = { url: string; init: RequestInit };
 
@@ -56,6 +56,19 @@ const list = {
 	events: { "10": { name: "Concert" }, "20": { name: "Festival" } },
 	venues: { "1000": { name: "Club", url: "/v" }, "2000": { name: "Park", url: "/v2" } },
 };
+
+const mobileHtml = `<html><body><div class="ticket"><div class="row header"><h1>Concert</h1></div>
+<div class="code"><img src="data:image/png;base64,AAAA" class="qrcode"/><div class="code">7032805057050</div></div>
+<div class="code"><img src="data:image/png;base64,BBBB" class="qrcode"/>
+<div class="code"> 7032805057051 </div></div></div><img src="data:image/png;base64,CCCC"/></body></html>`;
+
+test("parses QR codes from the mobile ticket page", () => {
+	assert.deepEqual(parseMobileTicket(mobileHtml), [
+		{ image: "data:image/png;base64,AAAA", code: "7032805057050" },
+		{ image: "data:image/png;base64,BBBB", code: "7032805057051" },
+	]);
+	assert.deepEqual(parseMobileTicket("<html>Tickets were sent to your e-mail</html>"), []);
+});
 
 test("session round-trips and rejects junk", () => {
 	const s = encodeSession({ token: "abc", other: "x=y" });
@@ -133,6 +146,8 @@ test("ticket file is fetched only from GoOut and HTML means it was emailed", asy
 	const goout = fakeGoout((url) => {
 		if (url.pathname === "/ticket/a/pdf")
 			return new Response("%PDF-1.4", { headers: { "content-type": "application/pdf" } });
+		if (url.pathname === "/services/ticketmaker/mobile/abc/x.html")
+			return new Response(mobileHtml, { headers: { "content-type": "text/html;charset=UTF-8" } });
 		if (url.pathname === "/ticket/r")
 			return new Response(null, { status: 302, headers: { location: "/ticket/a/pdf" } });
 		return new Response("<html>sent</html>", { headers: { "content-type": "text/html" } });
@@ -145,6 +160,12 @@ test("ticket file is fetched only from GoOut and HTML means it was emailed", asy
 	assert.equal(pdf.statusCode, 200);
 	assert.equal(pdf.headers["content-type"], "application/pdf");
 	assert.equal(pdf.body, "%PDF-1.4");
+	const mobile = await get("https://goout.net/services/ticketmaker/mobile/abc/x.html");
+	assert.equal(mobile.statusCode, 200);
+	assert.deepEqual(mobile.json().codes, [
+		{ image: "data:image/png;base64,AAAA", code: "7032805057050" },
+		{ image: "data:image/png;base64,BBBB", code: "7032805057051" },
+	]);
 	const emailed = await get("https://goout.net/ticket/other");
 	assert.equal(emailed.statusCode, 202);
 	assert.equal(emailed.json().error, "emailed");

@@ -114,6 +114,24 @@ export function toTickets(data: PurchaseList, origin: string): Ticket[] {
 		.sort((a, b) => (a.start ?? "9999").localeCompare(b.start ?? "9999"));
 }
 
+export interface TicketCode {
+	image: string;
+	code: string;
+}
+
+export function parseMobileTicket(html: string): TicketCode[] {
+	const images = [
+		...html.matchAll(/<img\b[^>]*\bsrc="(data:image\/(?:png|gif|jpeg|svg\+xml);base64,[A-Za-z0-9+/=]+)"[^>]*>/g),
+	]
+		.filter((m) => /class="[^"]*qrcode/.test(m[0]))
+		.map((m) => ({ image: m[1], index: m.index ?? 0 }));
+	return images.map(({ image, index }, i) => {
+		const until = images[i + 1]?.index ?? html.length;
+		const code = /<div class="code">\s*([^<]*?)\s*<\/div>/.exec(html.slice(index, until))?.[1] ?? "";
+		return { image, code };
+	});
+}
+
 export async function buildApp({
 	basePath = "",
 	webRoot,
@@ -220,7 +238,11 @@ export async function buildApp({
 		if (res.status === 401 || res.status === 403) return reply.code(401).send({ error: "login" });
 		if (!res.ok) return reply.code(502).send({ error: "goout", status: res.status });
 		const type = res.headers.get("content-type") ?? "application/octet-stream";
-		if (type.includes("text/html")) return reply.code(202).send({ error: "emailed" });
+		if (type.includes("text/html")) {
+			const codes = parseMobileTicket(await res.text());
+			if (codes.length) return { codes };
+			return reply.code(202).send({ error: "emailed" });
+		}
 		reply.header("cache-control", "no-store");
 		return reply.type(type).send(Buffer.from(await res.arrayBuffer()));
 	});
