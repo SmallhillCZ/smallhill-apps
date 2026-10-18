@@ -285,7 +285,7 @@ class ZoomSlider {
 			handle.style.top = `${y}px`;
 			const min = map.getMinZoom();
 			const max = map.getMaxZoom();
-			map.setZoom(min + ((bottom - y) / (bottom - top)) * (max - min), { animate: false });
+			map.setZoom(min + ((y - top) / (bottom - top)) * (max - min), { animate: false });
 		});
 		const end = (e: PointerEvent) => {
 			if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
@@ -295,8 +295,8 @@ class ZoomSlider {
 		handle.addEventListener("pointerup", end);
 		handle.addEventListener("pointercancel", end);
 		handle.addEventListener("keydown", (e) => {
-			if (e.key === "ArrowUp" || e.key === "+") map.zoomIn(0.5);
-			else if (e.key === "ArrowDown" || e.key === "-") map.zoomOut(0.5);
+			if (e.key === "ArrowDown" || e.key === "+") map.zoomIn(0.5);
+			else if (e.key === "ArrowUp" || e.key === "-") map.zoomOut(0.5);
 		});
 		map.on("zoom zoomend resize", () => {
 			if (!handle.classList.contains("dragging")) this.sync();
@@ -322,7 +322,7 @@ class ZoomSlider {
 		const min = this.map.getMinZoom();
 		const max = this.map.getMaxZoom();
 		const f = (this.map.getZoom() - min) / (max - min);
-		this.handle.style.top = `${bottom - f * (bottom - top)}px`;
+		this.handle.style.top = `${top + f * (bottom - top)}px`;
 		this.handle.setAttribute("aria-valuenow", this.map.getZoom().toFixed(1));
 		this.handle.setAttribute("aria-valuemin", String(this.map.getMinZoom()));
 		this.handle.setAttribute("aria-valuemax", String(this.map.getMaxZoom()));

@@ -157,10 +157,7 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 						</div>
 					}
 					<ul class="lists">
-						@for (list of store.ordered(); track list.url) {
-							@if (store.isForeign(list) && $index === firstForeign()) {
-								<li class="group-head muted small">{{ t().sharedWithMe }}</li>
-							}
+						@for (list of store.lists(); track list.url) {
 							<li class="list">
 								<div class="list-row">
 									<button
@@ -180,7 +177,7 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 										/>
 										<span class="list-name">
 											<span class="list-title">{{ list.data?.title || t().untitled }}</span>
-											@if (store.ownerOf(list); as who) {
+											@if (list.data?.owner?.name; as who) {
 												<span class="owner muted small">{{ t().sharedBy(who) }}</span>
 											}
 										</span>
@@ -572,12 +569,6 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 			font-weight: 400;
 			line-height: 1.2;
 		}
-		.group-head {
-			padding: 0.9rem 0 0.25rem;
-			font-weight: 600;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-		}
 		.list-title {
 			overflow: hidden;
 			text-overflow: ellipsis;
@@ -763,7 +754,6 @@ export class App {
 		const names = new Set(this.store.shared().map((l) => l.data?.owner?.name ?? null));
 		return names.size === 1 ? [...names][0] : null;
 	});
-	protected readonly firstForeign = computed(() => this.store.ordered().findIndex((l) => this.store.isForeign(l)));
 	protected readonly notice = signal<string | null>(null);
 	private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
