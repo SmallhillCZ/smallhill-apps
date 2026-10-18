@@ -1,0 +1,273 @@
+:root {
+	--bg: #f7f6f2;
+	--surface: #ffffff;
+	--text: #111111;
+	--muted: #555555;
+	--border: #cfcfcf;
+	--accent: #0c8599;
+	--accent-text: #ffffff;
+	--error: #b0413e;
+	--error-soft: #f5dcdb;
+	--shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+	--radius: 10px;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--bg: #141414;
+		--surface: #1f1f1f;
+		--text: #f2f2f2;
+		--muted: #a8a8a8;
+		--border: #3a3a3a;
+		--accent: #3bc9db;
+		--accent-text: #04262b;
+		--error: #e07a76;
+		--error-soft: #3d2423;
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #141414;
+	--surface: #1f1f1f;
+	--text: #f2f2f2;
+	--muted: #a8a8a8;
+	--border: #3a3a3a;
+	--accent: #3bc9db;
+	--accent-text: #04262b;
+	--error: #e07a76;
+	--error-soft: #3d2423;
+	color-scheme: dark;
+}
+:root[data-theme="eink"] {
+	--bg: #ffffff;
+	--surface: #ffffff;
+	--text: #000000;
+	--muted: #000000;
+	--border: #000000;
+	--accent: #000000;
+	--accent-text: #ffffff;
+	--error: #000000;
+	--error-soft: #ffffff;
+	--shadow: none;
+	color-scheme: light;
+}
+:root[data-theme="eink"] * {
+	transition: none !important;
+	animation: none !important;
+}
+:root[data-theme="eink"] .card,
+:root[data-theme="eink"] button,
+:root[data-theme="eink"] input {
+	border-width: 2px;
+}
+:root[data-theme="eink"] .error {
+	border: 2px solid #000;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	margin: 0;
+}
+body {
+	background: var(--bg);
+	color: var(--text);
+	font:
+		18px/1.45 system-ui,
+		-apple-system,
+		"Segoe UI",
+		Roboto,
+		sans-serif;
+}
+h1,
+h2,
+h3 {
+	line-height: 1.25;
+	margin: 0 0 0.5rem;
+}
+h1 {
+	font-size: 1.6rem;
+}
+h2 {
+	font-size: 1.25rem;
+}
+a {
+	color: var(--accent);
+}
+p {
+	margin: 0 0 1rem;
+}
+
+.card {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 1.25rem;
+	margin-bottom: 1rem;
+}
+.muted {
+	color: var(--muted);
+}
+.small {
+	font-size: 0.875rem;
+}
+.error {
+	background: var(--error-soft);
+	color: var(--error);
+	border-radius: var(--radius);
+	padding: 0.6rem 0.9rem;
+	margin-bottom: 1rem;
+}
+
+label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 0.25rem;
+}
+.field {
+	margin-bottom: 1rem;
+}
+input[type="email"],
+input[type="password"] {
+	width: 100%;
+	font: inherit;
+	color: inherit;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 0.65rem 0.8rem;
+}
+input:focus-visible,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+button,
+.button {
+	font: inherit;
+	font-weight: 600;
+	border-radius: 8px;
+	padding: 0.65rem 1.1rem;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.35rem;
+}
+button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+button.primary,
+.button.primary {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent-text);
+}
+button.link {
+	border: none;
+	background: none;
+	padding: 0.2rem 0.3rem;
+	color: var(--accent);
+	font-weight: 500;
+}
+button.wide {
+	width: 100%;
+}
+
+body {
+	overflow: hidden;
+}
+.leaflet-container {
+	font: inherit;
+	font-size: 0.9rem;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip,
+.leaflet-tooltip,
+.leaflet-bar a,
+.leaflet-control-attribution {
+	background: var(--surface) !important;
+	color: var(--text) !important;
+	border-color: var(--border) !important;
+}
+.leaflet-tooltip-top::before {
+	border-top-color: var(--surface) !important;
+}
+.leaflet-control-attribution a,
+.leaflet-popup-content a {
+	color: var(--accent) !important;
+}
+.leaflet-popup-close-button {
+	color: var(--muted) !important;
+}
+.leaflet-popup-content {
+	margin: 0.8rem 1rem;
+	line-height: 1.4;
+}
+.popup-list {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	color: var(--muted);
+	font-size: 0.8rem;
+	margin-bottom: 0.15rem;
+}
+.popup-list .dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+}
+.popup-name {
+	display: block;
+	font-size: 1rem;
+	padding-right: 0.75rem;
+}
+.popup .popup-note {
+	margin: 0.35rem 0 0;
+	font-style: italic;
+}
+.popup .popup-address {
+	margin: 0.35rem 0 0;
+	color: var(--muted);
+}
+.popup-links {
+	display: flex;
+	gap: 1rem;
+	margin-top: 0.5rem;
+	font-weight: 600;
+}
+.mapy-logo {
+	display: block;
+	line-height: 0;
+}
+.mapy-logo img {
+	height: 30px;
+	width: auto;
+}
+.leaflet-tile-pane {
+	filter: saturate(0.3) brightness(1.06) contrast(0.85);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme]) .leaflet-tile-pane {
+		filter: saturate(0.3) brightness(0.6) contrast(0.9);
+	}
+}
+:root[data-theme="dark"] .leaflet-tile-pane {
+	filter: saturate(0.3) brightness(0.6) contrast(0.9);
+}
+:root[data-theme="eink"] .leaflet-tile-pane {
+	filter: grayscale(1) contrast(0.8) brightness(1.1);
+}
+.leaflet-interactive {
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
