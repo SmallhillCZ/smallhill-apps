@@ -398,7 +398,11 @@ body {
 .popup-photos:not(.ready) {
 	animation: locating 1.2s ease-in-out infinite;
 }
-.popup-photos a {
+.popup-photos button {
+	padding: 0;
+	border: 0;
+	background: none;
+	cursor: zoom-in;
 	flex: none;
 	scroll-snap-align: start;
 	line-height: 0;
@@ -409,10 +413,10 @@ body {
 	min-width: 80px;
 	object-fit: cover;
 }
-.popup-photos a:only-child {
+.popup-photos button:only-child {
 	flex: 1;
 }
-.popup-photos a:only-child img {
+.popup-photos button:only-child img {
 	width: 100%;
 }
 .leaflet-popup-close-button {
@@ -421,4 +425,55 @@ body {
 	right: 6px !important;
 	border-radius: 50%;
 	background: var(--surface) !important;
+}
+
+.photo-viewer {
+	position: fixed;
+	inset: 0;
+	z-index: 3000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgb(0 0 0 / 0.9);
+}
+.photo-viewer img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+.photo-viewer button {
+	position: absolute;
+	width: 44px;
+	height: 44px;
+	border: 0;
+	border-radius: 50%;
+	background: rgb(255 255 255 / 0.15);
+	color: #fff;
+	font-size: 28px;
+	line-height: 1;
+	cursor: pointer;
+}
+.photo-viewer .photo-close {
+	top: calc(12px + env(safe-area-inset-top));
+	right: 12px;
+}
+.photo-viewer .photo-prev {
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.photo-viewer .photo-next {
+	right: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.photo-viewer.single .photo-prev,
+.photo-viewer.single .photo-next {
+	display: none;
+}
+.photo-viewer .photo-count {
+	position: absolute;
+	bottom: calc(16px + env(safe-area-inset-bottom));
+	color: #fff;
+	font-size: 0.9rem;
 }

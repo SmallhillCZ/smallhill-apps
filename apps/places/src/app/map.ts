@@ -6,6 +6,15 @@ import { Lists, type Place, type SavedList } from "./lists";
 import { MAPY_API_KEY } from "./mapy";
 
 const CZECHIA: L.LatLngTuple = [49.8, 15.5];
+const VIEW_KEY = "places.view";
+
+function savedView(): { center: L.LatLngTuple; zoom: number } | null {
+	try {
+		const v = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "null");
+		if (Array.isArray(v?.center) && typeof v.zoom === "number") return v;
+	} catch {}
+	return null;
+}
 
 const escape = (s: string) =>
 	s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -47,6 +56,7 @@ export class MapView implements OnDestroy {
 	private here: L.LayerGroup | null = null;
 	private readonly photos = new Map<string, Promise<string[]>>();
 	private slider: ZoomSlider | null = null;
+	private readonly viewer = new PhotoViewer();
 
 	constructor() {
 		afterNextRender(() => {
@@ -56,7 +66,18 @@ export class MapView implements OnDestroy {
 				zoomSnap: 0,
 				zoomDelta: 1,
 				wheelPxPerZoomLevel: 120,
-			}).setView(CZECHIA, 7);
+			});
+			const view = savedView();
+			if (view) {
+				map.setView(view.center, view.zoom);
+				this.fitted = true;
+			} else map.setView(CZECHIA, 7);
+			map.on("moveend", () => {
+				const c = map.getCenter();
+				try {
+					localStorage.setItem(VIEW_KEY, JSON.stringify({ center: [c.lat, c.lng], zoom: map.getZoom() }));
+				} catch {}
+			});
 			map.attributionControl.setPrefix(false);
 			this.slider = new ZoomSlider(map);
 			this.slider.setTitle(this.i18n.t().zoom);
@@ -82,6 +103,7 @@ export class MapView implements OnDestroy {
 		effect(() => {
 			this.locator.setTitle(this.i18n.t().locate);
 			this.slider?.setTitle(this.i18n.t().zoom);
+			this.viewer.setTexts(this.i18n.t());
 		});
 		effect(() => {
 			this.store.visiblePlaces();
@@ -92,6 +114,7 @@ export class MapView implements OnDestroy {
 
 	ngOnDestroy() {
 		this.map?.remove();
+		this.viewer.destroy();
 	}
 
 	focus(place: Place) {
@@ -163,10 +186,17 @@ export class MapView implements OnDestroy {
 		}
 		el.innerHTML = keys
 			.map(
-				(key) =>
-					`<a href="api/photo/${key}?w=1200" target="_blank" rel="noopener"><img src="api/photo/${key}?w=480" alt="" loading="lazy" /></a>`,
+				(key, i) =>
+					`<button type="button" data-index="${i}"><img src="api/photo/${key}?w=480" alt="" loading="lazy" /></button>`,
 			)
 			.join("");
+		el.addEventListener("click", (e) => {
+			const button = (e.target as HTMLElement).closest<HTMLElement>("button[data-index]");
+			if (!button) return;
+			e.preventDefault();
+			e.stopPropagation();
+			this.viewer.open(keys, Number(button.dataset["index"]));
+		});
 		el.classList.add("ready");
 	}
 
@@ -377,5 +407,89 @@ class MapyLogo extends L.Control {
 		a.innerHTML = `<img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com" height="30" />`;
 		L.DomEvent.disableClickPropagation(a);
 		return a;
+	}
+}
+
+class PhotoViewer {
+	private el: HTMLElement | null = null;
+	private keys: string[] = [];
+	private index = 0;
+	private texts = { photoClose: "Close", photoPrev: "Previous", photoNext: "Next" };
+	private touchX: number | null = null;
+	private readonly onKey = (e: KeyboardEvent) => {
+		if (e.key === "Escape") this.close();
+		else if (e.key === "ArrowLeft") this.show(this.index - 1);
+		else if (e.key === "ArrowRight") this.show(this.index + 1);
+		else return;
+		e.preventDefault();
+	};
+
+	setTexts(t: { photoClose: string; photoPrev: string; photoNext: string }) {
+		this.texts = t;
+		if (this.el) this.label();
+	}
+
+	open(keys: string[], index: number) {
+		this.keys = keys;
+		if (!this.el) this.build();
+		document.addEventListener("keydown", this.onKey);
+		this.show(index);
+		this.el!.querySelector<HTMLElement>(".photo-close")?.focus();
+	}
+
+	close() {
+		document.removeEventListener("keydown", this.onKey);
+		this.el?.remove();
+		this.el = null;
+	}
+
+	destroy() {
+		this.close();
+	}
+
+	private build() {
+		const el = document.createElement("div");
+		el.className = "photo-viewer";
+		el.setAttribute("role", "dialog");
+		el.setAttribute("aria-modal", "true");
+		el.innerHTML = `<img alt="" />
+			<button type="button" class="photo-close">×</button>
+			<button type="button" class="photo-prev">‹</button>
+			<button type="button" class="photo-next">›</button>
+			<span class="photo-count"></span>`;
+		el.addEventListener("click", (e) => {
+			const target = e.target as HTMLElement;
+			if (target.closest(".photo-prev")) this.show(this.index - 1);
+			else if (target.closest(".photo-next")) this.show(this.index + 1);
+			else if (target.tagName !== "IMG") this.close();
+		});
+		el.addEventListener("touchstart", (e) => (this.touchX = e.touches[0]?.clientX ?? null), { passive: true });
+		el.addEventListener("touchend", (e) => {
+			const end = e.changedTouches[0]?.clientX;
+			if (this.touchX === null || end === undefined) return;
+			const dx = end - this.touchX;
+			this.touchX = null;
+			if (Math.abs(dx) > 50) this.show(this.index + (dx < 0 ? 1 : -1));
+		});
+		document.body.append(el);
+		this.el = el;
+		this.label();
+	}
+
+	private label() {
+		const el = this.el!;
+		el.querySelector(".photo-close")!.setAttribute("aria-label", this.texts.photoClose);
+		el.querySelector(".photo-prev")!.setAttribute("aria-label", this.texts.photoPrev);
+		el.querySelector(".photo-next")!.setAttribute("aria-label", this.texts.photoNext);
+	}
+
+	private show(index: number) {
+		const el = this.el;
+		if (!el || !this.keys.length) return;
+		this.index = (index + this.keys.length) % this.keys.length;
+		el.querySelector("img")!.src = `api/photo/${this.keys[this.index]}?w=1200`;
+		const many = this.keys.length > 1;
+		el.classList.toggle("single", !many);
+		el.querySelector(".photo-count")!.textContent = many ? `${this.index + 1} / ${this.keys.length}` : "";
 	}
 }
