@@ -1,0 +1,24 @@
+name: Places
+
+on:
+  pull_request:
+    paths:
+      - "apps/places/**"
+      - ".github/workflows/app.places.yaml"
+  push:
+    branches:
+      - master
+    paths:
+      - "apps/places/**"
+      - ".github/workflows/app.places.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/_test.yaml
+    with:
+      app: places

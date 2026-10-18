@@ -84,6 +84,20 @@ export const APPS: AppInfo[] = [
 		listed: true,
 	},
 	{
+		id: "places",
+		name: { en: "Places", cs: "Místa" },
+		tagline: { en: "Your Google Maps lists on a clean map", cs: "Seznamy z Map Google na přehledné mapě" },
+		description: {
+			en: "Paste the share link of a Google Maps list and its places appear on a clean Mapy.com map, each list in its own colour. Tap a place for your note, the address and a link to open it in Google Maps or Mapy.com. Lists are saved on your device and refresh when you open the app.",
+			cs: "Vložte odkaz na sdílený seznam z Map Google a jeho místa se objeví na přehledné mapě z Mapy.com, každý seznam svou barvou. Klepnutím na místo uvidíte svou poznámku, adresu a odkaz do Map Google nebo na Mapy.com. Seznamy se ukládají do zařízení a při otevření aplikace se obnoví.",
+		},
+		color: "#0c8599",
+		icon: "apps/places/icon.svg",
+		screenshots: ["apps/places/screenshot-1.webp", "apps/places/screenshot-2.webp"],
+		url: "/places/",
+		listed: true,
+	},
+	{
 		id: "jachtarskaknizka",
 		name: { en: "Jachtařská knížka", cs: "Jachtařská knížka" },
 		tagline: { en: "Your sailing logbook online", cs: "Online jachtařská knížka" },

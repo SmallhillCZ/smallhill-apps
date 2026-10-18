@@ -1,0 +1,6 @@
+# Places
+
+- Shows the user's Google Maps lists on a Mapy.com map (Leaflet). Standalone project, not an npm workspace.
+- Frontend: Angular 22 standalone + signals, zoneless, PWA in `src/`. Lists (share link, colour, visibility, last data) live in localStorage (`src/app/lists.ts`); map in `src/app/map.ts`; texts EN/CS in `src/app/i18n.ts`. Mapy.com tiles straight from the browser with the public key in `src/app/mapy.ts`; logo + "Seznam.cz a.s." attribution are required by Mapy.com terms. Service worker caches tiles 30 days.
+- Server: Node 24 + Fastify in `server/`, no DB. `GET /api/list?url=<share link>&lang=` follows a `maps.app.goo.gl` link (only Google hosts allowed), reads the list id from `/placelists/list/<id>` or `!11m2!2s<id>` (also inside a `consent.google.com?continue=`), then calls Google's undocumented `/maps/preview/entitylist/getlist`. Entry layout: `[_, info, name, note]`, `info[4]` address, `info[5][2..3]` lat/lng, `info[6][1]` signed CID (shown as unsigned, `maps.google.com/?cid=`), `info[7]` `/g/` id. Cached 5 min in memory.
+- Tests: `npm test` (mocked fetch). Signature colour teal `#0c8599`.

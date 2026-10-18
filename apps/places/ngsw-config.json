@@ -1,0 +1,32 @@
+{
+	"$schema": "./node_modules/@angular/service-worker/config/schema.json",
+	"index": "/index.html",
+	"assetGroups": [
+		{
+			"name": "app",
+			"installMode": "prefetch",
+			"resources": {
+				"files": ["/icon.svg", "/index.html", "/manifest.webmanifest", "/*.css", "/*.js", "/*.mjs"]
+			}
+		},
+		{
+			"name": "assets",
+			"installMode": "lazy",
+			"updateMode": "prefetch",
+			"resources": {
+				"files": ["/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"]
+			}
+		}
+	],
+	"dataGroups": [
+		{
+			"name": "tiles",
+			"urls": ["https://api.mapy.com/v1/maptiles/**", "https://api.mapy.com/img/api/logo.svg"],
+			"cacheConfig": {
+				"strategy": "performance",
+				"maxSize": 3000,
+				"maxAge": "30d"
+			}
+		}
+	]
+}
