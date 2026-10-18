@@ -270,6 +270,9 @@ class ZoomSlider {
 		L.DomEvent.disableScrollPropagation(handle);
 		this.handle = handle;
 		let grab = 0;
+		let anchor: L.LatLng | null = null;
+		map.on("popupopen", (e) => (anchor = e.popup.getLatLng() ?? null));
+		map.on("popupclose", () => (anchor = null));
 		handle.addEventListener("pointerdown", (e) => {
 			handle.setPointerCapture(e.pointerId);
 			grab = e.clientY - handle.getBoundingClientRect().top;
@@ -285,7 +288,9 @@ class ZoomSlider {
 			handle.style.top = `${y}px`;
 			const min = map.getMinZoom();
 			const max = map.getMaxZoom();
-			map.setZoom(min + ((y - top) / (bottom - top)) * (max - min), { animate: false });
+			const zoom = min + ((y - top) / (bottom - top)) * (max - min);
+			if (anchor) map.setZoomAround(anchor, zoom, { animate: false });
+			else map.setZoom(zoom, { animate: false });
 		});
 		const end = (e: PointerEvent) => {
 			if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
@@ -295,8 +300,10 @@ class ZoomSlider {
 		handle.addEventListener("pointerup", end);
 		handle.addEventListener("pointercancel", end);
 		handle.addEventListener("keydown", (e) => {
-			if (e.key === "ArrowDown" || e.key === "+") map.zoomIn(0.5);
-			else if (e.key === "ArrowUp" || e.key === "-") map.zoomOut(0.5);
+			const step = e.key === "ArrowDown" || e.key === "+" ? 0.5 : e.key === "ArrowUp" || e.key === "-" ? -0.5 : 0;
+			if (!step) return;
+			if (anchor) map.setZoomAround(anchor, map.getZoom() + step);
+			else map.setZoom(map.getZoom() + step);
 		});
 		map.on("zoom zoomend resize", () => {
 			if (!handle.classList.contains("dragging")) this.sync();
