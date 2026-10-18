@@ -48,7 +48,10 @@ const en = {
 	shareTitle: "My places",
 	linkCopied: "Link copied. Anyone who opens it sees these lists.",
 	importing: "Loading shared lists…",
-	sharedTitle: (n: number): string => (n === 1 ? "Someone shared a list with you" : "Someone shared lists with you"),
+	sharedTitle: (n: number, who: string | null): string =>
+		`${who ?? "Someone"} shared ${n === 1 ? "a list" : "lists"} with you`,
+	sharedBy: (who: string) => `by ${who}`,
+	sharedWithMe: "Shared with me",
 	sharedQuestion: (n: number): string =>
 		n === 1 ? "Do you want to add it to your lists?" : "Do you want to add them to your lists?",
 	sharedAdd: "Add to my lists",
@@ -107,7 +110,10 @@ const cs: Texts = {
 	shareTitle: "Moje místa",
 	linkCopied: "Odkaz zkopírován. Kdo ho otevře, uvidí tyto seznamy.",
 	importing: "Načítám sdílené seznamy…",
-	sharedTitle: (n: number): string => (n === 1 ? "Někdo s vámi sdílí seznam" : "Někdo s vámi sdílí seznamy"),
+	sharedTitle: (n: number, who: string | null): string =>
+		`${who ?? "Někdo"} s vámi sdílí ${n === 1 ? "seznam" : "seznamy"}`,
+	sharedBy: (who: string) => `od ${who}`,
+	sharedWithMe: "Sdílené se mnou",
 	sharedQuestion: (n: number): string =>
 		n === 1 ? "Chcete si ho přidat do svých seznamů?" : "Chcete si je přidat do svých seznamů?",
 	sharedAdd: "Přidat do mých seznamů",
