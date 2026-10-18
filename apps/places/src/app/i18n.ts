@@ -42,14 +42,19 @@ const en = {
 	openGoogle: "Google Maps",
 	openMapy: "Mapy.com",
 	locate: "Show my location",
-	zoomIn: "Zoom in",
-	zoomOut: "Zoom out",
 	zoom: "Zoom: drag up or down",
 	locateFailed: "Your location is not available.",
 	share: "Share lists",
 	shareTitle: "My places",
 	linkCopied: "Link copied. Anyone who opens it sees these lists.",
 	importing: "Loading shared lists…",
+	sharedTitle: (n: number): string => (n === 1 ? "Someone shared a list with you" : "Someone shared lists with you"),
+	sharedQuestion: (n: number): string =>
+		n === 1 ? "Do you want to add it to your lists?" : "Do you want to add them to your lists?",
+	sharedAdd: "Add to my lists",
+	sharedView: "Just look",
+	sharedBanner: "Shared with you, not saved",
+	sharedDismiss: "Close",
 	importFailed: (n: number) =>
 		n === 1 ? "1 shared list could not be loaded." : `${n} shared lists could not be loaded.`,
 };
@@ -96,14 +101,19 @@ const cs: Texts = {
 	openGoogle: "Mapy Google",
 	openMapy: "Mapy.com",
 	locate: "Zobrazit moji polohu",
-	zoomIn: "Přiblížit",
-	zoomOut: "Oddálit",
 	zoom: "Přiblížení: táhněte nahoru nebo dolů",
 	locateFailed: "Vaše poloha není dostupná.",
 	share: "Sdílet seznamy",
 	shareTitle: "Moje místa",
 	linkCopied: "Odkaz zkopírován. Kdo ho otevře, uvidí tyto seznamy.",
 	importing: "Načítám sdílené seznamy…",
+	sharedTitle: (n: number): string => (n === 1 ? "Někdo s vámi sdílí seznam" : "Někdo s vámi sdílí seznamy"),
+	sharedQuestion: (n: number): string =>
+		n === 1 ? "Chcete si ho přidat do svých seznamů?" : "Chcete si je přidat do svých seznamů?",
+	sharedAdd: "Přidat do mých seznamů",
+	sharedView: "Jen se podívat",
+	sharedBanner: "Sdíleno s vámi, neuloženo",
+	sharedDismiss: "Zavřít",
 	importFailed: (n: number) =>
 		n === 1
 			? "1 sdílený seznam se nepodařilo načíst."

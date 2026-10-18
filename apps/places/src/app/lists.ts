@@ -68,8 +68,9 @@ export class Lists {
 			? (read<string>(MAPSET_KEY) as Mapset)
 			: "outdoor",
 	);
+	readonly shared = signal<SavedList[]>([]);
 	readonly visiblePlaces = computed(() =>
-		this.lists()
+		[...this.lists(), ...this.shared()]
 			.filter((l) => l.visible && l.data)
 			.flatMap((l) => l.data!.places.map((place) => ({ place, list: l }))),
 	);
@@ -98,28 +99,43 @@ export class Lists {
 		return url.toString();
 	}
 
-	async importShared(lang: string): Promise<{ added: number; failed: number }> {
+	async loadShared(lang: string): Promise<number> {
 		const here = new URL(location.href);
-		const links = here.searchParams.getAll("list").filter((l) => l.trim());
-		if (!links.length) return { added: 0, failed: 0 };
+		const links = [...new Set(here.searchParams.getAll("list").map((l) => l.trim()))].filter(Boolean);
+		if (!links.length) return 0;
 		here.searchParams.delete("list");
 		history.replaceState(history.state, "", here.toString());
-		let added = 0;
+		const shared: SavedList[] = [];
 		let failed = 0;
 		for (const link of links) {
-			const existing = this.lists().find((l) => l.url === link.trim());
+			const existing = this.lists().find((l) => l.url === link);
 			if (existing) {
 				if (!existing.visible) this.patch(existing.url, { visible: true });
 				continue;
 			}
 			try {
-				await this.add(link, lang);
-				added++;
-			} catch (err) {
-				if (!(err instanceof ListFailure && err.kind === "duplicate")) failed++;
+				const data = await this.fetchList(link, lang);
+				if (this.lists().some((l) => l.data?.id === data.id) || shared.some((l) => l.data?.id === data.id))
+					continue;
+				const used = new Set([...this.lists(), ...shared].map((l) => l.color));
+				const color = COLORS.find((c) => !used.has(c)) ?? COLORS[shared.length % COLORS.length];
+				shared.push({ url: link, color, visible: true, data, savedAt: new Date().toISOString() });
+			} catch {
+				failed++;
 			}
 		}
-		return { added, failed };
+		this.shared.set(shared);
+		return failed;
+	}
+
+	keepShared() {
+		const shared = this.shared();
+		this.shared.set([]);
+		this.update((lists) => [...lists, ...shared.filter((s) => !lists.some((l) => l.url === s.url))]);
+	}
+
+	dropShared() {
+		this.shared.set([]);
 	}
 
 	async refresh(url: string, lang: string) {
