@@ -126,8 +126,30 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 					}
 					@if (importing()) {
 						<p class="muted small">{{ t().importing }}</p>
-					} @else if (!store.lists().length) {
+					} @else if (!store.lists().length && !store.shared().length) {
 						<p class="muted small">{{ t().empty }}</p>
+					}
+					@if (store.shared().length && !sharedDialog()) {
+						<div class="shared-box">
+							<p class="small muted">{{ t().sharedBanner }}</p>
+							<ul>
+								@for (list of store.shared(); track list.url) {
+									<li class="shared-item">
+										<span class="dot" [style.background]="list.color"></span>
+										<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+										<span class="count muted small">{{ list.data?.places?.length ?? 0 }}</span>
+									</li>
+								}
+							</ul>
+							<div class="shared-actions">
+								<button type="button" class="primary" (click)="keepShared()">
+									{{ t().sharedAdd }}
+								</button>
+								<button type="button" class="link" (click)="store.dropShared()">
+									{{ t().sharedDismiss }}
+								</button>
+							</div>
+						</div>
 					}
 					<ul class="lists">
 						@for (list of store.lists(); track list.url) {
@@ -253,6 +275,26 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 				</button>
 			}
 		</div>
+		@if (sharedDialog()) {
+			<div class="backdrop" (click)="viewShared()"></div>
+			<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="shared-title">
+				<h2 id="shared-title">{{ t().sharedTitle(store.shared().length) }}</h2>
+				<ul>
+					@for (list of store.shared(); track list.url) {
+						<li class="shared-item">
+							<span class="dot" [style.background]="list.color"></span>
+							<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+							<span class="count muted small">{{ t().places(list.data?.places?.length ?? 0) }}</span>
+						</li>
+					}
+				</ul>
+				<p>{{ t().sharedQuestion(store.shared().length) }}</p>
+				<div class="dialog-actions">
+					<button type="button" class="link" (click)="viewShared()">{{ t().sharedView }}</button>
+					<button type="button" class="primary" (click)="keepShared()">{{ t().sharedAdd }}</button>
+				</div>
+			</div>
+		}
 	`,
 	styles: `
 		:host {
@@ -581,6 +623,73 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 		.hint {
 			margin: 0;
 		}
+		.shared-box {
+			margin: 0.25rem 0 0.75rem;
+			padding: 0.6rem 0.75rem;
+			border: 1px dashed var(--accent);
+			border-radius: 10px;
+		}
+		.shared-box p {
+			margin: 0 0 0.25rem;
+		}
+		.shared-item {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			min-height: 32px;
+			font-weight: 600;
+		}
+		.shared-item .list-title {
+			flex: 1;
+			min-width: 0;
+		}
+		.shared-item .dot {
+			flex: none;
+			width: 14px;
+			height: 14px;
+			border-radius: 50%;
+		}
+		.shared-actions {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			margin-top: 0.5rem;
+		}
+		.backdrop {
+			position: fixed;
+			inset: 0;
+			z-index: 2000;
+			background: rgba(0, 0, 0, 0.4);
+		}
+		.dialog {
+			position: fixed;
+			z-index: 2001;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -50%);
+			width: min(400px, calc(100vw - 32px));
+			max-height: calc(100dvh - 32px);
+			overflow-y: auto;
+			padding: 1.25rem;
+			border-radius: var(--radius);
+			background: var(--surface);
+			color: var(--text);
+			box-shadow: var(--shadow);
+		}
+		.dialog h2 {
+			margin: 0 0 0.75rem;
+			font-size: 1.2rem;
+		}
+		.dialog p {
+			margin: 0.75rem 0 0;
+		}
+		.dialog-actions {
+			display: flex;
+			justify-content: flex-end;
+			align-items: center;
+			gap: 0.75rem;
+			margin-top: 1.25rem;
+		}
 		.notice {
 			margin: 0 0 0.75rem;
 			padding: 0.5rem 0.75rem;
@@ -602,10 +711,12 @@ export class App {
 	private readonly narrow = matchMedia("(max-width: 640px)");
 	protected readonly mobile = signal(this.narrow.matches);
 	protected readonly panelOpen = signal(!this.narrow.matches || !this.store.lists().length);
-	protected readonly activeLists = computed(() => this.store.lists().filter((l) => l.visible));
+	protected readonly activeLists = computed(() =>
+		[...this.store.lists(), ...this.store.shared()].filter((l) => l.visible),
+	);
 	protected readonly peekText = computed(() => {
 		const t = this.t();
-		if (!this.store.lists().length) return t.addList;
+		if (!this.store.lists().length && !this.store.shared().length) return t.addList;
 		const active = this.activeLists();
 		if (!active.length) return t.noActive;
 		return active.map((l) => l.data?.title || t.untitled).join(", ");
@@ -616,11 +727,15 @@ export class App {
 	protected readonly addError = signal<ListError | null>(null);
 
 	protected readonly importing = signal(false);
+	protected readonly sharedDialog = signal(false);
 	protected readonly notice = signal<string | null>(null);
 	private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 	constructor() {
 		applyTheme(this.theme());
+		document.addEventListener("keydown", (e) => {
+			if (e.key === "Escape" && this.sharedDialog()) this.viewShared();
+		});
 		this.narrow.addEventListener("change", (e) => this.mobile.set(e.matches));
 		if (this.store.lists().length) this.store.refreshAll(this.i18n.lang());
 		this.importShared();
@@ -629,11 +744,23 @@ export class App {
 	private async importShared() {
 		if (!new URL(location.href).searchParams.has("list")) return;
 		this.importing.set(true);
-		const { added, failed } = await this.store.importShared(this.i18n.lang());
+		const failed = await this.store.loadShared(this.i18n.lang());
 		this.importing.set(false);
-		this.panelOpen.set(true);
 		if (failed) this.notify(this.t().importFailed(failed));
-		if (added) setTimeout(() => this.map().fitAll());
+		if (this.store.shared().length) {
+			if (this.mobile()) this.panelOpen.set(false);
+			this.sharedDialog.set(true);
+			setTimeout(() => this.map().fitAll());
+		}
+	}
+
+	protected keepShared() {
+		this.sharedDialog.set(false);
+		this.store.keepShared();
+	}
+
+	protected viewShared() {
+		this.sharedDialog.set(false);
 	}
 
 	protected async share() {

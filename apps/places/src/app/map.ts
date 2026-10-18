@@ -58,7 +58,7 @@ export class MapView implements OnDestroy {
 			}).setView(CZECHIA, 7);
 			map.attributionControl.setPrefix(false);
 			this.slider = new ZoomSlider(map);
-			this.slider.setTitles(this.i18n.t());
+			this.slider.setTitle(this.i18n.t().zoom);
 			this.locator.onLocate = () => this.locate();
 			this.locator.addTo(map);
 			this.locator.setTitle(this.i18n.t().locate);
@@ -79,7 +79,7 @@ export class MapView implements OnDestroy {
 		});
 		effect(() => {
 			this.locator.setTitle(this.i18n.t().locate);
-			this.slider?.setTitles(this.i18n.t());
+			this.slider?.setTitle(this.i18n.t().zoom);
 		});
 		effect(() => {
 			this.store.visiblePlaces();
@@ -223,87 +223,55 @@ function clusterGroup() {
 }
 
 class ZoomSlider {
-	private readonly root: HTMLElement;
-	private readonly plus: HTMLButtonElement;
-	private readonly minus: HTMLButtonElement;
-	private readonly track: HTMLElement;
-	private readonly thumb: HTMLElement;
+	private readonly handle: HTMLElement;
 
 	constructor(private readonly map: L.Map) {
-		this.root = L.DomUtil.create("div", "zoom-slider", map.getContainer());
-		this.plus = this.button("M6 12h12M12 6v12");
-		this.track = L.DomUtil.create("div", "zoom-track", this.root);
-		this.thumb = L.DomUtil.create("div", "zoom-thumb", this.track);
-		this.minus = this.button("M6 12h12");
-		this.root.append(this.plus, this.track, this.minus);
-		L.DomEvent.disableClickPropagation(this.root);
-		L.DomEvent.disableScrollPropagation(this.root);
-		L.DomEvent.on(this.plus, "click", () => map.setZoom(Math.round(map.getZoom()) + 1));
-		L.DomEvent.on(this.minus, "click", () => map.setZoom(Math.round(map.getZoom()) - 1));
-		this.drag();
-		map.on("zoom zoomend", () => this.sync());
+		const handle = L.DomUtil.create("div", "zoom-handle", map.getContainer());
+		handle.innerHTML = `<svg viewBox="0 0 16 28" aria-hidden="true"><path d="M3 10l5-6 5 6zM3 18l5 6 5-6z" /></svg>`;
+		handle.setAttribute("role", "slider");
+		handle.tabIndex = 0;
+		L.DomEvent.disableClickPropagation(handle);
+		L.DomEvent.disableScrollPropagation(handle);
+		this.handle = handle;
+		let startY = 0;
+		let startZoom = 0;
+		handle.addEventListener("pointerdown", (e) => {
+			handle.setPointerCapture(e.pointerId);
+			startY = e.clientY;
+			startZoom = map.getZoom();
+			handle.classList.add("dragging");
+		});
+		handle.addEventListener("pointermove", (e) => {
+			if (!handle.hasPointerCapture(e.pointerId)) return;
+			const dy = startY - e.clientY;
+			handle.style.transform = `translateY(${-Math.max(-160, Math.min(160, dy))}px)`;
+			const zoom = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), startZoom + dy / 50));
+			map.setZoom(zoom, { animate: false });
+		});
+		const end = (e: PointerEvent) => {
+			if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+			handle.classList.remove("dragging");
+			handle.style.transform = "";
+		};
+		handle.addEventListener("pointerup", end);
+		handle.addEventListener("pointercancel", end);
+		handle.addEventListener("keydown", (e) => {
+			if (e.key === "ArrowUp" || e.key === "+") map.zoomIn(0.5);
+			else if (e.key === "ArrowDown" || e.key === "-") map.zoomOut(0.5);
+		});
+		map.on("zoomend", () => this.sync());
 		this.sync();
 	}
 
-	setTitles(t: { zoomIn: string; zoomOut: string; zoom: string }) {
-		for (const [el, title] of [
-			[this.plus, t.zoomIn],
-			[this.minus, t.zoomOut],
-			[this.track, t.zoom],
-		] as const) {
-			el.title = title;
-			el.setAttribute("aria-label", title);
-		}
-	}
-
-	private button(path: string) {
-		const b = L.DomUtil.create("button", "zoom-step", this.root) as HTMLButtonElement;
-		b.type = "button";
-		b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}" /></svg>`;
-		return b;
-	}
-
-	private drag() {
-		const track = this.track;
-		track.setAttribute("role", "slider");
-		track.tabIndex = 0;
-		let startY = 0;
-		let startZoom = 0;
-		track.addEventListener("pointerdown", (e) => {
-			track.setPointerCapture(e.pointerId);
-			startY = e.clientY;
-			startZoom = this.map.getZoom();
-			this.root.classList.add("dragging");
-		});
-		track.addEventListener("pointermove", (e) => {
-			if (!track.hasPointerCapture(e.pointerId)) return;
-			const zoom = startZoom + (startY - e.clientY) / 40;
-			this.map.setZoom(Math.min(this.map.getMaxZoom(), Math.max(this.map.getMinZoom(), zoom)), {
-				animate: false,
-			});
-		});
-		const end = (e: PointerEvent) => {
-			if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
-			this.root.classList.remove("dragging");
-		};
-		track.addEventListener("pointerup", end);
-		track.addEventListener("pointercancel", end);
-		track.addEventListener("keydown", (e) => {
-			if (e.key === "ArrowUp") this.map.zoomIn(0.5);
-			else if (e.key === "ArrowDown") this.map.zoomOut(0.5);
-		});
+	setTitle(title: string) {
+		this.handle.title = title;
+		this.handle.setAttribute("aria-label", title);
 	}
 
 	private sync() {
-		const zoom = this.map.getZoom();
-		const min = this.map.getMinZoom();
-		const max = this.map.getMaxZoom();
-		this.thumb.style.bottom = `calc(6px + ${(zoom - min) / (max - min)} * (100% - 12px))`;
-		this.track.setAttribute("aria-valuenow", zoom.toFixed(1));
-		this.track.setAttribute("aria-valuemin", String(min));
-		this.track.setAttribute("aria-valuemax", String(max));
-		this.plus.disabled = zoom >= max;
-		this.minus.disabled = zoom <= min;
+		this.handle.setAttribute("aria-valuenow", this.map.getZoom().toFixed(1));
+		this.handle.setAttribute("aria-valuemin", String(this.map.getMinZoom()));
+		this.handle.setAttribute("aria-valuemax", String(this.map.getMaxZoom()));
 	}
 }
 
