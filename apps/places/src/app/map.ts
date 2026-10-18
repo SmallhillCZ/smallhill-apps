@@ -158,8 +158,8 @@ export class MapView implements OnDestroy {
 
 function clusterGroup() {
 	return (globalThis as unknown as { L: typeof L }).L.markerClusterGroup({
-		maxClusterRadius: (zoom) => (zoom <= 11 ? 80 : zoom <= 14 ? 50 : 30),
-		disableClusteringAtZoom: 17,
+		maxClusterRadius: 80,
+		disableClusteringAtZoom: 11,
 		showCoverageOnHover: false,
 		spiderfyOnMaxZoom: true,
 		iconCreateFunction: (cluster) => {
