@@ -91,6 +91,37 @@ export class Lists {
 		return saved;
 	}
 
+	shareUrl(): string {
+		const visible = this.lists().filter((l) => l.visible);
+		const url = new URL(".", document.baseURI);
+		for (const l of visible.length ? visible : this.lists()) url.searchParams.append("list", l.url);
+		return url.toString();
+	}
+
+	async importShared(lang: string): Promise<{ added: number; failed: number }> {
+		const here = new URL(location.href);
+		const links = here.searchParams.getAll("list").filter((l) => l.trim());
+		if (!links.length) return { added: 0, failed: 0 };
+		here.searchParams.delete("list");
+		history.replaceState(history.state, "", here.toString());
+		let added = 0;
+		let failed = 0;
+		for (const link of links) {
+			const existing = this.lists().find((l) => l.url === link.trim());
+			if (existing) {
+				if (!existing.visible) this.patch(existing.url, { visible: true });
+				continue;
+			}
+			try {
+				await this.add(link, lang);
+				added++;
+			} catch (err) {
+				if (!(err instanceof ListFailure && err.kind === "duplicate")) failed++;
+			}
+		}
+		return { added, failed };
+	}
+
 	async refresh(url: string, lang: string) {
 		this.setLoading(url, true);
 		try {

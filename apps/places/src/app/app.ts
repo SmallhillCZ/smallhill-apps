@@ -23,6 +23,22 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 						<path d="M4 6h16M4 12h16M4 18h10" />
 					</svg>
 				</button>
+				@if (store.lists().length) {
+					<button
+						type="button"
+						class="icon"
+						[attr.aria-label]="t().share"
+						[title]="t().share"
+						(click)="share()"
+					>
+						<svg viewBox="0 0 24 24" aria-hidden="true">
+							<circle cx="18" cy="5" r="2.5" />
+							<circle cx="6" cy="12" r="2.5" />
+							<circle cx="18" cy="19" r="2.5" />
+							<path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4" />
+						</svg>
+					</button>
+				}
 				<button
 					type="button"
 					class="icon more"
@@ -96,7 +112,12 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 							<button type="button" class="link small" (click)="map().fitAll()">{{ t().fit }}</button>
 						}
 					</div>
-					@if (!store.lists().length) {
+					@if (notice(); as text) {
+						<p class="notice small" role="status">{{ text }}</p>
+					}
+					@if (importing()) {
+						<p class="muted small">{{ t().importing }}</p>
+					} @else if (!store.lists().length) {
 						<p class="muted small">{{ t().empty }}</p>
 					}
 					<ul class="lists">
@@ -327,7 +348,7 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 			z-index: 1000;
 			top: 12px;
 			left: 12px;
-			bottom: 12px;
+			max-height: calc(100% - 24px);
 			width: 340px;
 			overflow-y: auto;
 			padding: 1rem;
@@ -475,6 +496,13 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 		.hint {
 			margin: 0;
 		}
+		.notice {
+			margin: 0 0 0.75rem;
+			padding: 0.5rem 0.75rem;
+			border-radius: 8px;
+			background: var(--bg);
+			border: 1px solid var(--border);
+		}
 	`,
 })
 export class App {
@@ -492,9 +520,49 @@ export class App {
 	protected readonly adding = signal(false);
 	protected readonly addError = signal<ListError | null>(null);
 
+	protected readonly importing = signal(false);
+	protected readonly notice = signal<string | null>(null);
+	private noticeTimer: ReturnType<typeof setTimeout> | undefined;
+
 	constructor() {
 		applyTheme(this.theme());
 		if (this.store.lists().length) this.store.refreshAll(this.i18n.lang());
+		this.importShared();
+	}
+
+	private async importShared() {
+		if (!new URL(location.href).searchParams.has("list")) return;
+		this.importing.set(true);
+		const { added, failed } = await this.store.importShared(this.i18n.lang());
+		this.importing.set(false);
+		this.panelOpen.set(true);
+		if (failed) this.notify(this.t().importFailed(failed));
+		if (added) setTimeout(() => this.map().fitAll());
+	}
+
+	protected async share() {
+		const url = this.store.shareUrl();
+		if (navigator.share) {
+			try {
+				await navigator.share({ title: this.t().shareTitle, url });
+				return;
+			} catch (err) {
+				if (err instanceof DOMException && err.name === "AbortError") return;
+			}
+		}
+		try {
+			await navigator.clipboard.writeText(url);
+			this.notify(this.t().linkCopied);
+		} catch {
+			prompt(this.t().share, url);
+		}
+	}
+
+	private notify(text: string) {
+		this.panelOpen.set(true);
+		this.notice.set(text);
+		clearTimeout(this.noticeTimer);
+		this.noticeTimer = setTimeout(() => this.notice.set(null), 6000);
 	}
 
 	protected setTheme(theme: Theme) {

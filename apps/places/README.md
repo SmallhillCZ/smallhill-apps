@@ -8,6 +8,7 @@ Part of [Smallhill Apps](../../README.md), served at https://apps.smallhill.cz/p
 
 - Google Maps has no public API for lists, so `server/` is a small Fastify proxy that opens the share link and reads the list the same way the Google Maps list page does. Only public lists ("Send link to view") work.
 - Lists and their last loaded places are kept on the device, so the map opens without signal.
+- Share gives a link with the Google list links in it (`?list=…`). Whoever opens it gets those lists added to their own map.
 - Map tiles come from [Mapy.com](https://developer.mapy.com/).
 
 ## Run locally

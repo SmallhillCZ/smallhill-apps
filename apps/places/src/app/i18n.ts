@@ -39,6 +39,12 @@ const en = {
 	mapsets: { basic: "Basic", outdoor: "Outdoor", aerial: "Aerial", winter: "Winter" },
 	openGoogle: "Google Maps",
 	openMapy: "Mapy.com",
+	share: "Share lists",
+	shareTitle: "My places",
+	linkCopied: "Link copied. Anyone who opens it sees these lists.",
+	importing: "Loading shared lists…",
+	importFailed: (n: number) =>
+		n === 1 ? "1 shared list could not be loaded." : `${n} shared lists could not be loaded.`,
 };
 
 export type Texts = typeof en;
@@ -80,6 +86,14 @@ const cs: Texts = {
 	mapsets: { basic: "Základní", outdoor: "Turistická", aerial: "Letecká", winter: "Zimní" },
 	openGoogle: "Mapy Google",
 	openMapy: "Mapy.com",
+	share: "Sdílet seznamy",
+	shareTitle: "Moje místa",
+	linkCopied: "Odkaz zkopírován. Kdo ho otevře, uvidí tyto seznamy.",
+	importing: "Načítám sdílené seznamy…",
+	importFailed: (n: number) =>
+		n === 1
+			? "1 sdílený seznam se nepodařilo načíst."
+			: `${n} ${czech(n, "sdílený seznam", "sdílené seznamy", "sdílených seznamů")} se nepodařilo načíst.`,
 };
 
 const TEXTS: Record<Lang, Texts> = { en, cs };
