@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildApp, isShareUrl, parseListUrl, toPlaceList } from "../server/app.ts";
+import { buildApp, extractPhotos, isShareUrl, parseListUrl, toPlaceList } from "../server/app.ts";
 
 const LIST_ID = "tAbCdEfGhIjKlMnOpQrStUvWxYz012";
 
@@ -128,4 +128,33 @@ test("GET /api/list reports a link that is not a list", async () => {
 	});
 	assert.equal(res.statusCode, 404);
 	assert.equal(res.json().error, "notfound");
+});
+
+const PHOTO = "AABkmLc0FpC0Pah8ZfolcRCCYsphVtBQ5CD5C9DMBRe5PD62C";
+
+test("extracts place photo keys and skips avatars", () => {
+	const raw = `["https://lh3.googleusercontent.com/a-/ALV-UjVpaePlpr1pCS1FAwBDBgy9LPqq4eIVLCJ","https:\\/\\/lh3.googleusercontent.com\\/grass-cs\\/${PHOTO}","https://lh5.googleusercontent.com/p/AF1QipNabcdefghijklmnopqrstu=w100","https://lh3.googleusercontent.com/grass-cs/${PHOTO}"]`;
+	assert.deepEqual(extractPhotos(raw), [`grass-cs/${PHOTO}`, "p/AF1QipNabcdefghijklmnopqrstu"]);
+});
+
+test("GET /api/photos reads the place page and its preview", async () => {
+	const calls: string[] = [];
+	const fake: typeof fetch = async (input) => {
+		const url = String(input);
+		calls.push(url);
+		if (url.includes("/maps?cid=")) {
+			return new Response(`<link href="/maps/preview/place?authuser=0&amp;hl=cs&amp;pb=%211m1" rel="prefetch">`);
+		}
+		if (url.includes("/maps/preview/place?authuser=0&hl=cs&pb=")) {
+			return new Response(`)]}'\n["https://lh3.googleusercontent.com/grass-cs/${PHOTO}"]`);
+		}
+		return new Response("", { status: 404 });
+	};
+	const app = await buildApp({ googleUrl: "https://google.test", fetch: fake });
+	const res = await app.inject({ url: "/api/photos?cid=12875133451263745548" });
+	assert.equal(res.statusCode, 200);
+	assert.deepEqual(res.json(), { photos: [`grass-cs/${PHOTO}`] });
+	assert.equal(calls[0], "https://google.test/maps?cid=12875133451263745548&hl=cs");
+	assert.equal((await app.inject({ url: "/api/photos?cid=abc" })).statusCode, 400);
+	assert.equal((await app.inject({ url: "/api/photo/a-/evil" })).statusCode, 400);
 });

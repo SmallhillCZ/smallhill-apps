@@ -45,6 +45,7 @@ export class MapView implements OnDestroy {
 	private fitted = false;
 	private readonly locator = new Locator({ position: "topright" });
 	private here: L.LayerGroup | null = null;
+	private readonly photos = new Map<string, Promise<string[]>>();
 	private slider: ZoomSlider | null = null;
 
 	constructor() {
@@ -63,6 +64,7 @@ export class MapView implements OnDestroy {
 			this.locator.addTo(map);
 			this.locator.setTitle(this.i18n.t().locate);
 			map.on("locationfound", (e) => this.showHere(e));
+			map.on("popupopen", (e) => this.loadPhotos(e.popup));
 			map.on("locationerror", () => {
 				this.locator.setState("error", this.i18n.t().locateFailed);
 			});
@@ -136,6 +138,38 @@ export class MapView implements OnDestroy {
 		map.flyTo(e.latlng, Math.max(map.getZoom(), 15), { duration: 0.8 });
 	}
 
+	private async loadPhotos(popup: L.Popup) {
+		const el = popup.getElement()?.querySelector<HTMLElement>(".popup-photos[data-cid]");
+		const cid = el?.dataset["cid"];
+		if (!el || !cid || el.dataset["loaded"]) return;
+		el.dataset["loaded"] = "1";
+		if (!this.photos.has(cid)) {
+			this.photos.set(
+				cid,
+				fetch(`api/photos?cid=${cid}`)
+					.then((res) => (res.ok ? (res.json() as Promise<{ photos: string[] }>) : { photos: [] }))
+					.then((body) => body.photos)
+					.catch(() => {
+						this.photos.delete(cid);
+						return [];
+					}),
+			);
+		}
+		const keys = await this.photos.get(cid)!;
+		if (!keys.length) {
+			el.remove();
+			popup.update();
+			return;
+		}
+		el.innerHTML = keys
+			.map(
+				(key) =>
+					`<a href="api/photo/${key}?w=1200" target="_blank" rel="noopener"><img src="api/photo/${key}?w=480" alt="" loading="lazy" /></a>`,
+			)
+			.join("");
+		el.classList.add("ready");
+	}
+
 	invalidate() {
 		this.map?.invalidateSize();
 	}
@@ -187,7 +221,9 @@ export class MapView implements OnDestroy {
 	private popup(place: Place, list: SavedList) {
 		const t = this.i18n.t();
 		const title = list.data?.title || t.untitled;
+		const photos = place.cid ? `<div class="popup-photos" data-cid="${place.cid}"></div>` : "";
 		return `<div class="popup">
+			${photos}
 			<div class="popup-list"><span class="dot" style="background:${list.color}"></span>${escape(title)}</div>
 			<strong class="popup-name">${escape(place.name)}</strong>
 			${place.note ? `<p class="popup-note">${escape(place.note)}</p>` : ""}
