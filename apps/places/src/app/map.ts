@@ -1,5 +1,6 @@
 import { Component, ElementRef, OnDestroy, afterNextRender, effect, inject, viewChild } from "@angular/core";
 import * as L from "leaflet";
+import "leaflet.markercluster";
 import { I18n } from "./i18n";
 import { Lists, type Place, type SavedList } from "./lists";
 import { MAPY_API_KEY } from "./mapy";
@@ -39,13 +40,13 @@ export class MapView implements OnDestroy {
 	private readonly host = viewChild.required<ElementRef<HTMLElement>>("map");
 	private map: L.Map | null = null;
 	private tiles: L.TileLayer | null = null;
-	private readonly markers = L.layerGroup();
-	private readonly byPlace = new Map<Place, L.CircleMarker>();
+	private readonly markers = clusterGroup();
+	private readonly byPlace = new Map<Place, L.Marker>();
 	private fitted = false;
 
 	constructor() {
 		afterNextRender(() => {
-			const map = L.map(this.host().nativeElement, { zoomControl: false }).setView(CZECHIA, 7);
+			const map = L.map(this.host().nativeElement, { zoomControl: false, maxZoom: 19 }).setView(CZECHIA, 7);
 			map.attributionControl.setPrefix(false);
 			L.control.zoom({ position: "topright" }).addTo(map);
 			this.markers.addTo(map);
@@ -73,8 +74,7 @@ export class MapView implements OnDestroy {
 	focus(place: Place) {
 		const marker = this.byPlace.get(place);
 		if (!this.map || !marker) return;
-		this.map.flyTo([place.lat, place.lng], Math.max(this.map.getZoom(), 15), { duration: 0.6 });
-		marker.openPopup();
+		this.markers.zoomToShowLayer(marker, () => marker.openPopup());
 	}
 
 	fitAll() {
@@ -120,18 +120,20 @@ export class MapView implements OnDestroy {
 		this.byPlace.clear();
 		const places = this.store.visiblePlaces();
 		for (const { place, list } of places) {
-			const marker = L.circleMarker([place.lat, place.lng], {
-				radius: 8,
-				color: "#ffffff",
-				weight: 2,
-				fillColor: list.color,
-				fillOpacity: 1,
-			})
-				.bindTooltip(escape(place.name), { direction: "top", offset: [0, -8] })
+			const marker = L.marker([place.lat, place.lng], {
+				icon: L.divIcon({
+					className: "pin",
+					html: `<span style="background:${list.color}"></span>`,
+					iconSize: [20, 20],
+				}),
+				title: place.name,
+				color: list.color,
+			} as L.MarkerOptions)
+				.bindTooltip(escape(place.name), { direction: "top", offset: [0, -10] })
 				.bindPopup(() => this.popup(place, list), { maxWidth: 280 });
-			marker.addTo(this.markers);
 			this.byPlace.set(place, marker);
 		}
+		this.markers.addLayers([...this.byPlace.values()]);
 		if (!this.fitted && places.length) {
 			this.fitted = true;
 			this.fitAll();
@@ -152,6 +154,28 @@ export class MapView implements OnDestroy {
 			</div>
 		</div>`;
 	}
+}
+
+function clusterGroup() {
+	return (globalThis as unknown as { L: typeof L }).L.markerClusterGroup({
+		maxClusterRadius: (zoom) => (zoom <= 11 ? 80 : zoom <= 14 ? 50 : 30),
+		disableClusteringAtZoom: 17,
+		showCoverageOnHover: false,
+		spiderfyOnMaxZoom: true,
+		iconCreateFunction: (cluster) => {
+			const count = cluster.getChildCount();
+			const colors = new Set(
+				cluster.getAllChildMarkers().map((m) => (m.options as L.MarkerOptions & { color?: string }).color),
+			);
+			const color = colors.size === 1 ? [...colors][0]! : "#343a40";
+			const size = count < 10 ? 34 : count < 50 ? 40 : 48;
+			return L.divIcon({
+				className: "cluster",
+				html: `<span style="background:${color}">${count}</span>`,
+				iconSize: [size, size],
+			});
+		},
+	});
 }
 
 class MapyLogo extends L.Control {
