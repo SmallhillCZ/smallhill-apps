@@ -289,3 +289,9 @@ body {
 	font-size: 0.85rem;
 	border-width: 3px;
 }
+
+@media (max-width: 640px) {
+	.leaflet-bottom {
+		bottom: calc(48px + env(safe-area-inset-bottom));
+	}
+}
