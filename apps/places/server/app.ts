@@ -26,6 +26,7 @@ export interface PlaceList {
 	token: string | null;
 	title: string;
 	description: string | null;
+	owner: { name: string; id: string | null } | null;
 	places: Place[];
 }
 
@@ -135,6 +136,7 @@ export function toPlaceList(raw: string, id: string, token: string | null): Plac
 		token,
 		title: str(at(list, 4)) ?? "",
 		description: str(at(list, 5)),
+		owner: str(at(list, 3, 0)) ? { name: str(at(list, 3, 0))!, id: str(at(list, 3, 2)) } : null,
 		places,
 	};
 }

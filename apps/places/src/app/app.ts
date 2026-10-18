@@ -136,7 +136,12 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 								@for (list of store.shared(); track list.url) {
 									<li class="shared-item">
 										<span class="dot" [style.background]="list.color"></span>
-										<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+										<span class="list-name">
+											<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+											@if (list.data?.owner?.name; as who) {
+												<span class="owner muted small">{{ t().sharedBy(who) }}</span>
+											}
+										</span>
 										<span class="count muted small">{{ list.data?.places?.length ?? 0 }}</span>
 									</li>
 								}
@@ -152,7 +157,10 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 						</div>
 					}
 					<ul class="lists">
-						@for (list of store.lists(); track list.url) {
+						@for (list of store.ordered(); track list.url) {
+							@if (store.isForeign(list) && $index === firstForeign()) {
+								<li class="group-head muted small">{{ t().sharedWithMe }}</li>
+							}
 							<li class="list">
 								<div class="list-row">
 									<button
@@ -170,7 +178,12 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 											[attr.aria-label]="t().show"
 											(change)="store.toggle(list.url)"
 										/>
-										<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+										<span class="list-name">
+											<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+											@if (store.ownerOf(list); as who) {
+												<span class="owner muted small">{{ t().sharedBy(who) }}</span>
+											}
+										</span>
 									</label>
 									<span class="count muted small">{{ list.data?.places?.length ?? 0 }}</span>
 									<button
@@ -278,12 +291,17 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 		@if (sharedDialog()) {
 			<div class="backdrop" (click)="viewShared()"></div>
 			<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="shared-title">
-				<h2 id="shared-title">{{ t().sharedTitle(store.shared().length) }}</h2>
+				<h2 id="shared-title">{{ t().sharedTitle(store.shared().length, sharedOwner()) }}</h2>
 				<ul>
 					@for (list of store.shared(); track list.url) {
 						<li class="shared-item">
 							<span class="dot" [style.background]="list.color"></span>
-							<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+							<span class="list-name">
+								<span class="list-title">{{ list.data?.title || t().untitled }}</span>
+								@if (!sharedOwner() && list.data?.owner?.name) {
+									<span class="owner muted small">{{ t().sharedBy(list.data!.owner!.name) }}</span>
+								}
+							</span>
 							<span class="count muted small">{{ t().places(list.data?.places?.length ?? 0) }}</span>
 						</li>
 					}
@@ -546,6 +564,20 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 			height: 18px;
 			accent-color: var(--accent);
 		}
+		.list-name {
+			display: grid;
+			min-width: 0;
+		}
+		.owner {
+			font-weight: 400;
+			line-height: 1.2;
+		}
+		.group-head {
+			padding: 0.9rem 0 0.25rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+		}
 		.list-title {
 			overflow: hidden;
 			text-overflow: ellipsis;
@@ -639,9 +671,8 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 			min-height: 32px;
 			font-weight: 600;
 		}
-		.shared-item .list-title {
+		.shared-item .list-name {
 			flex: 1;
-			min-width: 0;
 		}
 		.shared-item .dot {
 			flex: none;
@@ -728,6 +759,11 @@ export class App {
 
 	protected readonly importing = signal(false);
 	protected readonly sharedDialog = signal(false);
+	protected readonly sharedOwner = computed(() => {
+		const names = new Set(this.store.shared().map((l) => l.data?.owner?.name ?? null));
+		return names.size === 1 ? [...names][0] : null;
+	});
+	protected readonly firstForeign = computed(() => this.store.ordered().findIndex((l) => this.store.isForeign(l)));
 	protected readonly notice = signal<string | null>(null);
 	private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 

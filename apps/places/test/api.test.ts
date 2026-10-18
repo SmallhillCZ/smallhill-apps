@@ -64,6 +64,7 @@ test("parses places with notes and unsigned CID", () => {
 	const list = toPlaceList(RAW, LIST_ID, null);
 	assert.equal(list.title, "Pubs");
 	assert.equal(list.description, null);
+	assert.deepEqual(list.owner, { name: "Owner", id: "1" });
 	assert.equal(list.places.length, 2);
 	assert.deepEqual(list.places[0], {
 		name: "U Matěje",

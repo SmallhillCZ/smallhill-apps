@@ -15,6 +15,7 @@ export interface PlaceList {
 	token: string | null;
 	title: string;
 	description: string | null;
+	owner?: { name: string; id: string | null } | null;
 	places: Place[];
 }
 
@@ -24,6 +25,7 @@ export interface SavedList {
 	visible: boolean;
 	data: PlaceList | null;
 	savedAt: string | null;
+	source?: "own" | "shared";
 }
 
 export type ListError = "url" | "notfound" | "google" | "offline" | "duplicate";
@@ -69,11 +71,33 @@ export class Lists {
 			: "outdoor",
 	);
 	readonly shared = signal<SavedList[]>([]);
+	private readonly myIds = computed(
+		() =>
+			new Set(
+				this.lists()
+					.filter((l) => l.source !== "shared" && l.data?.owner?.id)
+					.map((l) => l.data!.owner!.id!),
+			),
+	);
+	readonly ordered = computed(() => {
+		const lists = this.lists();
+		return [...lists.filter((l) => !this.isForeign(l)), ...lists.filter((l) => this.isForeign(l))];
+	});
 	readonly visiblePlaces = computed(() =>
 		[...this.lists(), ...this.shared()]
 			.filter((l) => l.visible && l.data)
 			.flatMap((l) => l.data!.places.map((place) => ({ place, list: l }))),
 	);
+
+	isForeign(list: SavedList): boolean {
+		const id = list.data?.owner?.id;
+		if (id) return !this.myIds().has(id);
+		return list.source === "shared";
+	}
+
+	ownerOf(list: SavedList): string | null {
+		return this.isForeign(list) ? (list.data?.owner?.name ?? null) : null;
+	}
 
 	setMapset(mapset: Mapset) {
 		this.mapset.set(mapset);
@@ -87,7 +111,14 @@ export class Lists {
 		if (this.lists().some((l) => l.data?.id === data.id)) throw new ListFailure("duplicate");
 		const used = new Set(this.lists().map((l) => l.color));
 		const color = COLORS.find((c) => !used.has(c)) ?? COLORS[this.lists().length % COLORS.length];
-		const saved: SavedList = { url: trimmed, color, visible: true, data, savedAt: new Date().toISOString() };
+		const saved: SavedList = {
+			url: trimmed,
+			color,
+			visible: true,
+			data,
+			savedAt: new Date().toISOString(),
+			source: "own",
+		};
 		this.update((lists) => [...lists, saved]);
 		return saved;
 	}
@@ -119,7 +150,14 @@ export class Lists {
 					continue;
 				const used = new Set([...this.lists(), ...shared].map((l) => l.color));
 				const color = COLORS.find((c) => !used.has(c)) ?? COLORS[shared.length % COLORS.length];
-				shared.push({ url: link, color, visible: true, data, savedAt: new Date().toISOString() });
+				shared.push({
+					url: link,
+					color,
+					visible: true,
+					data,
+					savedAt: new Date().toISOString(),
+					source: "shared",
+				});
 			} catch {
 				failed++;
 			}
