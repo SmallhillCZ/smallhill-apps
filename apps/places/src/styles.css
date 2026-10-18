@@ -384,3 +384,42 @@ body {
 	position: absolute;
 	inset: -10px 0 -10px -14px;
 }
+
+.popup-photos {
+	display: flex;
+	gap: 4px;
+	height: 120px;
+	margin: -0.8rem -1rem 0.6rem;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	border-radius: 12px 12px 0 0;
+	background: var(--bg);
+	scrollbar-width: none;
+}
+.popup-photos:not(.ready) {
+	animation: locating 1.2s ease-in-out infinite;
+}
+.popup-photos a {
+	flex: none;
+	scroll-snap-align: start;
+	line-height: 0;
+}
+.popup-photos img {
+	height: 120px;
+	width: auto;
+	min-width: 80px;
+	object-fit: cover;
+}
+.popup-photos a:only-child {
+	flex: 1;
+}
+.popup-photos a:only-child img {
+	width: 100%;
+}
+.leaflet-popup-close-button {
+	z-index: 1;
+	top: 6px !important;
+	right: 6px !important;
+	border-radius: 50%;
+	background: var(--surface) !important;
+}

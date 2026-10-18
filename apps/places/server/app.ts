@@ -8,6 +8,7 @@ export interface AppOptions {
 	webRoot?: string;
 	logger?: boolean;
 	googleUrl?: string;
+	photoUrl?: string;
 	fetch?: typeof fetch;
 }
 
@@ -44,6 +45,21 @@ const SHORT_LINK_USER_AGENT = "Mozilla/5.0";
 const USER_AGENT =
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36";
 const CACHE_MS = 5 * 60 * 1000;
+
+const PHOTO_CACHE_MS = 24 * 60 * 60 * 1000;
+const PHOTO_KEY = /^(grass-cs|gps-cs-s|p)\/[A-Za-z0-9_-]{20,500}$/;
+
+export function extractPhotos(raw: string, limit = 6): string[] {
+	const text = raw.replace(/\\\//g, "/");
+	const keys: string[] = [];
+	for (const m of text.matchAll(
+		/https:\/\/lh\d\.googleusercontent\.com\/((?:grass-cs|gps-cs-s|p)\/[A-Za-z0-9_-]{20,500})/g,
+	)) {
+		if (!keys.includes(m[1])) keys.push(m[1]);
+		if (keys.length >= limit) break;
+	}
+	return keys;
+}
 
 const isGoogleHost = (host: string) => /^(www\.)?google\.[a-z.]{2,6}$/.test(host);
 
@@ -146,6 +162,7 @@ export async function buildApp({
 	webRoot,
 	logger = false,
 	googleUrl = "https://www.google.com",
+	photoUrl = "https://lh3.googleusercontent.com",
 	fetch: doFetch = fetch,
 }: AppOptions = {}): Promise<FastifyInstance> {
 	const app = Fastify({ logger: logger ? { level: "warn" } : false, bodyLimit: 16 * 1024 });
@@ -190,6 +207,52 @@ export async function buildApp({
 		cache.set(key, { at: Date.now(), list });
 		return list;
 	}
+
+	const photoCache = new Map<string, { at: number; photos: string[] }>();
+
+	async function photos(cid: string): Promise<string[]> {
+		const hit = photoCache.get(cid);
+		if (hit && Date.now() - hit.at < PHOTO_CACHE_MS) return hit.photos;
+		const headers = { "User-Agent": USER_AGENT, "Accept-Language": "cs,en" };
+		const page = await doFetch(`${googleUrl}/maps?cid=${cid}&hl=cs`, { headers });
+		if (!page.ok) throw new ListError("google", page.status);
+		const preview = /\/maps\/preview\/place\?[^"'\s]+/.exec(await page.text())?.[0].replace(/&amp;/g, "&");
+		let found: string[] = [];
+		if (preview) {
+			const res = await doFetch(`${googleUrl}${preview}`, { headers });
+			if (!res.ok) throw new ListError("google", res.status);
+			found = extractPhotos(await res.text());
+		}
+		if (photoCache.size > 2000) photoCache.clear();
+		photoCache.set(cid, { at: Date.now(), photos: found });
+		return found;
+	}
+
+	app.get<{ Querystring: { cid?: string } }>(`${api}/photos`, async (req, reply) => {
+		const cid = req.query.cid ?? "";
+		if (!/^\d{1,20}$/.test(cid)) return reply.code(400).send({ error: "cid" });
+		try {
+			reply.header("Cache-Control", "public, max-age=86400");
+			return { photos: await photos(cid) };
+		} catch (err) {
+			req.log.warn(err);
+			return reply.code(502).send({ error: "google" });
+		}
+	});
+
+	app.get<{ Params: { "*": string }; Querystring: { w?: string } }>(`${api}/photo/*`, async (req, reply) => {
+		const key = req.params["*"];
+		if (!PHOTO_KEY.test(key)) return reply.code(400).send({ error: "photo" });
+		const w = Math.min(1200, Math.max(80, Number(req.query.w) || 480));
+		const h = Math.round((w * 2) / 3);
+		const res = await doFetch(`${photoUrl}/${key}=w${w}-h${h}-k-no`, { headers: { "User-Agent": USER_AGENT } });
+		const type = res.headers.get("content-type") ?? "";
+		if (!res.ok || !type.startsWith("image/")) return reply.code(404).send({ error: "photo" });
+		return reply
+			.header("Content-Type", type)
+			.header("Cache-Control", "public, max-age=604800, immutable")
+			.send(Buffer.from(await res.arrayBuffer()));
+	});
 
 	app.get<{ Querystring: { url?: string; lang?: string } }>(`${api}/list`, async (req, reply) => {
 		const share = isShareUrl(req.query.url ?? "");
