@@ -162,21 +162,6 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 										@if (list.data?.description) {
 											<p class="muted small">{{ list.data!.description }}</p>
 										}
-										<ul class="places">
-											@for (place of list.data?.places ?? []; track $index) {
-												<li>
-													<button type="button" class="place" (click)="focus(list, place)">
-														<span class="place-name">{{ place.name }}</span>
-														@if (place.note) {
-															<span class="place-note small">{{ place.note }}</span>
-														}
-														@if (place.address) {
-															<span class="muted small">{{ place.address }}</span>
-														}
-													</button>
-												</li>
-											}
-										</ul>
 										<div class="list-actions">
 											@if (list.savedAt) {
 												<span class="muted small">{{ t().cached(when(list.savedAt)) }}</span>
@@ -197,6 +182,21 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 												{{ t().remove }}
 											</button>
 										</div>
+										<ul class="places">
+											@for (place of list.data?.places ?? []; track $index) {
+												<li>
+													<button type="button" class="place" (click)="focus(list, place)">
+														<span class="place-name">{{ place.name }}</span>
+														@if (place.note) {
+															<span class="place-note small">{{ place.note }}</span>
+														}
+														@if (place.address) {
+															<span class="muted small">{{ place.address }}</span>
+														}
+													</button>
+												</li>
+											}
+										</ul>
 									</div>
 								}
 							</li>
@@ -457,7 +457,7 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 			flex-wrap: wrap;
 			align-items: center;
 			gap: 0.25rem 0.5rem;
-			margin-top: 0.5rem;
+			margin-bottom: 0.25rem;
 		}
 		.list-actions .muted {
 			flex: 1 1 100%;

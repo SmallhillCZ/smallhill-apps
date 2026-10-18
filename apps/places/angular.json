@@ -24,8 +24,12 @@
 								"input": "public"
 							}
 						],
-						"styles": ["node_modules/leaflet/dist/leaflet.css", "src/styles.css"],
-						"allowedCommonJsDependencies": ["leaflet"]
+						"styles": [
+							"node_modules/leaflet/dist/leaflet.css",
+							"node_modules/leaflet.markercluster/dist/MarkerCluster.css",
+							"src/styles.css"
+						],
+						"allowedCommonJsDependencies": ["leaflet", "leaflet.markercluster"]
 					},
 					"configurations": {
 						"production": {
