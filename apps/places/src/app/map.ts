@@ -269,34 +269,47 @@ class ZoomSlider {
 		L.DomEvent.disableClickPropagation(handle);
 		L.DomEvent.disableScrollPropagation(handle);
 		this.handle = handle;
-		let startY = 0;
-		let startZoom = 0;
+		let grab = 0;
 		handle.addEventListener("pointerdown", (e) => {
 			handle.setPointerCapture(e.pointerId);
-			startY = e.clientY;
-			startZoom = map.getZoom();
+			grab = e.clientY - handle.getBoundingClientRect().top;
 			handle.classList.add("dragging");
 		});
 		handle.addEventListener("pointermove", (e) => {
 			if (!handle.hasPointerCapture(e.pointerId)) return;
-			const dy = startY - e.clientY;
-			handle.style.transform = `translateY(${-Math.max(-160, Math.min(160, dy))}px)`;
-			const zoom = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), startZoom + dy / 50));
-			map.setZoom(zoom, { animate: false });
+			const { top, bottom } = this.track();
+			const y = Math.min(
+				bottom,
+				Math.max(top, e.clientY - map.getContainer().getBoundingClientRect().top - grab),
+			);
+			handle.style.top = `${y}px`;
+			const min = map.getMinZoom();
+			const max = map.getMaxZoom();
+			map.setZoom(min + ((y - top) / (bottom - top)) * (max - min), { animate: false });
 		});
 		const end = (e: PointerEvent) => {
 			if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
 			handle.classList.remove("dragging");
-			handle.style.transform = "";
+			this.sync();
 		};
 		handle.addEventListener("pointerup", end);
 		handle.addEventListener("pointercancel", end);
 		handle.addEventListener("keydown", (e) => {
-			if (e.key === "ArrowUp" || e.key === "+") map.zoomIn(0.5);
-			else if (e.key === "ArrowDown" || e.key === "-") map.zoomOut(0.5);
+			if (e.key === "ArrowDown" || e.key === "+") map.zoomIn(0.5);
+			else if (e.key === "ArrowUp" || e.key === "-") map.zoomOut(0.5);
 		});
-		map.on("zoomend", () => this.sync());
+		map.on("zoom zoomend resize", () => {
+			if (!handle.classList.contains("dragging")) this.sync();
+		});
 		this.sync();
+	}
+
+	private track() {
+		const height = this.map.getContainer().clientHeight;
+		const narrow = window.matchMedia("(max-width: 640px)").matches;
+		const top = 72;
+		const bottom = Math.max(top, height - this.handle.offsetHeight - (narrow ? 130 : 80));
+		return { top, bottom };
 	}
 
 	setTitle(title: string) {
@@ -305,6 +318,11 @@ class ZoomSlider {
 	}
 
 	private sync() {
+		const { top, bottom } = this.track();
+		const min = this.map.getMinZoom();
+		const max = this.map.getMaxZoom();
+		const f = (this.map.getZoom() - min) / (max - min);
+		this.handle.style.top = `${top + f * (bottom - top)}px`;
 		this.handle.setAttribute("aria-valuenow", this.map.getZoom().toFixed(1));
 		this.handle.setAttribute("aria-valuemin", String(this.map.getMinZoom()));
 		this.handle.setAttribute("aria-valuemax", String(this.map.getMaxZoom()));
