@@ -1,4 +1,4 @@
-import { Component, inject, signal, viewChild } from "@angular/core";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { I18n, LANGS } from "./i18n";
 import { Lists, ListFailure, MAPSETS, type ListError, type Mapset, type Place, type SavedList } from "./lists";
 import { MapView } from "./map";
@@ -111,6 +111,15 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 						@if (store.visiblePlaces().length) {
 							<button type="button" class="link small" (click)="map().fitAll()">{{ t().fit }}</button>
 						}
+						<button
+							type="button"
+							class="icon sheet-close"
+							[attr.aria-label]="t().hidePanel"
+							[title]="t().hidePanel"
+							(click)="panelOpen.set(false)"
+						>
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+						</button>
 					</div>
 					@if (notice(); as text) {
 						<p class="notice small" role="status">{{ text }}</p>
@@ -226,6 +235,22 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 						<p class="muted small hint">{{ t().addHint }}</p>
 					</form>
 				</aside>
+			} @else if (mobile()) {
+				<button
+					type="button"
+					class="peek"
+					[attr.aria-label]="t().showPanel"
+					[attr.aria-expanded]="false"
+					(click)="panelOpen.set(true)"
+				>
+					@for (list of activeLists(); track list.url) {
+						<span class="dot" [style.background]="list.color"></span>
+					}
+					<span class="peek-text" [class.muted]="!activeLists().length">
+						{{ peekText() }}
+					</span>
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" /></svg>
+				</button>
 			}
 		</div>
 	`,
@@ -365,11 +390,71 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 				right: 0;
 				bottom: 0;
 				width: auto;
-				max-height: 45%;
+				max-height: 70%;
 				border-radius: var(--radius) var(--radius) 0 0;
 				border-bottom: 0;
 				padding-bottom: max(1rem, env(safe-area-inset-bottom));
 			}
+		}
+		.sheet-close {
+			display: none !important;
+		}
+		@media (max-width: 640px) {
+			.sheet-close {
+				display: grid !important;
+				margin: -6px -8px -6px 0;
+			}
+			.panel-head {
+				align-items: center;
+			}
+			.panel-head h1 {
+				flex: 1;
+			}
+		}
+		.peek {
+			position: absolute;
+			z-index: 1000;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			display: flex;
+			align-items: center;
+			gap: 0.4rem;
+			min-height: 48px;
+			padding: 0.5rem 1rem;
+			padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+			border: 1px solid var(--border);
+			border-bottom: 0;
+			border-radius: var(--radius) var(--radius) 0 0;
+			background: var(--surface);
+			color: var(--text);
+			box-shadow: var(--shadow);
+			font: inherit;
+			font-weight: 600;
+			text-align: left;
+		}
+		.peek .dot {
+			flex: none;
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+		}
+		.peek-text {
+			flex: 1;
+			min-width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		.peek svg {
+			flex: none;
+			width: 20px;
+			height: 20px;
+			fill: none;
+			stroke: var(--muted);
+			stroke-width: 2;
+			stroke-linecap: round;
+			stroke-linejoin: round;
 		}
 		.panel-head {
 			display: flex;
@@ -514,7 +599,17 @@ export class App {
 	protected readonly themes = THEMES;
 	protected readonly mapsets = MAPSETS;
 	protected readonly theme = signal<Theme>(loadTheme());
-	protected readonly panelOpen = signal(true);
+	private readonly narrow = matchMedia("(max-width: 640px)");
+	protected readonly mobile = signal(this.narrow.matches);
+	protected readonly panelOpen = signal(!this.narrow.matches || !this.store.lists().length);
+	protected readonly activeLists = computed(() => this.store.lists().filter((l) => l.visible));
+	protected readonly peekText = computed(() => {
+		const t = this.t();
+		if (!this.store.lists().length) return t.addList;
+		const active = this.activeLists();
+		if (!active.length) return t.noActive;
+		return active.map((l) => l.data?.title || t.untitled).join(", ");
+	});
 	protected readonly expanded = signal<string | null>(null);
 	protected readonly link = signal("");
 	protected readonly adding = signal(false);
@@ -526,6 +621,7 @@ export class App {
 
 	constructor() {
 		applyTheme(this.theme());
+		this.narrow.addEventListener("change", (e) => this.mobile.set(e.matches));
 		if (this.store.lists().length) this.store.refreshAll(this.i18n.lang());
 		this.importShared();
 	}
@@ -585,7 +681,7 @@ export class App {
 
 	protected focus(list: SavedList, place: Place) {
 		if (!list.visible) this.store.toggle(list.url);
-		if (matchMedia("(max-width: 640px)").matches) this.panelOpen.set(false);
+		if (this.mobile()) this.panelOpen.set(false);
 		setTimeout(() => this.map().focus(this.store.visiblePlaces().find((p) => p.place === place)?.place ?? place));
 	}
 
