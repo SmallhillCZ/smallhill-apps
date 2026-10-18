@@ -1,5 +1,5 @@
 {
-	"name": "Places from Google Maps lists",
+	"name": "Places",
 	"short_name": "Places",
 	"display": "standalone",
 	"scope": "./",
@@ -60,7 +60,7 @@
 			"purpose": "maskable"
 		}
 	],
-	"description": "Your Google Maps lists on a clean map. No ads, no tracking.",
+	"description": "Your saved place lists on a clean map. No ads, no tracking.",
 	"theme_color": "#0c8599",
 	"background_color": "#f7f6f2"
 }
