@@ -477,3 +477,15 @@ body {
 	color: #fff;
 	font-size: 0.9rem;
 }
+
+.leaflet-tooltip.with-note {
+	width: max-content;
+	max-width: 240px;
+	white-space: normal;
+}
+.tooltip-note {
+	display: block;
+	margin-top: 2px;
+	font-style: italic;
+	opacity: 0.8;
+}

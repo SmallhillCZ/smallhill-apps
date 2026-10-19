@@ -237,7 +237,12 @@ export class MapView implements OnDestroy {
 				title: place.name,
 				color: list.color,
 			} as L.MarkerOptions)
-				.bindTooltip(escape(place.name), { direction: "top", offset: [0, -10] })
+				.bindTooltip(
+					place.note
+						? `<strong>${escape(place.name)}</strong><span class="tooltip-note">${escape(place.note)}</span>`
+						: escape(place.name),
+					{ direction: "top", offset: [0, -10], className: place.note ? "with-note" : "" },
+				)
 				.bindPopup(() => this.popup(place, list), { maxWidth: 280 });
 			this.byPlace.set(place, marker);
 		}
