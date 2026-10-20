@@ -7,6 +7,7 @@ import { MAPY_API_KEY } from "./mapy";
 
 const CZECHIA: L.LatLngTuple = [49.8, 15.5];
 const VIEW_KEY = "places.view";
+const LABEL_ZOOM = 15;
 
 function savedView(): { center: L.LatLngTuple; zoom: number } | null {
 	try {
@@ -56,6 +57,7 @@ export class MapView implements OnDestroy {
 	private here: L.LayerGroup | null = null;
 	private readonly photos = new Map<string, Promise<string[]>>();
 	private slider: ZoomSlider | null = null;
+	private labels = false;
 	private readonly viewer = new PhotoViewer();
 
 	constructor() {
@@ -86,6 +88,8 @@ export class MapView implements OnDestroy {
 			this.locator.setTitle(this.i18n.t().locate);
 			map.on("locationfound", (e) => this.showHere(e));
 			map.on("popupopen", (e) => this.loadPhotos(e.popup));
+			map.on("zoomend", () => this.updateLabels());
+			pinchZoom(map, this.host().nativeElement.parentElement!);
 			map.on("locationerror", () => {
 				this.locator.setState("error", this.i18n.t().locateFailed);
 			});
@@ -222,8 +226,34 @@ export class MapView implements OnDestroy {
 		this.tiles.addTo(map);
 	}
 
+	private updateLabels() {
+		const labels = (this.map?.getZoom() ?? 0) >= LABEL_ZOOM;
+		if (labels === this.labels) return;
+		this.labels = labels;
+		for (const [place, marker] of this.byPlace) this.bindLabel(marker.unbindTooltip(), place, labels);
+	}
+
+	private bindLabel(marker: L.Marker, place: Place, label: boolean) {
+		const name = escape(place.name);
+		const note = place.note ? `<span class="tooltip-note">${escape(place.note)}</span>` : "";
+		if (label)
+			marker.bindTooltip(`<span class="label-name">${name}</span>${note}`, {
+				permanent: true,
+				direction: "right",
+				offset: [8, 0],
+				className: "pin-label",
+			});
+		else
+			marker.bindTooltip(note ? `<strong>${name}</strong>${note}` : name, {
+				direction: "top",
+				offset: [0, -10],
+				className: note ? "with-note" : "",
+			});
+	}
+
 	private renderMarkers() {
 		if (!this.map) return;
+		this.labels = this.map.getZoom() >= LABEL_ZOOM;
 		this.markers.clearLayers();
 		this.byPlace.clear();
 		const places = this.store.visiblePlaces();
@@ -237,13 +267,10 @@ export class MapView implements OnDestroy {
 				title: place.name,
 				color: list.color,
 			} as L.MarkerOptions)
-				.bindTooltip(
-					place.note
-						? `<strong>${escape(place.name)}</strong><span class="tooltip-note">${escape(place.note)}</span>`
-						: escape(place.name),
-					{ direction: "top", offset: [0, -10], className: place.note ? "with-note" : "" },
-				)
+				.on("mouseover", () => marker.getTooltip()?.getElement()?.classList.add("show-note"))
+				.on("mouseout", () => marker.getTooltip()?.getElement()?.classList.remove("show-note"))
 				.bindPopup(() => this.popup(place, list), { maxWidth: 280 });
+			this.bindLabel(marker, place, this.labels);
 			this.byPlace.set(place, marker);
 		}
 		this.markers.addLayers([...this.byPlace.values()]);
@@ -497,4 +524,47 @@ class PhotoViewer {
 		el.classList.toggle("single", !many);
 		el.querySelector(".photo-count")!.textContent = many ? `${this.index + 1} / ${this.keys.length}` : "";
 	}
+}
+
+function pinchZoom(map: L.Map, target: HTMLElement) {
+	let pending = 0;
+	let point: L.Point | null = null;
+	let frame = 0;
+	const apply = () => {
+		frame = 0;
+		if (!point) return;
+		const zoom = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), map.getZoom() + pending));
+		map.setZoomAround(point, zoom, { animate: false });
+		pending = 0;
+	};
+	const queue = (delta: number, x: number, y: number) => {
+		pending += delta;
+		const rect = map.getContainer().getBoundingClientRect();
+		point = L.point(x - rect.left, y - rect.top);
+		if (!frame) frame = requestAnimationFrame(apply);
+	};
+	target.addEventListener(
+		"wheel",
+		(e) => {
+			if (!e.ctrlKey) return;
+			e.preventDefault();
+			e.stopPropagation();
+			const delta = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+			queue(-delta / 69, e.clientX, e.clientY);
+		},
+		{ passive: false, capture: true },
+	);
+	let last = 1;
+	type Gesture = Event & { scale: number; clientX: number; clientY: number };
+	target.addEventListener("gesturestart", (e) => {
+		e.preventDefault();
+		last = (e as Gesture).scale;
+	});
+	target.addEventListener("gesturechange", (e) => {
+		e.preventDefault();
+		const g = e as Gesture;
+		queue(Math.log2(g.scale / last), g.clientX, g.clientY);
+		last = g.scale;
+	});
+	target.addEventListener("gestureend", (e) => e.preventDefault());
 }

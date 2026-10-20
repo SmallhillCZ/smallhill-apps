@@ -42,7 +42,8 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 				<button
 					type="button"
 					class="icon more"
-					popovertarget="menu"
+					[attr.aria-expanded]="menuOpen()"
+					(click)="menuOpen.set(!menuOpen())"
 					[attr.aria-label]="t().menu"
 					[title]="t().menu"
 				>
@@ -53,54 +54,58 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 					</svg>
 				</button>
 			</div>
-			<div id="menu" class="menu" popover>
-				<div class="menu-row">
-					<span>{{ t().mapStyle }}</span>
-					<select
-						[attr.aria-label]="t().mapStyle"
-						[value]="store.mapset()"
-						(change)="store.setMapset($any($event.target).value)"
-					>
-						@for (m of mapsets; track m) {
-							<option [value]="m" [selected]="m === store.mapset()">{{ t().mapsets[m] }}</option>
-						}
-					</select>
-				</div>
-				<div class="menu-row">
-					<span>{{ t().language }}</span>
-					<div class="langs" role="group" [attr.aria-label]="t().language">
-						@for (l of langs; track l) {
-							<button
-								type="button"
-								class="link small"
-								[class.on]="i18n.lang() === l"
-								[attr.aria-pressed]="i18n.lang() === l"
-								[attr.lang]="l"
-								(click)="i18n.setLang(l)"
-							>
-								{{ l.toUpperCase() }}
-							</button>
-						}
-					</div>
-				</div>
-				<div class="menu-row">
-					<span>{{ t().theme }}</span>
-					<select
-						[attr.aria-label]="t().theme"
-						[value]="theme()"
-						(change)="setTheme($any($event.target).value)"
-					>
-						@for (option of themes; track option) {
-							<option [value]="option" [selected]="option === theme()">{{ t().themes[option] }}</option>
-						}
-					</select>
-				</div>
-				@if (store.lists().length) {
+			@if (menuOpen()) {
+				<div id="menu" class="menu">
 					<div class="menu-row">
-						<button type="button" class="link" (click)="refreshAll()">{{ t().refreshAll }}</button>
+						<span>{{ t().mapStyle }}</span>
+						<select
+							[attr.aria-label]="t().mapStyle"
+							[value]="store.mapset()"
+							(change)="store.setMapset($any($event.target).value)"
+						>
+							@for (m of mapsets; track m) {
+								<option [value]="m" [selected]="m === store.mapset()">{{ t().mapsets[m] }}</option>
+							}
+						</select>
 					</div>
-				}
-			</div>
+					<div class="menu-row">
+						<span>{{ t().language }}</span>
+						<div class="langs" role="group" [attr.aria-label]="t().language">
+							@for (l of langs; track l) {
+								<button
+									type="button"
+									class="link small"
+									[class.on]="i18n.lang() === l"
+									[attr.aria-pressed]="i18n.lang() === l"
+									[attr.lang]="l"
+									(click)="i18n.setLang(l)"
+								>
+									{{ l.toUpperCase() }}
+								</button>
+							}
+						</div>
+					</div>
+					<div class="menu-row">
+						<span>{{ t().theme }}</span>
+						<select
+							[attr.aria-label]="t().theme"
+							[value]="theme()"
+							(change)="setTheme($any($event.target).value)"
+						>
+							@for (option of themes; track option) {
+								<option [value]="option" [selected]="option === theme()">
+									{{ t().themes[option] }}
+								</option>
+							}
+						</select>
+					</div>
+					@if (store.lists().length) {
+						<div class="menu-row">
+							<button type="button" class="link" (click)="refreshAll()">{{ t().refreshAll }}</button>
+						</div>
+					}
+				</div>
+			}
 		</header>
 		<div class="body">
 			<app-map />
@@ -377,8 +382,9 @@ import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
 			color: var(--text);
 			box-shadow: var(--shadow);
 		}
-		.menu:popover-open {
+		.menu {
 			display: grid;
+			z-index: 1002;
 		}
 		.menu-row {
 			display: flex;
@@ -757,10 +763,17 @@ export class App {
 	protected readonly notice = signal<string | null>(null);
 	private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
+	protected readonly menuOpen = signal(false);
+
 	constructor() {
 		applyTheme(this.theme());
 		document.addEventListener("keydown", (e) => {
 			if (e.key === "Escape" && this.sharedDialog()) this.viewShared();
+			if (e.key === "Escape") this.menuOpen.set(false);
+		});
+		document.addEventListener("pointerdown", (e) => {
+			const target = e.target as Element | null;
+			if (this.menuOpen() && !target?.closest("#menu, .more")) this.menuOpen.set(false);
 		});
 		this.narrow.addEventListener("change", (e) => this.mobile.set(e.matches));
 		if (this.store.lists().length) this.store.refreshAll(this.i18n.lang());
@@ -828,7 +841,7 @@ export class App {
 	}
 
 	protected refreshAll() {
-		document.getElementById("menu")?.hidePopover();
+		this.menuOpen.set(false);
 		this.store.refreshAll(this.i18n.lang());
 	}
 
