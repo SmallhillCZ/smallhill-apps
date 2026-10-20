@@ -9,14 +9,16 @@ The image has no Traefik or Watchtower labels; the server compose sets them once
 
 ## Server setup
 
-[`docker-compose.example.yml`](docker-compose.example.yml) is the whole stack: Traefik (ports 80/443, Let's Encrypt), Watchtower, the `smallhill-apps` container with every app, and one Postgres shared by all apps. Copy it to the server as `docker-compose.yml` and run:
+[`docker-compose.example.yml`](docker-compose.example.yml) is the app stack: the `smallhill-apps` container with every app and one Postgres shared by all apps. Traefik (with TLS on its entrypoint) and Watchtower run in a separate admin stack; the app container joins its external `admin_traefik` network. Copy the file to the server as `docker-compose.yml` and run:
 
 ```sh
 docker login ghcr.io
-ACME_EMAIL=... WATCHTOWER_TOKEN=... DB_PASSWORD=... docker compose up -d
+DB_PASSWORD=... docker compose up -d
 ```
 
-Watchtower's update API is exposed at `https://apps.smallhill.cz/v1/update`. GitHub repo settings: variable `WATCHTOWER_URL=https://apps.smallhill.cz/v1/update`, secret `WATCHTOWER_TOKEN` (same value as on the server).
+GitHub repo settings: variable `WATCHTOWER_URL` (the admin Watchtower's `/v1/update` endpoint), secret `WATCHTOWER_TOKEN`.
+
+After a release that changes labels, run `docker compose up -d smallhill-apps` once: Watchtower drops container labels equal to the old image's labels when it recreates the container.
 
 ## Adding an app
 
