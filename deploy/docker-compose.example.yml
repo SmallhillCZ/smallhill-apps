@@ -1,72 +1,44 @@
 name: smallhill-apps
 
+networks:
+  admin_traefik:
+    external: true
+  db:
+
 services:
-  traefik:
-    image: traefik:v3
-    restart: unless-stopped
-    command:
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=smallhill-apps
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.websecure.address=:443
-      - --entrypoints.websecure.http.tls.certresolver=letsencrypt
-      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
-      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - letsencrypt:/letsencrypt
-
-  watchtower:
-    image: nickfedor/watchtower
-    restart: unless-stopped
-    environment:
-      WATCHTOWER_LABEL_ENABLE: "true"
-      WATCHTOWER_CLEANUP: "true"
-      WATCHTOWER_HTTP_API_UPDATE: "true"
-      WATCHTOWER_HTTP_API_TOKEN: ${WATCHTOWER_TOKEN}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ${DOCKER_CONFIG:-/root/.docker}/config.json:/config.json:ro
-    labels:
-      traefik.enable: "true"
-      traefik.http.routers.watchtower.rule: Host(`${APPS_HOST:-apps.smallhill.cz}`) && Path(`/v1/update`)
-      traefik.http.services.watchtower.loadbalancer.server.port: "8080"
-
   smallhill-apps:
     image: ghcr.io/smallhillcz/smallhill-apps:latest
+    container_name: smallhill-apps
     restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://smallhill-apps:${DB_PASSWORD}@smallhill-apps.db:5432/smallhill-apps
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - admin_traefik
+      - db
     labels:
       com.centurylinklabs.watchtower.enable: "true"
       traefik.enable: "true"
       traefik.http.routers.smallhill-apps.rule: Host(`${APPS_HOST:-apps.smallhill.cz}`)
-      traefik.http.routers.smallhill-apps.tls: "true"
-      traefik.http.services.smallhill-apps.loadbalancer.server.port: "80"
-    environment:
-      DATABASE_URL: postgres://smallhill-apps:${DB_PASSWORD}@db:5432/smallhill-apps
-    depends_on:
-      db:
-        condition: service_healthy
 
   db:
     image: postgres:17-alpine
+    container_name: smallhill-apps.db
     restart: unless-stopped
     environment:
       POSTGRES_USER: smallhill-apps
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: smallhill-apps
     volumes:
-      - db:/var/lib/postgresql/data
+      - ./data/db:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "smallhill-apps"]
       interval: 5s
       retries: 10
-
-volumes:
-  letsencrypt:
-  db:
+    networks:
+      - db
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+      com.centurylinklabs.watchtower.cooldown-delay: 7d
