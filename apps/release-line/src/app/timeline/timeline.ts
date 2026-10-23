@@ -16,6 +16,7 @@ import { isVersionTag, parseFilter, readableText, tagColor } from "../core/tags"
 import { autoReleaseTags, matchWorkflow } from "../core/workflows";
 import {
 	type BranchMode,
+	EXPAND_DEPTH,
 	type Commit,
 	Github,
 	GithubFailure,
@@ -101,123 +102,146 @@ interface RowRef {
 				<section class="timeline card" [attr.aria-label]="d.owner + '/' + d.name">
 					<div class="range muted small">
 						<span>{{ d.releaseTags.length ? t().rangeFrom(oldestTag()) : t().rangeRecent }}</span>
-						<span>{{ t().commits(d.commits.length) }}</span>
+						<span>{{ t().commits(d.total) }}</span>
 					</div>
 					<div class="graph" [style.--row.px]="geo().row">
 						<svg class="lines" [attr.width]="graphWidth()" [attr.height]="height()" aria-hidden="true">
 							@for (e of edges(); track $index) {
-								<path [attr.d]="e.d" [attr.class]="'edge lane-' + e.lane + (e.open ? ' fade' : '')" />
-							}
-							@for (n of d.graph.nodes; track n.commit.oid) {
-								<circle
-									[attr.cx]="geo().pad + n.lane * geo().lane"
-									[attr.cy]="n.row * geo().row + geo().row / 2"
-									r="5.5"
+								<path
+									[attr.d]="e.d"
 									[attr.class]="
-										'dot lane-' + (n.lane % lanes) + (tagged().has(n.commit.oid) ? ' filled' : '')
+										'edge lane-' + e.lane + (e.open ? ' fade' : '') + (e.gap ? ' gap' : '')
 									"
 								/>
 							}
+							@for (n of d.graph.nodes; track n.commit.oid) {
+								@if (!n.commit.gap) {
+									<circle
+										[attr.cx]="geo().pad + n.lane * geo().lane"
+										[attr.cy]="n.row * geo().row + geo().row / 2"
+										r="5.5"
+										[attr.class]="
+											'dot lane-' +
+											(n.lane % lanes) +
+											(tagged().has(n.commit.oid) ? ' filled' : '')
+										"
+									/>
+								}
+							}
 						</svg>
 						@for (row of rows(); track row.commit.oid) {
-							<div
-								class="row"
-								[class.drop]="dropOid() === row.commit.oid"
-								[class.merge]="row.merge"
-								[style.padding-left.px]="graphWidth() + 8"
-								tabindex="0"
-								role="button"
-								[attr.aria-label]="row.commit.short + ' ' + row.commit.message"
-								(click)="openPicker(row.commit)"
-								(keydown.enter)="openPicker(row.commit)"
-								(dragover)="dragOver($event, row.commit)"
-								(dragleave)="dropOid.set(null)"
-								(drop)="drop($event, row.commit)"
-							>
-								<code class="sha">{{ row.commit.short }}</code>
-								<span class="msg">{{ row.commit.message }}</span>
-								<span class="refs">
-									@for (ref of row.refs; track ref.kind + ref.name) {
-										@switch (ref.kind) {
-											@case ("release") {
-												<span
-													class="tag release"
-													[class.movable]="d.canPush"
-													[style.background]="ref.color"
-													[style.color]="ref.text"
-													[attr.draggable]="d.canPush"
-													(dragstart)="dragStart($event, ref.name)"
-													(dragend)="dragEnd()"
-													(click)="$event.stopPropagation(); openPicker(row.commit)"
-												>
-													@if (d.canPush) {
+							@if (row.commit.gap; as gap) {
+								<div class="row gap" [style.padding-left.px]="graphWidth() + 8">
+									<span class="muted small">{{ t().hiddenCommits(gap.count) }}</span>
+									<button
+										type="button"
+										class="link small"
+										[disabled]="expanding() === row.commit.oid"
+										(click)="expand(row.commit.oid)"
+									>
+										@if (expanding() === row.commit.oid) {
+											<span class="spinner" aria-hidden="true"></span>
+										}
+										{{ gap.count > expandStep ? t().showSome(expandStep) : t().showHidden }}
+									</button>
+								</div>
+							} @else {
+								<div
+									class="row"
+									[class.drop]="dropOid() === row.commit.oid"
+									[class.merge]="row.merge"
+									[style.padding-left.px]="graphWidth() + 8"
+									tabindex="0"
+									role="button"
+									[attr.aria-label]="row.commit.short + ' ' + row.commit.message"
+									(click)="openPicker(row.commit)"
+									(keydown.enter)="openPicker(row.commit)"
+									(dragover)="dragOver($event, row.commit)"
+									(dragleave)="dropOid.set(null)"
+									(drop)="drop($event, row.commit)"
+								>
+									<code class="sha">{{ row.commit.short }}</code>
+									<span class="msg">{{ row.commit.message }}</span>
+									<span class="refs">
+										@for (ref of row.refs; track ref.kind + ref.name) {
+											@switch (ref.kind) {
+												@case ("release") {
+													<span
+														class="tag release"
+														[class.movable]="d.canPush"
+														[style.background]="ref.color"
+														[style.color]="ref.text"
+														[attr.draggable]="d.canPush"
+														(dragstart)="dragStart($event, ref.name)"
+														(dragend)="dragEnd()"
+														(click)="$event.stopPropagation(); openPicker(row.commit)"
+													>
+														@if (d.canPush) {
+															<svg
+																width="8"
+																height="12"
+																viewBox="0 0 10 14"
+																aria-hidden="true"
+															>
+																<g fill="currentColor">
+																	<circle cx="2.5" cy="2.5" r="1.3" />
+																	<circle cx="7.5" cy="2.5" r="1.3" />
+																	<circle cx="2.5" cy="7" r="1.3" />
+																	<circle cx="7.5" cy="7" r="1.3" />
+																	<circle cx="2.5" cy="11.5" r="1.3" />
+																	<circle cx="7.5" cy="11.5" r="1.3" />
+																</g>
+															</svg>
+														}
+														{{ ref.name }}
+													</span>
+												}
+												@case ("pending") {
+													<a
+														class="tag pending"
+														[style.border-color]="ref.color"
+														[style.color]="ref.color"
+														[attr.href]="ref.url"
+														target="_blank"
+														rel="noopener"
+														[title]="t().viewRun"
+														(click)="$event.stopPropagation()"
+														><span class="spinner" aria-hidden="true"></span
+														>{{ ref.name }} · {{ t().pending }}</a
+													>
+												}
+												@case ("version") {
+													<span class="tag version">{{ ref.name }}</span>
+												}
+												@case ("branch") {
+													<span [attr.class]="'tag branch lane-' + ref.lane">
 														<svg
-															width="8"
+															width="12"
 															height="12"
-															viewBox="0 0 10 14"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2.4"
 															aria-hidden="true"
 														>
-															<g fill="currentColor">
-																<circle cx="2.5" cy="2.5" r="1.3" />
-																<circle cx="7.5" cy="2.5" r="1.3" />
-																<circle cx="2.5" cy="7" r="1.3" />
-																<circle cx="7.5" cy="7" r="1.3" />
-																<circle cx="2.5" cy="11.5" r="1.3" />
-																<circle cx="7.5" cy="11.5" r="1.3" />
-															</g>
+															<circle cx="6" cy="5" r="2.5" />
+															<circle cx="6" cy="19" r="2.5" />
+															<circle cx="18" cy="7" r="2.5" />
+															<path d="M6 7.5v9M18 9.5a6 6 0 0 1-6 6H8" />
 														</svg>
-													}
-													{{ ref.name }}
-												</span>
-											}
-											@case ("pending") {
-												<a
-													class="tag pending"
-													[style.border-color]="ref.color"
-													[style.color]="ref.color"
-													[attr.href]="ref.url"
-													target="_blank"
-													rel="noopener"
-													[title]="t().viewRun"
-													(click)="$event.stopPropagation()"
-													><span class="spinner" aria-hidden="true"></span>{{ ref.name }} ·
-													{{ t().pending }}</a
-												>
-											}
-											@case ("version") {
-												<span class="tag version">{{ ref.name }}</span>
-											}
-											@case ("branch") {
-												<span [attr.class]="'tag branch lane-' + ref.lane">
-													<svg
-														width="12"
-														height="12"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2.4"
-														aria-hidden="true"
-													>
-														<circle cx="6" cy="5" r="2.5" />
-														<circle cx="6" cy="19" r="2.5" />
-														<circle cx="18" cy="7" r="2.5" />
-														<path d="M6 7.5v9M18 9.5a6 6 0 0 1-6 6H8" />
-													</svg>
-													{{ ref.name }}
-												</span>
+														{{ ref.name }}
+													</span>
+												}
 											}
 										}
-									}
-								</span>
-								<span class="meta muted small"
-									>{{ row.commit.author }} · {{ ago(row.commit.date) }}</span
-								>
-							</div>
+									</span>
+									<span class="meta muted small"
+										>{{ row.commit.author }} · {{ ago(row.commit.date) }}</span
+									>
+								</div>
+							}
 						}
 					</div>
-					@if (d.truncated) {
-						<p class="muted small more">{{ t().truncated }}</p>
-					}
 				</section>
 				<aside>
 					<h2 class="aside-title">{{ t().releaseTags }}</h2>
@@ -358,6 +382,8 @@ export class Timeline {
 	protected readonly picker = viewChild.required<ElementRef<HTMLDialogElement>>("picker");
 	private readonly now = signal(Date.now());
 	private loadId = 0;
+	protected readonly expanding = signal<string | null>(null);
+	protected readonly expandStep = EXPAND_DEPTH;
 
 	protected readonly full = computed(() => `${this.owner()}/${this.repo()}`);
 	protected readonly geo = computed(() =>
@@ -378,6 +404,7 @@ export class Timeline {
 			d: edgePath(e, geo, bottom),
 			lane: e.lane % LANES,
 			open: e.toRow === null,
+			gap: !!d.commits[e.fromRow]?.gap || (e.toRow !== null && !!d.commits[e.toRow]?.gap),
 		}));
 	});
 
@@ -454,7 +481,7 @@ export class Timeline {
 			const match = this.matches()[name];
 			const run = this.runs()[name] ?? null;
 			const inView = d.commits.some((c) => c.oid === tag.oid);
-			const behind = head && inView ? countBetween(d.commits, head, tag.oid) : 0;
+			const behind = d.behind[name] ?? (head && inView ? countBetween(d.commits, head, tag.oid) : 0);
 			const pending = this.pendingHere().find((p) => p.tag === name);
 			return {
 				name,
@@ -568,6 +595,21 @@ export class Timeline {
 			this.error.set(this.t().errors[e instanceof GithubFailure ? e.kind : "failed"]);
 		} finally {
 			if (id === this.loadId) this.loading.set(false);
+		}
+	}
+
+	protected async expand(oid: string) {
+		const d = this.data();
+		if (!d || this.expanding()) return;
+		const id = this.loadId;
+		this.expanding.set(oid);
+		try {
+			const next = await this.github.expand(d, oid);
+			if (id === this.loadId) this.data.set(next);
+		} catch (e) {
+			if (id === this.loadId) this.error.set(this.t().errors[e instanceof GithubFailure ? e.kind : "failed"]);
+		} finally {
+			this.expanding.set(null);
 		}
 	}
 

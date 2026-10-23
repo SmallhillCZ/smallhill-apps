@@ -38,6 +38,7 @@ test("layout keeps the main branch in lane 0 and puts merged branches beside it"
 		c("f2", "2026-01-04", "f1"),
 		c("m", "2026-01-05", "b", "f2"),
 		c("open", "2026-01-06", "b"),
+		c("side", "2026-01-07", "open", "elsewhere"),
 	];
 	const g = layout(commits, "m");
 	const lane = (oid: string) => g.nodes.find((n) => n.commit.oid === oid)!.lane;
@@ -51,13 +52,15 @@ test("layout keeps the main branch in lane 0 and puts merged branches beside it"
 	assert.ok(outside);
 	assert.equal(outside.lane, 0);
 	assert.ok(g.lanes >= 2);
+	assert.equal(g.edges.filter((e) => e.toRow === null).length, 1);
 });
 
 test("edgePath draws straight lines in a lane and curves between lanes", () => {
 	const geo = { row: 50, lane: 20, pad: 10 };
 	assert.equal(edgePath({ fromRow: 0, fromLane: 0, lane: 0, toRow: 2, toLane: 0 }, geo, 500), "M 10 25 L 10 125");
 	assert.match(edgePath({ fromRow: 0, fromLane: 1, lane: 1, toRow: 3, toLane: 0 }, geo, 500), /L 30 125 C/);
-	assert.match(edgePath({ fromRow: 0, fromLane: 0, lane: 1, toRow: null, toLane: 1 }, geo, 500), /L 30 500$/);
+	assert.equal(edgePath({ fromRow: 0, fromLane: 0, lane: 0, toRow: null, toLane: 0 }, geo, 500), "M 10 25 L 10 75");
+	assert.equal(edgePath({ fromRow: 9, fromLane: 1, lane: 1, toRow: null, toLane: 1 }, geo, 500), "M 30 475 L 30 500");
 });
 
 test("tag filters and release tags", () => {
