@@ -98,6 +98,20 @@ export const APPS: AppInfo[] = [
 		listed: true,
 	},
 	{
+		id: "release-line",
+		name: { en: "Release Line", cs: "Release Line" },
+		tagline: { en: "Release by moving a tag on a branch map", cs: "Vydávejte přesunutím tagu na mapě větví" },
+		description: {
+			en: "Sign in with GitHub and see a repository's branches as metro lines, with release tags like NEXT or PRODUCTION on their commits. Drag a tag to another commit, or tap a commit, and the app runs that tag's release workflow and asks for its inputs, such as the version bump. Your sign-in stays on your device.",
+			cs: "Přihlaste se přes GitHub a uvidíte větve repozitáře jako linky metra, s tagy vydání jako NEXT nebo PRODUCTION u commitů. Přetáhněte tag na jiný commit, nebo na commit klepněte, a aplikace spustí workflow vydání pro daný tag a zeptá se na jeho vstupy, třeba na zvýšení verze. Přihlášení zůstává ve vašem zařízení.",
+		},
+		color: "#9c36b5",
+		icon: "apps/release-line/icon.svg",
+		screenshots: ["apps/release-line/screenshot-1.webp", "apps/release-line/screenshot-2.webp"],
+		url: "/release-line/",
+		listed: true,
+	},
+	{
 		id: "jachtarskaknizka",
 		name: { en: "Jachtařská knížka", cs: "Jachtařská knížka" },
 		tagline: { en: "Your sailing logbook online", cs: "Online jachtařská knížka" },
