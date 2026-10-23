@@ -52,6 +52,7 @@ export function topoSort<C extends GraphCommit>(commits: C[]): C[] {
 
 export function layout<C extends GraphCommit>(commits: C[], mainHead?: string): Graph<C> {
 	const order = topoSort(commits);
+	const present = new Set(commits.map((c) => c.oid));
 	const lanes: (string | null)[] = mainHead && commits.some((c) => c.oid === mainHead) ? [mainHead] : [];
 	const nodes: GraphNode<C>[] = [];
 	const open: { fromRow: number; fromLane: number; lane: number; parent: string }[] = [];
@@ -69,6 +70,10 @@ export function layout<C extends GraphCommit>(commits: C[], mainHead?: string): 
 		for (let i = 0; i < lanes.length; i++) if (lanes[i] === commit.oid) lanes[i] = null;
 		nodes.push({ commit, row, lane });
 		commit.parents.forEach((parent, k) => {
+			if (!present.has(parent)) {
+				if (k === 0) open.push({ fromRow: row, fromLane: lane, lane, parent });
+				return;
+			}
 			let travel: number;
 			if (k === 0) {
 				travel = lane;
@@ -108,11 +113,7 @@ export function edgePath(e: GraphEdge, g: Geometry, bottom: number): string {
 	const y0 = y(e.fromRow);
 	const xt = x(e.lane);
 	const parts = [`M ${x0} ${y0}`];
-	if (e.toRow === null) {
-		if (xt !== x0) parts.push(curve(x0, y0, xt, y0 + g.row));
-		parts.push(`L ${xt} ${bottom}`);
-		return parts.join(" ");
-	}
+	if (e.toRow === null) return `${parts[0]} L ${x0} ${Math.min(bottom, y0 + g.row)}`;
 	const x1 = x(e.toLane);
 	const y1 = y(e.toRow);
 	if (xt !== x0 && xt !== x1 && e.toRow - e.fromRow < 2) return `${parts[0]} ${curve(x0, y0, x1, y1)}`;

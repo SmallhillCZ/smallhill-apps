@@ -247,10 +247,6 @@
 	border-radius: 50%;
 	animation: spin 0.9s linear infinite;
 }
-.more {
-	margin: 0;
-	padding: 0.8rem 1rem;
-}
 
 aside {
 	flex: 1 1 280px;
@@ -384,4 +380,15 @@ aside {
 		max-width: 100vw;
 		border-radius: 18px 18px 0 0;
 	}
+}
+.edge.gap {
+	stroke-dasharray: 1 7;
+}
+.row.gap {
+	cursor: default;
+	gap: 0.5rem;
+	background: repeating-linear-gradient(-45deg, transparent 0 8px, var(--surface-2) 8px 16px);
+}
+.row.gap:hover {
+	background: repeating-linear-gradient(-45deg, transparent 0 8px, var(--surface-2) 8px 16px);
 }

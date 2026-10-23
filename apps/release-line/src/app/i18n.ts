@@ -55,7 +55,9 @@ const en = {
 	rangeFrom: (tag: string) => `From ${tag}, the oldest release tag, to the newest commit`,
 	rangeRecent: "Latest commits on the default branch",
 	commits: (n: number) => (n === 1 ? "1 commit" : `${n} commits`),
-	truncated: "Some commits are not shown.",
+	hiddenCommits: (n: number) => (n === 1 ? "1 commit hidden" : `${n} commits hidden`),
+	showHidden: "Show",
+	showSome: (n: number) => `Show ${n} more`,
 	releaseTags: "Release tags",
 	dragHint:
 		"Drag a coloured tag onto another commit, or click a commit, to release it there. Grey version tags are made by the workflows and can't be moved.",
@@ -205,7 +207,9 @@ const cs: Texts = {
 	rangeFrom: (tag: string) => `Od ${tag}, nejstaršího tagu vydání, po nejnovější commit`,
 	rangeRecent: "Poslední commity hlavní větve",
 	commits: (n: number) => `${n} ${czech(n, "commit", "commity", "commitů")}`,
-	truncated: "Některé commity nejsou zobrazené.",
+	hiddenCommits: (n: number) => `${n} ${czech(n, "skrytý commit", "skryté commity", "skrytých commitů")}`,
+	showHidden: "Zobrazit",
+	showSome: (n: number) => `Zobrazit dalších ${n}`,
 	releaseTags: "Tagy vydání",
 	dragHint:
 		"Přetáhněte barevný tag na jiný commit, nebo na commit klepněte, a vydáte ho tam. Šedé tagy verzí vytvářejí workflow a přesouvat nejdou.",

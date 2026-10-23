@@ -462,6 +462,6 @@ export function countBetween(commits: Commit[], newer: string, older: string): n
 	if (!fromNewer.has(older)) return 0;
 	const fromOlder = reach(older);
 	let n = 0;
-	for (const oid of fromNewer) if (!fromOlder.has(oid)) n++;
+	for (const oid of fromNewer) if (!fromOlder.has(oid)) n += byOid.get(oid)!.gap?.count ?? 1;
 	return n;
 }

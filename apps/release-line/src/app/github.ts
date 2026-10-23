@@ -39,6 +39,7 @@ export interface Commit {
 	login: string | null;
 	url: string;
 	parents: string[];
+	gap?: { count: number; target: string };
 }
 
 export interface Ref {
@@ -60,8 +61,10 @@ export interface RepoData {
 	shownTags: string[];
 	commits: Commit[];
 	graph: Graph<Commit>;
+	anchors: string[];
+	behind: Record<string, number>;
+	total: number;
 	since: string | null;
-	truncated: boolean;
 	canPush: boolean;
 }
 
@@ -81,8 +84,15 @@ export interface Run {
 }
 
 const COMMIT_FIELDS = `oid abbreviatedOid messageHeadline committedDate url author { name user { login } } parents(first: 4) { nodes { oid } }`;
-const MAX_COMMITS = 1500;
 const MAX_BRANCHES = 20;
+const MAIN_DEPTH = 30;
+const BRANCH_DEPTH = 6;
+const TAG_DEPTH = 3;
+export const EXPAND_DEPTH = 100;
+const MAX_TAG_ANCHORS = 40;
+const MAX_GAPS = 20;
+const SMALL_GAP = 8;
+const COMPARE_TRIES = 3;
 
 interface RawCommit {
 	oid: string;
@@ -101,11 +111,6 @@ interface RawRef {
 		committedDate?: string;
 		target?: { oid: string; committedDate?: string };
 	};
-}
-
-interface History {
-	nodes: RawCommit[];
-	pageInfo: { hasNextPage: boolean; endCursor: string | null };
 }
 
 const toCommit = (c: RawCommit): Commit => ({
@@ -128,6 +133,7 @@ const toRef = (r: RawRef): Ref | null => {
 @Injectable({ providedIn: "root" })
 export class Github {
 	private readonly auth = inject(Auth);
+	private readonly compared = new Map<string, { status: string; ahead: number } | null>();
 
 	async request<T>(path: string, init: RequestInit = {}): Promise<T> {
 		const token = this.auth.token();
@@ -242,9 +248,8 @@ export class Github {
 		const releaseDates = tags.filter((t) => releaseTags.includes(t.name)).map((t) => t.date);
 		if (releaseDates.length) since = releaseDates.reduce((a, b) => (a < b ? a : b));
 		else {
-			const recent = await this.histories(owner, name, [main], null, 40, 1);
-			const list = recent.get(main.name) ?? [];
-			since = list.length ? list[list.length - 1].date : null;
+			const recent = await this.fragments(owner, name, [{ oid: main.oid, first: MAIN_DEPTH }], null);
+			since = recent.length ? recent.reduce((a, c) => (a < c.date ? a : c.date), recent[0].date) : null;
 		}
 
 		const visible = allBranches.filter((b) => !b.name.startsWith(TEMP_PREFIX));
@@ -256,74 +261,204 @@ export class Github {
 					: visible.filter((b) => b.name === defaultBranch || !since || b.date >= since);
 		branches = [main, ...branches.filter((b) => b !== main)].slice(0, MAX_BRANCHES);
 
+		const anchorTags = tags
+			.filter((t) => shownTags.includes(t.name) && (!since || t.date >= since))
+			.sort((a, b) => (a.date < b.date ? 1 : -1));
+		const tagAnchors = [
+			...anchorTags.filter((t) => releaseTags.includes(t.name)),
+			...anchorTags.filter((t) => !releaseTags.includes(t.name)).slice(0, MAX_TAG_ANCHORS),
+		];
+		const depth = new Map<string, number>();
+		const want = (oid: string, first: number) => depth.set(oid, Math.max(depth.get(oid) ?? 0, first));
+		want(main.oid, MAIN_DEPTH);
+		for (const b of branches) want(b.oid, BRANCH_DEPTH);
+		for (const t of tagAnchors) want(t.oid, TAG_DEPTH);
 		const sinceArg = since ? new Date(new Date(since).getTime() - 1000).toISOString() : null;
-		const histories = await this.histories(owner, name, branches, sinceArg, 100, 6);
-		const byOid = new Map<string, Commit>();
-		let truncated = false;
-		for (const list of histories.values()) {
-			for (const c of list) {
-				if (byOid.size >= MAX_COMMITS) truncated = true;
-				else byOid.set(c.oid, c);
-			}
-		}
-		const commits = [...byOid.values()];
-		const graph = layout(commits, main.oid);
-		return {
+		const loaded = await this.fragments(
 			owner,
 			name,
-			defaultBranch,
-			branches,
-			allBranches: visible.length,
-			tags,
-			releaseTags,
-			shownTags,
-			commits: graph.nodes.map((n) => n.commit),
+			[...depth].map(([oid, first]) => ({ oid, first })),
+			sinceArg,
+		);
+		const commits = new Map(loaded.map((c) => [c.oid, c]));
+		const anchorOids = new Set(tagAnchors.map((t) => t.oid));
+		const behindEntries = await Promise.all(
+			tags
+				.filter((t) => releaseTags.includes(t.name))
+				.map(async (t) => {
+					if (t.oid === main.oid) return [t.name, 0] as const;
+					const r = await this.compare(owner, name, t.oid, main.oid);
+					return [t.name, r?.status === "ahead" ? r.ahead : null] as const;
+				}),
+		);
+		const behind: Record<string, number> = {};
+		for (const [tag, n] of behindEntries) if (n !== null) behind[tag] = n;
+		await this.connect(owner, name, commits, anchorOids, main.oid);
+		return this.assemble(
+			{
+				owner,
+				name,
+				defaultBranch,
+				branches,
+				allBranches: visible.length,
+				tags,
+				releaseTags,
+				shownTags,
+				since,
+				canPush: ["ADMIN", "MAINTAIN", "WRITE"].includes(repo.viewerPermission ?? ""),
+				behind,
+			},
+			commits,
+			main.oid,
+			anchorOids,
+		);
+	}
+
+	async expand(data: RepoData, gapOid: string): Promise<RepoData> {
+		const gap = data.commits.find((c) => c.oid === gapOid && c.gap);
+		if (!gap?.gap) return data;
+		const loaded = await this.fragments(
+			data.owner,
+			data.name,
+			[{ oid: gap.oid, first: Math.min(gap.gap.count, EXPAND_DEPTH) }],
+			null,
+		);
+		const commits = new Map(data.commits.map((c) => [c.oid, c]));
+		for (const c of loaded) if (!commits.has(c.oid) || commits.get(c.oid)!.gap) commits.set(c.oid, c);
+		const anchors = new Set(data.anchors);
+		anchors.add(gap.gap.target);
+		const main = data.branches.find((b) => b.name === data.defaultBranch)!;
+		await this.connect(data.owner, data.name, commits, anchors, main.oid);
+		return this.assemble(data, commits, main.oid, anchors);
+	}
+
+	private assemble(
+		base: Omit<RepoData, "commits" | "graph" | "anchors" | "total">,
+		commits: Map<string, Commit>,
+		head: string,
+		anchors: Set<string>,
+	): RepoData {
+		const graph = layout([...commits.values()], head);
+		const list = graph.nodes.map((n) => n.commit);
+		return {
+			...base,
+			commits: list,
 			graph,
-			since,
-			truncated: truncated || histories.size < branches.length,
-			canPush: ["ADMIN", "MAINTAIN", "WRITE"].includes(repo.viewerPermission ?? ""),
+			anchors: [...anchors],
+			total: Math.max(
+				list.reduce((n, c) => n + (c.gap?.count ?? 1), 0),
+				...Object.values(base.behind).map((n) => n + 1),
+			),
 		};
 	}
 
-	private async histories(
+	private async fragments(
 		owner: string,
 		name: string,
-		branches: Ref[],
+		starts: { oid: string; first: number }[],
 		since: string | null,
-		page: number,
-		maxPages: number,
-	): Promise<Map<string, Commit[]>> {
-		const out = new Map<string, Commit[]>();
-		const seen = new Set<string>();
-		let todo = branches.map((b) => ({ branch: b, cursor: null as string | null, pages: 0 }));
-		while (todo.length) {
-			const batch = todo.slice(0, 10);
+	): Promise<Commit[]> {
+		const out: Commit[] = [];
+		for (let i = 0; i < starts.length; i += 20) {
+			const batch = starts.slice(i, i + 20);
 			const fields = batch
 				.map(
-					(t, i) =>
-						`b${i}: object(oid: "${t.branch.oid}") { ... on Commit { history(first: ${page}${since ? `, since: $since` : ""}${t.cursor ? `, after: ${JSON.stringify(t.cursor)}` : ""}) { nodes { ${COMMIT_FIELDS} } pageInfo { hasNextPage endCursor } } } }`,
+					(s, k) =>
+						`f${k}: object(oid: "${s.oid}") { ... on Commit { history(first: ${s.first}${since ? ", since: $since" : ""}) { nodes { ${COMMIT_FIELDS} } } } }`,
 				)
 				.join("\n");
-			const data = await this.graphql<{ repository: Record<string, { history: History } | null> }>(
+			const data = await this.graphql<{ repository: Record<string, { history: { nodes: RawCommit[] } } | null> }>(
 				`query($owner: String!, $name: String!${since ? ", $since: GitTimestamp" : ""}) { repository(owner: $owner, name: $name) { ${fields} } }`,
 				since ? { owner, name, since } : { owner, name },
 			);
-			const next: typeof todo = [];
-			batch.forEach((t, i) => {
-				const history = data.repository[`b${i}`]?.history;
-				if (!history) return;
-				const commits = history.nodes.map(toCommit);
-				const known = commits.some((c) => seen.has(c.oid));
-				for (const c of commits) seen.add(c.oid);
-				out.set(t.branch.name, [...(out.get(t.branch.name) ?? []), ...commits]);
-				const pages = t.pages + 1;
-				if (history.pageInfo.hasNextPage && !known && pages < maxPages) {
-					next.push({ branch: t.branch, cursor: history.pageInfo.endCursor, pages });
-				}
-			});
-			todo = [...next, ...todo.slice(10)];
+			batch.forEach((_, k) => out.push(...(data.repository[`f${k}`]?.history.nodes ?? []).map(toCommit)));
 		}
 		return out;
+	}
+
+	private async compare(owner: string, name: string, base: string, head: string) {
+		const key = `${owner}/${name}:${base}...${head}`;
+		if (!this.compared.has(key)) {
+			const res = await this.request<{ status: string; ahead_by: number }>(
+				`/repos/${owner}/${name}/compare/${base}...${head}?per_page=1`,
+			).catch(() => null);
+			this.compared.set(key, res ? { status: res.status, ahead: res.ahead_by } : null);
+		}
+		return this.compared.get(key)!;
+	}
+
+	private async connect(
+		owner: string,
+		name: string,
+		commits: Map<string, Commit>,
+		anchors: Set<string>,
+		head: string,
+	) {
+		await this.link(owner, name, commits, anchors, head);
+		const small = [...commits.values()].filter((c) => c.gap && c.gap.count <= SMALL_GAP);
+		if (!small.length) return;
+		const filled = await this.fragments(
+			owner,
+			name,
+			small.map((c) => ({ oid: c.oid, first: c.gap!.count })),
+			null,
+		);
+		for (const c of filled) commits.set(c.oid, c);
+		await this.link(owner, name, commits, anchors, head);
+	}
+
+	private async link(owner: string, name: string, commits: Map<string, Commit>, anchors: Set<string>, head: string) {
+		for (const [oid, c] of commits) if (c.gap) commits.delete(oid);
+		const real = [...commits.values()];
+		const hasChild = new Set(real.flatMap((c) => c.parents));
+		const targets = real
+			.filter((c) => anchors.has(c.oid) && !hasChild.has(c.oid))
+			.sort((a, b) => (a.date < b.date ? 1 : -1));
+		const childDate = new Map<string, string>();
+		for (const c of real) {
+			const p = c.parents[0];
+			if (p && !commits.has(p) && (childDate.get(p) ?? "") < c.date) childDate.set(p, c.date);
+		}
+		const missing = [...childDate].sort((a, b) => (a[1] < b[1] ? 1 : -1)).slice(0, MAX_GAPS);
+		const found = await Promise.all(
+			missing.map(async ([oid, date]) => {
+				for (const target of targets.filter((t) => t.date <= date).slice(0, COMPARE_TRIES)) {
+					const r = await this.compare(owner, name, target.oid, oid);
+					if (r?.status === "ahead") return { oid, target, count: r.ahead };
+				}
+				return null;
+			}),
+		);
+		const gaps = new Map(found.filter((f) => !!f).map((f) => [f.oid, f]));
+		const used = new Set<string>();
+		const place = (f: { oid: string; target: Commit; count: number }) => {
+			if (used.has(f.target.oid) || commits.has(f.oid)) return false;
+			used.add(f.target.oid);
+			commits.set(f.oid, {
+				oid: f.oid,
+				short: f.oid.slice(0, 7),
+				message: "",
+				date: f.target.date,
+				author: "",
+				login: null,
+				url: "",
+				parents: [f.target.oid],
+				gap: { count: f.count, target: f.target.oid },
+			});
+			return true;
+		};
+		const seen = new Set<string>();
+		for (let oid: string | undefined = head; oid && !seen.has(oid);) {
+			seen.add(oid);
+			const c = commits.get(oid);
+			if (c) oid = c.parents[0];
+			else {
+				const f = gaps.get(oid);
+				if (!f || !place(f)) break;
+				oid = f.target.oid;
+			}
+		}
+		for (const f of [...gaps.values()].sort((a, b) => a.count - b.count)) place(f);
 	}
 
 	async workflows(owner: string, name: string): Promise<WorkflowSet> {
