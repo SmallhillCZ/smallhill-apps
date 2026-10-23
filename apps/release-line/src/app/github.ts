@@ -130,6 +130,15 @@ const toRef = (r: RawRef): Ref | null => {
 	return { name: r.name, oid: target.oid, date: target.committedDate };
 };
 
+export function olderStart(data: RepoData): string | null {
+	const known = new Set(data.commits.map((c) => c.oid));
+	for (let i = data.graph.nodes.length - 1; i >= 0; i--) {
+		const c = data.graph.nodes[i].commit;
+		if (!c.gap && c.parents[0] && !known.has(c.parents[0])) return c.parents[0];
+	}
+	return null;
+}
+
 @Injectable({ providedIn: "root" })
 export class Github {
 	private readonly auth = inject(Auth);
@@ -327,6 +336,18 @@ export class Github {
 		for (const c of loaded) if (!commits.has(c.oid) || commits.get(c.oid)!.gap) commits.set(c.oid, c);
 		const anchors = new Set(data.anchors);
 		anchors.add(gap.gap.target);
+		const main = data.branches.find((b) => b.name === data.defaultBranch)!;
+		await this.connect(data.owner, data.name, commits, anchors, main.oid);
+		return this.assemble(data, commits, main.oid, anchors);
+	}
+
+	async older(data: RepoData): Promise<RepoData> {
+		const from = olderStart(data);
+		if (!from) return data;
+		const loaded = await this.fragments(data.owner, data.name, [{ oid: from, first: EXPAND_DEPTH }], null);
+		const commits = new Map(data.commits.map((c) => [c.oid, c]));
+		for (const c of loaded) if (!commits.has(c.oid) || commits.get(c.oid)!.gap) commits.set(c.oid, c);
+		const anchors = new Set(data.anchors);
 		const main = data.branches.find((b) => b.name === data.defaultBranch)!;
 		await this.connect(data.owner, data.name, commits, anchors, main.oid);
 		return this.assemble(data, commits, main.oid, anchors);

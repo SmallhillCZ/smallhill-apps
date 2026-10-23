@@ -20,6 +20,7 @@ import {
 	type Commit,
 	Github,
 	GithubFailure,
+	olderStart,
 	type RepoData,
 	type Run,
 	type WorkflowSet,
@@ -242,6 +243,16 @@ interface RowRef {
 							}
 						}
 					</div>
+					@if (canLoadOlder()) {
+						<div class="older">
+							<button type="button" (click)="loadOlder()" [disabled]="!!expanding()">
+								@if (expanding() === "older") {
+									<span class="spinner" aria-hidden="true"></span>
+								}
+								{{ t().loadOlder(expandStep) }}
+							</button>
+						</div>
+					}
 				</section>
 				<aside>
 					<h2 class="aside-title">{{ t().releaseTags }}</h2>
@@ -595,6 +606,26 @@ export class Timeline {
 			this.error.set(this.t().errors[e instanceof GithubFailure ? e.kind : "failed"]);
 		} finally {
 			if (id === this.loadId) this.loading.set(false);
+		}
+	}
+
+	protected readonly canLoadOlder = computed(() => {
+		const d = this.data();
+		return !!d && !!olderStart(d);
+	});
+
+	protected async loadOlder() {
+		const d = this.data();
+		if (!d || this.expanding()) return;
+		const id = this.loadId;
+		this.expanding.set("older");
+		try {
+			const next = await this.github.older(d);
+			if (id === this.loadId) this.data.set(next);
+		} catch (e) {
+			if (id === this.loadId) this.error.set(this.t().errors[e instanceof GithubFailure ? e.kind : "failed"]);
+		} finally {
+			this.expanding.set(null);
 		}
 	}
 

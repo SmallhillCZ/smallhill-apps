@@ -8,7 +8,7 @@ Part of [Smallhill Apps](../../README.md), served at https://apps.smallhill.cz/r
 
 - Sign in with GitHub (device flow: the app shows a code, you approve it on github.com) or paste a fine-grained personal access token with Contents and Actions read and write. The token stays in the browser.
 - The timeline runs from the oldest release tag to the newest commit across the branches active in that range.
-- Long runs of commits between tags are hidden behind a "N commits hidden" row and only loaded when you open them.
+- Long runs of commits between tags are hidden behind a "N commits hidden" row and only loaded when you open them. Older history below the oldest tag loads 100 commits at a time.
 - Drag a release tag to another commit, or click a commit and pick a tag. The dialog runs the tag's release workflow with its `workflow_dispatch` inputs; until the run ends the tag shows as pending.
 
 ## Matching tags to workflows

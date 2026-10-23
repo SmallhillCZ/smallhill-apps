@@ -58,6 +58,7 @@ const en = {
 	hiddenCommits: (n: number) => (n === 1 ? "1 commit hidden" : `${n} commits hidden`),
 	showHidden: "Show",
 	showSome: (n: number) => `Show ${n} more`,
+	loadOlder: (n: number) => `Load ${n} older commits`,
 	releaseTags: "Release tags",
 	dragHint:
 		"Drag a coloured tag onto another commit, or click a commit, to release it there. Grey version tags are made by the workflows and can't be moved.",
@@ -210,6 +211,7 @@ const cs: Texts = {
 	hiddenCommits: (n: number) => `${n} ${czech(n, "skrytý commit", "skryté commity", "skrytých commitů")}`,
 	showHidden: "Zobrazit",
 	showSome: (n: number) => `Zobrazit dalších ${n}`,
+	loadOlder: (n: number) => `Načíst ${n} starších commitů`,
 	releaseTags: "Tagy vydání",
 	dragHint:
 		"Přetáhněte barevný tag na jiný commit, nebo na commit klepněte, a vydáte ho tam. Šedé tagy verzí vytvářejí workflow a přesouvat nejdou.",
