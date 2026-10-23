@@ -92,6 +92,8 @@ export const EXPAND_DEPTH = 100;
 const MAX_TAG_ANCHORS = 40;
 const MAX_GAPS = 20;
 const SMALL_GAP = 8;
+const MAX_SIDES = 20;
+const SIDE_DEPTH = 30;
 const COMPARE_TRIES = 3;
 
 interface RawCommit {
@@ -124,6 +126,25 @@ const toCommit = (c: RawCommit): Commit => ({
 	parents: c.parents.nodes.map((p) => p.oid),
 });
 
+interface RestCommit {
+	sha: string;
+	html_url: string;
+	commit: { message: string; author: { name: string } | null; committer: { date: string } | null };
+	author: { login: string } | null;
+	parents: { sha: string }[];
+}
+
+const fromRest = (c: RestCommit): Commit => ({
+	oid: c.sha,
+	short: c.sha.slice(0, 7),
+	message: c.commit.message.split("\n")[0],
+	date: c.commit.committer?.date ?? "",
+	author: c.commit.author?.name ?? c.author?.login ?? "",
+	login: c.author?.login ?? null,
+	url: c.html_url,
+	parents: c.parents.map((p) => p.sha),
+});
+
 const toRef = (r: RawRef): Ref | null => {
 	const target = r.target.target ?? r.target;
 	if (!target.committedDate) return null;
@@ -143,6 +164,7 @@ export function olderStart(data: RepoData): string | null {
 export class Github {
 	private readonly auth = inject(Auth);
 	private readonly compared = new Map<string, { status: string; ahead: number } | null>();
+	private readonly merged = new Map<string, Commit[]>();
 
 	async request<T>(path: string, init: RequestInit = {}): Promise<T> {
 		const token = this.auth.token();
@@ -415,6 +437,7 @@ export class Github {
 		anchors: Set<string>,
 		head: string,
 	) {
+		await this.sides(owner, name, commits);
 		await this.link(owner, name, commits, anchors, head);
 		const small = [...commits.values()].filter((c) => c.gap && c.gap.count <= SMALL_GAP);
 		if (!small.length) return;
@@ -426,6 +449,36 @@ export class Github {
 		);
 		for (const c of filled) commits.set(c.oid, c);
 		await this.link(owner, name, commits, anchors, head);
+	}
+
+	private async sides(owner: string, name: string, commits: Map<string, Commit>) {
+		const merges = [...commits.values()]
+			.filter((c) => !c.gap && c.parents.slice(1).some((p) => !commits.has(p)))
+			.sort((a, b) => (a.date < b.date ? 1 : -1))
+			.slice(0, MAX_SIDES);
+		const found = await Promise.all(
+			merges.flatMap((m) =>
+				m.parents
+					.slice(1)
+					.filter((p) => !commits.has(p))
+					.map((p) => this.branchCommits(owner, name, m.parents[0], p)),
+			),
+		);
+		for (const list of found) for (const c of list) if (!commits.has(c.oid)) commits.set(c.oid, c);
+	}
+
+	private async branchCommits(owner: string, name: string, base: string, head: string): Promise<Commit[]> {
+		const key = `${owner}/${name}:${base}...${head}`;
+		if (!this.merged.has(key)) {
+			const res = await this.request<{ ahead_by: number; commits: RestCommit[] }>(
+				`/repos/${owner}/${name}/compare/${base}...${head}?per_page=${SIDE_DEPTH}`,
+			).catch(() => null);
+			let list: Commit[] = [];
+			if (res && res.ahead_by <= SIDE_DEPTH) list = res.commits.map(fromRest);
+			else if (res) list = await this.fragments(owner, name, [{ oid: head, first: BRANCH_DEPTH }], null);
+			this.merged.set(key, list);
+		}
+		return this.merged.get(key)!;
 	}
 
 	private async link(owner: string, name: string, commits: Map<string, Commit>, anchors: Set<string>, head: string) {
