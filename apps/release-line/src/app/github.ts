@@ -92,6 +92,7 @@ export const EXPAND_DEPTH = 100;
 const MAX_TAG_ANCHORS = 40;
 const MAX_GAPS = 20;
 const SMALL_GAP = 8;
+const FILL_ROUNDS = 3;
 const MAX_SIDES = 20;
 const SIDE_DEPTH = 30;
 const COMPARE_TRIES = 3;
@@ -115,11 +116,13 @@ interface RawRef {
 	};
 }
 
+const iso = (date: string) => (date ? new Date(date).toISOString() : date);
+
 const toCommit = (c: RawCommit): Commit => ({
 	oid: c.oid,
 	short: c.abbreviatedOid.slice(0, 7),
 	message: c.messageHeadline,
-	date: c.committedDate,
+	date: iso(c.committedDate),
 	author: c.author?.name ?? c.author?.user?.login ?? "",
 	login: c.author?.user?.login ?? null,
 	url: c.url,
@@ -138,17 +141,22 @@ const fromRest = (c: RestCommit): Commit => ({
 	oid: c.sha,
 	short: c.sha.slice(0, 7),
 	message: c.commit.message.split("\n")[0],
-	date: c.commit.committer?.date ?? "",
+	date: iso(c.commit.committer?.date ?? ""),
 	author: c.commit.author?.name ?? c.author?.login ?? "",
 	login: c.author?.login ?? null,
 	url: c.html_url,
 	parents: c.parents.map((p) => p.sha),
 });
 
+interface Side {
+	commits: Commit[];
+	base: string | null;
+}
+
 const toRef = (r: RawRef): Ref | null => {
 	const target = r.target.target ?? r.target;
 	if (!target.committedDate) return null;
-	return { name: r.name, oid: target.oid, date: target.committedDate };
+	return { name: r.name, oid: target.oid, date: iso(target.committedDate) };
 };
 
 export function olderStart(data: RepoData): string | null {
@@ -164,7 +172,7 @@ export function olderStart(data: RepoData): string | null {
 export class Github {
 	private readonly auth = inject(Auth);
 	private readonly compared = new Map<string, { status: string; ahead: number } | null>();
-	private readonly merged = new Map<string, Commit[]>();
+	private readonly merged = new Map<string, Side>();
 
 	async request<T>(path: string, init: RequestInit = {}): Promise<T> {
 		const token = this.auth.token();
@@ -302,7 +310,6 @@ export class Github {
 		const depth = new Map<string, number>();
 		const want = (oid: string, first: number) => depth.set(oid, Math.max(depth.get(oid) ?? 0, first));
 		want(main.oid, MAIN_DEPTH);
-		for (const b of branches) want(b.oid, BRANCH_DEPTH);
 		for (const t of tagAnchors) want(t.oid, TAG_DEPTH);
 		const sinceArg = since ? new Date(new Date(since).getTime() - 1000).toISOString() : null;
 		const loaded = await this.fragments(
@@ -313,6 +320,13 @@ export class Github {
 		);
 		const commits = new Map(loaded.map((c) => [c.oid, c]));
 		const anchorOids = new Set(tagAnchors.map((t) => t.oid));
+		const sides = await Promise.all(
+			branches.filter((b) => b !== main).map((b) => this.branchCommits(owner, name, main.oid, b.oid)),
+		);
+		for (const side of sides) {
+			for (const c of side.commits) if (!commits.has(c.oid)) commits.set(c.oid, c);
+			if (side.base) anchorOids.add(side.base);
+		}
 		const behindEntries = await Promise.all(
 			tags
 				.filter((t) => releaseTags.includes(t.name))
@@ -439,16 +453,18 @@ export class Github {
 	) {
 		await this.sides(owner, name, commits);
 		await this.link(owner, name, commits, anchors, head);
-		const small = [...commits.values()].filter((c) => c.gap && c.gap.count <= SMALL_GAP);
-		if (!small.length) return;
-		const filled = await this.fragments(
-			owner,
-			name,
-			small.map((c) => ({ oid: c.oid, first: c.gap!.count })),
-			null,
-		);
-		for (const c of filled) commits.set(c.oid, c);
-		await this.link(owner, name, commits, anchors, head);
+		for (let round = 0; round < FILL_ROUNDS; round++) {
+			const small = [...commits.values()].filter((c) => c.gap && c.gap.count <= SMALL_GAP);
+			if (!small.length) return;
+			const filled = await this.fragments(
+				owner,
+				name,
+				small.map((c) => ({ oid: c.oid, first: c.gap!.count })),
+				null,
+			);
+			for (const c of filled) commits.set(c.oid, c);
+			await this.link(owner, name, commits, anchors, head);
+		}
 	}
 
 	private async sides(owner: string, name: string, commits: Map<string, Commit>) {
@@ -464,19 +480,24 @@ export class Github {
 					.map((p) => this.branchCommits(owner, name, m.parents[0], p)),
 			),
 		);
-		for (const list of found) for (const c of list) if (!commits.has(c.oid)) commits.set(c.oid, c);
+		for (const side of found) for (const c of side.commits) if (!commits.has(c.oid)) commits.set(c.oid, c);
 	}
 
-	private async branchCommits(owner: string, name: string, base: string, head: string): Promise<Commit[]> {
+	private async branchCommits(owner: string, name: string, base: string, head: string): Promise<Side> {
 		const key = `${owner}/${name}:${base}...${head}`;
 		if (!this.merged.has(key)) {
-			const res = await this.request<{ ahead_by: number; commits: RestCommit[] }>(
+			const res = await this.request<{ ahead_by: number; commits: RestCommit[]; merge_base_commit?: RestCommit }>(
 				`/repos/${owner}/${name}/compare/${base}...${head}?per_page=${SIDE_DEPTH}`,
 			).catch(() => null);
-			let list: Commit[] = [];
-			if (res && res.ahead_by <= SIDE_DEPTH) list = res.commits.map(fromRest);
-			else if (res) list = await this.fragments(owner, name, [{ oid: head, first: BRANCH_DEPTH }], null);
-			this.merged.set(key, list);
+			const side: Side = { commits: [], base: null };
+			if (res?.merge_base_commit) {
+				side.base = res.merge_base_commit.sha;
+				side.commits.push(fromRest(res.merge_base_commit));
+			}
+			if (res && res.ahead_by <= SIDE_DEPTH) side.commits.push(...res.commits.map(fromRest));
+			else if (res)
+				side.commits.push(...(await this.fragments(owner, name, [{ oid: head, first: BRANCH_DEPTH }], null)));
+			this.merged.set(key, side);
 		}
 		return this.merged.get(key)!;
 	}
@@ -485,9 +506,7 @@ export class Github {
 		for (const [oid, c] of commits) if (c.gap) commits.delete(oid);
 		const real = [...commits.values()];
 		const hasChild = new Set(real.flatMap((c) => c.parents));
-		const targets = real
-			.filter((c) => anchors.has(c.oid) && !hasChild.has(c.oid))
-			.sort((a, b) => (a.date < b.date ? 1 : -1));
+		const targets = real.filter((c) => anchors.has(c.oid)).sort((a, b) => (a.date < b.date ? 1 : -1));
 		const childDate = new Map<string, string>();
 		for (const c of real) {
 			const p = c.parents[0];
