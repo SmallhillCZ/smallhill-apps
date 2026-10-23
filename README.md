@@ -12,6 +12,7 @@ Simple, ad-free, no-tracking apps served at https://apps.smallhill.cz.
 | [Player](apps/player)                                                         | `/player/`                              | Angular PWA + OneDrive, FE only   |
 | [Tickets](apps/tickets)                                                       | `/tickets/`                             | Angular PWA + Fastify GoOut proxy |
 | [Places](apps/places)                                                         | `/places/`                              | Angular PWA + Leaflet + Fastify   |
+| [Release Line](apps/release-line)                                             | `/release-line/`                        | Angular PWA + Fastify auth proxy  |
 | [Jachtařská knížka](https://github.com/SmallhillCZ/jachtarskaknizka-1d489984) | https://jachtarskaknizka.eu (own repo)  | React + TanStack Start, FE only   |
 | Zpěvník                                                                       | https://app.dev.zpevniky.com (external) | PWA                               |
 
