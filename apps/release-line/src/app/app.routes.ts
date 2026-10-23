@@ -1,8 +1,9 @@
 import { inject } from "@angular/core";
-import { Router, type Routes } from "@angular/router";
+import { type CanActivateFn, Router, type Routes } from "@angular/router";
 import { Auth } from "./auth";
 
-const signedIn = () => inject(Auth).signedIn() || inject(Router).createUrlTree(["/"]);
+const signedIn: CanActivateFn = (_, state) =>
+	inject(Auth).signedIn() || inject(Router).createUrlTree(["/"], { queryParams: { next: state.url } });
 
 export const routes: Routes = [
 	{ path: "", loadComponent: () => import("./home/home").then((m) => m.Home) },
