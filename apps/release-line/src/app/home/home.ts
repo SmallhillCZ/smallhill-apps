@@ -348,7 +348,7 @@ export class Home implements OnDestroy {
 		try {
 			const code = await this.auth.startDevice();
 			this.code.set(code);
-			await this.auth.waitForDevice(code, () => this.destroyed);
+			if (await this.auth.waitForDevice(code, () => this.destroyed)) this.goNext();
 		} catch (e) {
 			this.code.set(null);
 			this.error.set(this.t().authErrors[e instanceof AuthFailure ? e.kind : "failed"]);
@@ -376,6 +376,7 @@ export class Home implements OnDestroy {
 		try {
 			await this.github.user();
 			form.reset();
+			this.goNext();
 		} catch (e) {
 			this.auth.setToken(null);
 			this.error.set(
@@ -386,6 +387,12 @@ export class Home implements OnDestroy {
 		} finally {
 			this.busy.set(false);
 		}
+	}
+
+	private goNext() {
+		const next = this.router.parseUrl(this.router.url).queryParams["next"];
+		if (typeof next === "string" && /^\/[\w.-]+\/[\w.-]+(\/workflows)?$/.test(next))
+			this.router.navigateByUrl(next, { replaceUrl: true });
 	}
 
 	protected openTyped(event: Event) {
