@@ -7,6 +7,7 @@ const app = await buildApp({
 	webRoot: env.WEB_ROOT ? resolve(env.WEB_ROOT) : undefined,
 	basePath: env.BASE_PATH ?? "",
 	clientId: env.GITHUB_CLIENT_ID || undefined,
+	clientSecret: env.RELEASE_LINE_GITHUB_SECRET || undefined,
 	githubUrl: env.GITHUB_URL,
 	logger: true,
 });

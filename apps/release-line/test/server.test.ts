@@ -17,9 +17,9 @@ const json = (body: unknown, status = 200) =>
 
 test("reports whether device flow is available", async () => {
 	const on = await buildApp({ clientId: "abc", basePath: "/release-line/" });
-	assert.deepEqual((await on.inject({ url: "/release-line/api/auth" })).json(), { deviceFlow: true });
+	assert.deepEqual((await on.inject({ url: "/release-line/api/auth" })).json(), { deviceFlow: true, webFlow: false });
 	const off = await buildApp({ clientId: "" });
-	assert.deepEqual((await off.inject({ url: "/api/auth" })).json(), { deviceFlow: false });
+	assert.deepEqual((await off.inject({ url: "/api/auth" })).json(), { deviceFlow: false, webFlow: false });
 	assert.equal((await off.inject({ method: "POST", url: "/api/device/code" })).statusCode, 404);
 });
 
@@ -67,4 +67,41 @@ test("reports GitHub failures as 502", async () => {
 	const gh = fakeGithub(() => new Response("oops", { status: 500 }));
 	const app = await buildApp({ clientId: "abc", fetch: gh.fetch });
 	assert.equal((await app.inject({ method: "POST", url: "/api/device/code" })).statusCode, 502);
+});
+
+test("offers the web flow only with a client secret", async () => {
+	const on = await buildApp({ clientId: "abc", clientSecret: "s3cret" });
+	assert.deepEqual((await on.inject({ url: "/api/auth" })).json(), {
+		deviceFlow: true,
+		webFlow: true,
+		clientId: "abc",
+		scope: "repo",
+	});
+	const off = await buildApp({ clientId: "abc" });
+	assert.equal((await off.inject({ url: "/api/auth" })).json().webFlow, false);
+	const code = await off.inject({ method: "POST", url: "/api/oauth/token", payload: { code: "x" } });
+	assert.equal(code.statusCode, 404);
+});
+
+test("exchanges a web flow code with the client secret", async () => {
+	const gh = fakeGithub((_, body) =>
+		body["code"] === "good" ? json({ access_token: "gho_web" }) : json({ error: "bad_verification_code" }),
+	);
+	const app = await buildApp({ clientId: "abc", clientSecret: "s3cret", fetch: gh.fetch });
+	const ok = await app.inject({ method: "POST", url: "/api/oauth/token", payload: { code: "good" } });
+	assert.deepEqual(ok.json(), { token: "gho_web" });
+	assert.equal(ok.headers["cache-control"], "no-store");
+	assert.equal(gh.calls[0].url, "https://github.com/login/oauth/access_token");
+	assert.deepEqual(gh.calls[0].body, { client_id: "abc", client_secret: "s3cret", code: "good" });
+	const bad = await app.inject({ method: "POST", url: "/api/oauth/token", payload: { code: "old" } });
+	assert.equal(bad.statusCode, 400);
+});
+
+test("revokes a token on sign-out", async () => {
+	const gh = fakeGithub(() => new Response(null, { status: 204 }));
+	const app = await buildApp({ clientId: "abc", clientSecret: "s3cret", fetch: gh.fetch });
+	const res = await app.inject({ method: "POST", url: "/api/oauth/revoke", payload: { token: "gho_web" } });
+	assert.equal(res.statusCode, 204);
+	assert.equal(gh.calls[0].url, "https://api.github.com/applications/abc/token");
+	assert.deepEqual(gh.calls[0].body, { access_token: "gho_web" });
 });
