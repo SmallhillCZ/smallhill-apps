@@ -1,6 +1,7 @@
 import { Injectable, computed, signal } from "@angular/core";
 
 const TOKEN_KEY = "release-line.token";
+const STATE_KEY = "release-line.oauth";
 
 export interface DeviceCode {
 	deviceCode: string;
@@ -29,12 +30,53 @@ export class Auth {
 	readonly token = signal<string | null>(stored());
 	readonly signedIn = computed(() => !!this.token());
 	readonly deviceFlow = signal<boolean | null>(null);
+	readonly webFlow = signal<{ clientId: string; scope: string } | null>(null);
 
 	constructor() {
 		fetch("api/auth", { cache: "no-store" })
 			.then((r) => (r.ok ? r.json() : { deviceFlow: false }))
-			.then((r: { deviceFlow: boolean }) => this.deviceFlow.set(!!r.deviceFlow))
+			.then((r: { deviceFlow: boolean; webFlow?: boolean; clientId?: string; scope?: string }) => {
+				if (r.webFlow && r.clientId) this.webFlow.set({ clientId: r.clientId, scope: r.scope ?? "repo" });
+				this.deviceFlow.set(!!r.deviceFlow);
+			})
 			.catch(() => this.deviceFlow.set(false));
+	}
+
+	startWeb(next: string | null) {
+		const web = this.webFlow();
+		if (!web) return;
+		const state = crypto.randomUUID();
+		try {
+			sessionStorage.setItem(STATE_KEY, JSON.stringify({ state, next }));
+		} catch {}
+		const url = new URL("https://github.com/login/oauth/authorize");
+		url.searchParams.set("client_id", web.clientId);
+		url.searchParams.set("scope", web.scope);
+		url.searchParams.set("state", state);
+		url.searchParams.set("redirect_uri", document.baseURI);
+		location.assign(url.toString());
+	}
+
+	async finishWeb(code: string, state: string): Promise<{ next: string | null }> {
+		let saved: { state?: string; next?: string | null } = {};
+		try {
+			saved = JSON.parse(sessionStorage.getItem(STATE_KEY) ?? "{}");
+			sessionStorage.removeItem(STATE_KEY);
+		} catch {}
+		if (!saved.state || saved.state !== state) throw new AuthFailure("failed");
+		const res = await this.post("api/oauth/token", { code });
+		if (res.status === 400) throw new AuthFailure("expired");
+		if (!res.ok) throw new AuthFailure("failed");
+		const body = (await res.json()) as { token?: string };
+		if (!body.token) throw new AuthFailure("failed");
+		this.setToken(body.token);
+		return { next: saved.next ?? null };
+	}
+
+	signOut() {
+		const token = this.token();
+		if (token && this.webFlow()) this.post("api/oauth/revoke", { token }).catch(() => {});
+		this.setToken(null);
 	}
 
 	setToken(token: string | null) {

@@ -184,7 +184,7 @@ export class App {
 
 	protected signOut() {
 		document.getElementById("menu")?.hidePopover();
-		this.auth.setToken(null);
+		this.auth.signOut();
 		this.router.navigateByUrl("/");
 	}
 

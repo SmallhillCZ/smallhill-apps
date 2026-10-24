@@ -10,7 +10,9 @@ export interface AppOptions {
 	webRoot?: string;
 	logger?: boolean;
 	clientId?: string;
+	clientSecret?: string;
 	githubUrl?: string;
+	apiUrl?: string;
 	fetch?: typeof fetch;
 }
 
@@ -19,7 +21,9 @@ export async function buildApp({
 	webRoot,
 	logger = false,
 	clientId = GITHUB_CLIENT_ID,
+	clientSecret,
 	githubUrl = "https://github.com",
+	apiUrl = "https://api.github.com",
 	fetch: doFetch = fetch,
 }: AppOptions = {}): Promise<FastifyInstance> {
 	const app = Fastify({ logger: logger ? { level: "warn" } : false, bodyLimit: 4 * 1024 });
@@ -36,7 +40,66 @@ export async function buildApp({
 		return { ok: res.ok && !!data, data: data ?? {} };
 	};
 
-	app.get(`${api}/auth`, async () => ({ deviceFlow: !!clientId }));
+	const webFlow = !!clientId && !!clientSecret;
+
+	app.get(`${api}/auth`, async () => ({
+		deviceFlow: !!clientId,
+		webFlow,
+		...(webFlow ? { clientId, scope: SCOPE } : {}),
+	}));
+
+	app.post<{ Body: { code: string } }>(
+		`${api}/oauth/token`,
+		{
+			schema: {
+				body: {
+					type: "object",
+					required: ["code"],
+					additionalProperties: false,
+					properties: { code: { type: "string", minLength: 1, maxLength: 200 } },
+				},
+			},
+		},
+		async (req, reply) => {
+			if (!webFlow) return reply.code(404).send({ error: "disabled" });
+			const { ok, data } = await post("/login/oauth/access_token", {
+				client_id: clientId,
+				client_secret: clientSecret!,
+				code: req.body.code,
+			});
+			if (!ok) return reply.code(502).send({ error: "github" });
+			reply.header("cache-control", "no-store");
+			if (typeof data["access_token"] === "string") return { token: data["access_token"] };
+			return reply.code(400).send({ error: typeof data["error"] === "string" ? data["error"] : "failed" });
+		},
+	);
+
+	app.post<{ Body: { token: string } }>(
+		`${api}/oauth/revoke`,
+		{
+			schema: {
+				body: {
+					type: "object",
+					required: ["token"],
+					additionalProperties: false,
+					properties: { token: { type: "string", minLength: 1, maxLength: 400 } },
+				},
+			},
+		},
+		async (req, reply) => {
+			if (!webFlow) return reply.code(404).send({ error: "disabled" });
+			const res = await doFetch(new URL(`/applications/${clientId}/token`, apiUrl), {
+				method: "DELETE",
+				headers: {
+					Accept: "application/vnd.github+json",
+					Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ access_token: req.body.token }),
+			}).catch(() => null);
+			return reply.code(res && (res.ok || res.status === 404) ? 204 : 502).send();
+		},
+	);
 
 	app.post(`${api}/device/code`, async (_, reply) => {
 		if (!clientId) return reply.code(404).send({ error: "disabled" });
