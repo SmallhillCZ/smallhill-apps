@@ -237,7 +237,7 @@ interface RowRef {
 										}
 									</span>
 									<span class="meta muted small"
-										>{{ row.commit.author }} · {{ ago(row.commit.date) }}</span
+										>{{ row.commit.author }} · {{ when(row.commit.date) }}</span
 									>
 								</div>
 							}
@@ -301,7 +301,7 @@ interface RowRef {
 									target="_blank"
 									rel="noopener"
 								>
-									{{ t().lastRun[card.runState] }} · {{ ago(card.run.createdAt) }}
+									{{ t().lastRun[card.runState] }} · {{ when(card.run.createdAt) }}
 								</a>
 							} @else if (card.workflow) {
 								<span class="small muted">{{ t().lastRun.none }}</span>
@@ -322,7 +322,7 @@ interface RowRef {
 			@if (pickFor(); as c) {
 				<div class="picker-body">
 					<div>
-						<code class="muted">{{ c.short }} · {{ c.author }} · {{ ago(c.date) }}</code>
+						<code class="muted">{{ c.short }} · {{ c.author }} · {{ when(c.date) }}</code>
 						<h2 id="picker-title">{{ c.message }}</h2>
 					</div>
 					@if (data()?.canPush && pickerTags().length) {
@@ -391,7 +391,6 @@ export class Timeline {
 	protected readonly request = signal<ReleaseRequest | null>(null);
 	protected readonly narrow = signal(matchMedia("(max-width: 700px)").matches);
 	protected readonly picker = viewChild.required<ElementRef<HTMLDialogElement>>("picker");
-	private readonly now = signal(Date.now());
 	private loadId = 0;
 	protected readonly expanding = signal<string | null>(null);
 	protected readonly expandStep = EXPAND_DEPTH;
@@ -546,10 +545,8 @@ export class Timeline {
 		const media = matchMedia("(max-width: 700px)");
 		const onMedia = () => this.narrow.set(media.matches);
 		media.addEventListener("change", onMedia);
-		const tick = setInterval(() => this.now.set(Date.now()), 60_000);
 		inject(DestroyRef).onDestroy(() => {
 			media.removeEventListener("change", onMedia);
-			clearInterval(tick);
 		});
 
 		effect(() => {
@@ -679,18 +676,13 @@ export class Timeline {
 		this.load();
 	}
 
-	protected ago(iso: string): string {
-		const diff = (new Date(iso).getTime() - this.now()) / 1000;
-		const rtf = new Intl.RelativeTimeFormat(this.i18n.locale(), { numeric: "auto" });
-		const abs = Math.abs(diff);
-		if (abs < 60) return rtf.format(Math.round(diff), "second");
-		if (abs < 3600) return rtf.format(Math.round(diff / 60), "minute");
-		if (abs < 86400) return rtf.format(Math.round(diff / 3600), "hour");
-		if (abs < 86400 * 30) return rtf.format(Math.round(diff / 86400), "day");
-		return new Date(iso).toLocaleDateString(this.i18n.locale(), {
+	protected when(iso: string): string {
+		return new Date(iso).toLocaleString(this.i18n.locale(), {
 			day: "numeric",
-			month: "short",
+			month: "numeric",
 			year: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
 		});
 	}
 
