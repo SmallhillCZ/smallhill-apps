@@ -298,6 +298,26 @@ aside {
 .status.running {
 	color: var(--accent);
 }
+.status-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+button.bell {
+	width: 34px;
+	height: 34px;
+	min-height: 34px;
+	flex: none;
+	color: var(--muted);
+}
+button.bell.on {
+	color: var(--accent);
+	border-color: var(--accent);
+}
+button.bell.on svg {
+	fill: currentColor;
+}
 .hint {
 	margin: 0.25rem 0 0;
 }

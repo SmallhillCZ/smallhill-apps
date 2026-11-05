@@ -286,14 +286,60 @@ interface RowRef {
 									<span class="muted">{{ t().noWorkflow }}</span>
 								}
 							</div>
-							@if (card.pending) {
-								<a
-									class="small status running"
-									[attr.href]="card.pending"
-									target="_blank"
-									rel="noopener"
-									><span class="spinner" aria-hidden="true"></span>{{ t().pending }}</a
-								>
+							@if (card.pending || card.runState === "running") {
+								<div class="status-row">
+									@if (card.pending) {
+										<a
+											class="small status running"
+											[attr.href]="card.pending"
+											target="_blank"
+											rel="noopener"
+											><span class="spinner" aria-hidden="true"></span>{{ t().pending }}</a
+										>
+									} @else if (card.run) {
+										<a
+											class="small status running"
+											[href]="card.run.url"
+											target="_blank"
+											rel="noopener"
+										>
+											{{ t().lastRun.running }} · {{ when(card.run.createdAt) }}
+										</a>
+									}
+									@if (store.canNotify) {
+										<button
+											type="button"
+											class="icon bell"
+											[class.on]="card.watched"
+											[attr.aria-pressed]="card.watched"
+											[attr.aria-label]="t().notifyMe"
+											[title]="
+												card.watched
+													? t().notifyOn
+													: blocked()
+														? t().notifyBlocked
+														: t().notifyMe
+											"
+											(click)="toggleNotify(card)"
+										>
+											<svg
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+												<path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+												@if (blocked() && !card.watched) {
+													<path d="M3 3l18 18" />
+												}
+											</svg>
+										</button>
+									}
+								</div>
 							} @else if (card.run) {
 								<a
 									[class]="'small status ' + card.runState"
@@ -370,7 +416,7 @@ interface RowRef {
 })
 export class Timeline {
 	private readonly github = inject(Github);
-	private readonly store = inject(Store);
+	protected readonly store = inject(Store);
 	protected readonly i18n = inject(I18n);
 	protected readonly t = this.i18n.t;
 	readonly owner = input.required<string>();
@@ -394,6 +440,7 @@ export class Timeline {
 	private loadId = 0;
 	protected readonly expanding = signal<string | null>(null);
 	protected readonly expandStep = EXPAND_DEPTH;
+	protected readonly blocked = signal(typeof Notification !== "undefined" && Notification.permission === "denied");
 
 	protected readonly full = computed(() => `${this.owner()}/${this.repo()}`);
 	protected readonly geo = computed(() =>
@@ -518,6 +565,8 @@ export class Timeline {
 								? "failure"
 								: "other",
 				pending: pending ? (pending.url ?? "#") : null,
+				runId: pending ? pending.runId : (run?.id ?? null),
+				watched: this.store.watching(this.full(), name),
 			} as const;
 		});
 	});
@@ -575,6 +624,16 @@ export class Timeline {
 			if (c && !el.open) el.showModal();
 			if (!c && el.open) el.close();
 		});
+	}
+
+	protected async toggleNotify(card: { name: string; runId: number | null; workflow: string | null }) {
+		const ok = await this.store.toggleWatch({
+			repo: this.full(),
+			tag: card.name,
+			runId: card.runId,
+			workflow: card.workflow ?? "",
+		});
+		this.blocked.set(!ok);
 	}
 
 	private colorOf(tag: string) {
