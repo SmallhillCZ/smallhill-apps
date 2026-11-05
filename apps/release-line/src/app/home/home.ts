@@ -169,6 +169,12 @@ const GITHUB_MARK =
 						}
 					</ul>
 				}
+				@if (auth.grantUrl(); as url) {
+					<p class="muted small grant">
+						{{ t().missingOrg }}
+						<a [href]="url" target="_blank" rel="noopener" (click)="awaitGrant()">{{ t().grantOrg }}</a>
+					</p>
+				}
 			</section>
 		}
 	`,
@@ -308,6 +314,9 @@ const GITHUB_MARK =
 		.desc {
 			flex-basis: 100%;
 		}
+		.grant {
+			margin: -0.75rem 0 1.5rem;
+		}
 	`,
 })
 export class Home implements OnDestroy {
@@ -365,7 +374,18 @@ export class Home implements OnDestroy {
 
 	ngOnDestroy() {
 		this.destroyed = true;
+		document.removeEventListener("visibilitychange", this.onReturn);
 	}
+
+	protected awaitGrant() {
+		document.addEventListener("visibilitychange", this.onReturn);
+	}
+
+	private readonly onReturn = () => {
+		if (document.visibilityState !== "visible") return;
+		document.removeEventListener("visibilitychange", this.onReturn);
+		this.loadRepos();
+	};
 
 	protected owner = (full: string) => full.split("/")[0];
 	protected name = (full: string) => full.split("/")[1];

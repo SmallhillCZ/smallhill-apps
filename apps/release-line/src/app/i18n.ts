@@ -41,6 +41,8 @@ const en = {
 	recent: "Recent",
 	yourRepos: "Your repositories",
 	noRepos: "No repositories found.",
+	missingOrg: "Missing an organization?",
+	grantOrg: "Grant access on GitHub",
 	private: "Private",
 
 	tags: "Tags",
@@ -194,6 +196,8 @@ const cs: Texts = {
 	recent: "Naposledy otevřené",
 	yourRepos: "Vaše repozitáře",
 	noRepos: "Žádné repozitáře.",
+	missingOrg: "Chybí vám organizace?",
+	grantOrg: "Povolit přístup na GitHubu",
 	private: "Soukromý",
 
 	tags: "Tagy",

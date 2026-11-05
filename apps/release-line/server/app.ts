@@ -45,7 +45,8 @@ export async function buildApp({
 	app.get(`${api}/auth`, async () => ({
 		deviceFlow: !!clientId,
 		webFlow,
-		...(webFlow ? { clientId, scope: SCOPE } : {}),
+		...(clientId ? { clientId } : {}),
+		...(webFlow ? { scope: SCOPE } : {}),
 	}));
 
 	app.post<{ Body: { code: string } }>(
