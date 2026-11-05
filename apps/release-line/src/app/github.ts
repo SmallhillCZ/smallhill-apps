@@ -66,6 +66,12 @@ export interface RepoData {
 	total: number;
 	since: string | null;
 	canPush: boolean;
+	signature: string;
+}
+
+export interface CompareResult {
+	status: string;
+	ahead: number;
 }
 
 export interface WorkflowSet {
@@ -85,6 +91,7 @@ export interface Run {
 
 const COMMIT_FIELDS = `oid abbreviatedOid messageHeadline committedDate url author { name user { login } } parents(first: 4) { nodes { oid } }`;
 const MAX_BRANCHES = 20;
+const MAX_KNOWN_COMPARES = 2000;
 const MAIN_DEPTH = 30;
 const BRANCH_DEPTH = 6;
 const TAG_DEPTH = 3;
@@ -171,7 +178,7 @@ export function olderStart(data: RepoData): string | null {
 @Injectable({ providedIn: "root" })
 export class Github {
 	private readonly auth = inject(Auth);
-	private readonly compared = new Map<string, { status: string; ahead: number } | null>();
+	private readonly compared = new Map<string, CompareResult | null>();
 	private readonly merged = new Map<string, Side>();
 
 	async request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -246,6 +253,7 @@ export class Github {
 		patterns: string[],
 		mode: BranchMode,
 		autoPick?: (names: string[]) => string[] | Promise<string[]>,
+		previous?: RepoData | null,
 	): Promise<RepoData> {
 		const refs = await this.graphql<{
 			repository: {
@@ -282,6 +290,7 @@ export class Github {
 				: releaseTagNames(tagNames, patterns);
 		const shownTags = [...new Set([...releaseTags, ...shownTagNames(tagNames, patterns)])];
 		const main = allBranches.find((b) => b.name === defaultBranch)!;
+		const canPush = ["ADMIN", "MAINTAIN", "WRITE"].includes(repo.viewerPermission ?? "");
 
 		let since: string | null = null;
 		const releaseDates = tags.filter((t) => releaseTags.includes(t.name)).map((t) => t.date);
@@ -299,6 +308,16 @@ export class Github {
 					? visible
 					: visible.filter((b) => b.name === defaultBranch || !since || b.date >= since);
 		branches = [main, ...branches.filter((b) => b !== main)].slice(0, MAX_BRANCHES);
+		const signature = JSON.stringify([
+			mode,
+			patterns,
+			releaseTags,
+			defaultBranch,
+			branches.map((b) => [b.name, b.oid]),
+			tags.map((t) => [t.name, t.oid]),
+		]);
+		if (previous?.signature === signature && previous.owner === owner && previous.name === name)
+			return { ...previous, canPush };
 
 		const anchorTags = tags
 			.filter((t) => shownTags.includes(t.name) && (!since || t.date >= since))
@@ -350,8 +369,9 @@ export class Github {
 				releaseTags,
 				shownTags,
 				since,
-				canPush: ["ADMIN", "MAINTAIN", "WRITE"].includes(repo.viewerPermission ?? ""),
+				canPush,
 				behind,
+				signature,
 			},
 			commits,
 			main.oid,
@@ -431,6 +451,16 @@ export class Github {
 			batch.forEach((_, k) => out.push(...(data.repository[`f${k}`]?.history.nodes ?? []).map(toCommit)));
 		}
 		return out;
+	}
+
+	knownCompares(repo: string): [string, CompareResult][] {
+		return [...this.compared]
+			.filter((e): e is [string, CompareResult] => !!e[1] && e[0].startsWith(`${repo}:`))
+			.slice(-MAX_KNOWN_COMPARES);
+	}
+
+	rememberCompares(entries: [string, CompareResult][]) {
+		for (const [key, value] of entries) if (!this.compared.has(key)) this.compared.set(key, value);
 	}
 
 	private async compare(owner: string, name: string, base: string, head: string) {

@@ -18,6 +18,7 @@ import {
 	type BranchMode,
 	EXPAND_DEPTH,
 	type Commit,
+	type CompareResult,
 	Github,
 	GithubFailure,
 	olderStart,
@@ -45,6 +46,7 @@ interface Snapshot {
 	data: RepoData;
 	workflows: WorkflowSet;
 	runs: Record<string, Run | null>;
+	compares?: [string, CompareResult][];
 }
 
 @Component({
@@ -655,31 +657,41 @@ export class Timeline {
 		this.error.set(null);
 		const full = this.full();
 		const key = this.cacheKey();
-		if (!this.data()) {
-			cached<Snapshot>(full, key).then((snap) => {
-				if (!snap || id !== this.loadId || this.data()) return;
-				this.data.set(snap.data);
-				this.workflows.set(snap.workflows);
-				this.runs.set(snap.runs);
-			});
-		}
 		try {
 			const pending = this.github
 				.workflows(owner, repo)
 				.catch((): WorkflowSet => ({ workflows: [], config: {}, hasConfig: false }));
+			if (!this.data()) {
+				const snap = await cached<Snapshot>(full, key);
+				if (id !== this.loadId) return;
+				if (snap?.compares) this.github.rememberCompares(snap.compares);
+				if (snap && !this.data()) {
+					this.data.set(snap.data);
+					this.workflows.set(snap.workflows);
+					this.runs.set(snap.runs);
+				}
+			}
+			const previous = this.data();
 			const data = await this.github.load(
 				owner,
 				repo,
 				parseFilter(this.filter()),
 				this.branchMode(),
 				async (names) => autoReleaseTags(names, await pending, this.picks()),
+				previous,
 			);
 			const workflows = await pending;
 			if (id !== this.loadId) return;
 			this.data.set(data);
 			this.workflows.set(workflows);
 			await this.loadRuns(id);
-			if (id === this.loadId) cache(full, key, { data, workflows, runs: this.runs() } satisfies Snapshot);
+			if (id === this.loadId)
+				cache(full, key, {
+					data,
+					workflows,
+					runs: this.runs(),
+					compares: this.github.knownCompares(full),
+				} satisfies Snapshot);
 		} catch (e) {
 			if (id !== this.loadId) return;
 			this.error.set(this.t().errors[e instanceof GithubFailure ? e.kind : "failed"]);
