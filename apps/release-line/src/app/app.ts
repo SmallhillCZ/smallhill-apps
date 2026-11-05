@@ -1,6 +1,7 @@
 import { Component, inject, signal } from "@angular/core";
 import { Router, RouterLink, RouterOutlet } from "@angular/router";
 import { Auth } from "./auth";
+import { clearCache } from "./cache";
 import { I18n, LANGS } from "./i18n";
 import { Store } from "./store";
 import { THEMES, Theme, applyTheme, loadTheme } from "./theme";
@@ -185,6 +186,7 @@ export class App {
 	protected signOut() {
 		document.getElementById("menu")?.hidePopover();
 		this.auth.signOut();
+		clearCache();
 		this.router.navigateByUrl("/");
 	}
 

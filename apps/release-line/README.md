@@ -9,6 +9,7 @@ Part of [Smallhill Apps](../../README.md), served at https://apps.smallhill.cz/r
 - Sign in with GitHub (normal OAuth redirect when the server has `RELEASE_LINE_GITHUB_SECRET`, otherwise device flow: the app shows a code, you approve it on github.com) or paste a fine-grained personal access token with Contents and Actions read and write. The token stays in the browser.
 - An organization not granted at sign-in can be added later: the repository list links to the app's GitHub settings page (OAuth sign-ins only) and reloads the list when you come back.
 - A running release shows a bell button: click it and the app shows a system notification when the run finishes. It works while any Release Line tab is open (polled by the app, not pushed by a server).
+- The last loaded view of each repository is kept in IndexedDB and shown immediately on the next visit while fresh data loads (cleared on sign-out).
 - The timeline runs from the oldest release tag to the newest commit across the branches active in that range.
 - Long runs of commits between tags are hidden behind a "N commits hidden" row and only loaded when you open them. Older history below the oldest tag loads 100 commits at a time.
 - Drag a release tag to another commit, or click a commit and pick a tag. The dialog runs the tag's release workflow with its `workflow_dispatch` inputs; until the run ends the tag shows as pending.

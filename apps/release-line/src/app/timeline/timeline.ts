@@ -25,6 +25,7 @@ import {
 	type Run,
 	type WorkflowSet,
 } from "../github";
+import { cache, cached } from "../cache";
 import { I18n } from "../i18n";
 import { Store } from "../store";
 import { ReleaseDialog, type ReleaseRequest, countBetween } from "./release-dialog";
@@ -38,6 +39,12 @@ interface RowRef {
 	text?: string;
 	lane?: number;
 	url?: string | null;
+}
+
+interface Snapshot {
+	data: RepoData;
+	workflows: WorkflowSet;
+	runs: Record<string, Run | null>;
 }
 
 @Component({
@@ -646,17 +653,33 @@ export class Timeline {
 		const repo = this.repo();
 		this.loading.set(true);
 		this.error.set(null);
+		const full = this.full();
+		const key = this.cacheKey();
+		if (!this.data()) {
+			cached<Snapshot>(full, key).then((snap) => {
+				if (!snap || id !== this.loadId || this.data()) return;
+				this.data.set(snap.data);
+				this.workflows.set(snap.workflows);
+				this.runs.set(snap.runs);
+			});
+		}
 		try {
-			const workflows = await this.github
+			const pending = this.github
 				.workflows(owner, repo)
 				.catch((): WorkflowSet => ({ workflows: [], config: {}, hasConfig: false }));
-			const data = await this.github.load(owner, repo, parseFilter(this.filter()), this.branchMode(), (names) =>
-				autoReleaseTags(names, workflows, this.picks()),
+			const data = await this.github.load(
+				owner,
+				repo,
+				parseFilter(this.filter()),
+				this.branchMode(),
+				async (names) => autoReleaseTags(names, await pending, this.picks()),
 			);
+			const workflows = await pending;
 			if (id !== this.loadId) return;
 			this.data.set(data);
 			this.workflows.set(workflows);
-			this.loadRuns(id);
+			await this.loadRuns(id);
+			if (id === this.loadId) cache(full, key, { data, workflows, runs: this.runs() } satisfies Snapshot);
 		} catch (e) {
 			if (id !== this.loadId) return;
 			this.error.set(this.t().errors[e instanceof GithubFailure ? e.kind : "failed"]);
@@ -698,6 +721,10 @@ export class Timeline {
 		} finally {
 			this.expanding.set(null);
 		}
+	}
+
+	private cacheKey() {
+		return JSON.stringify([this.filter(), this.branchMode(), this.picks()]);
 	}
 
 	private async loadRuns(id: number) {

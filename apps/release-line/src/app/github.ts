@@ -245,7 +245,7 @@ export class Github {
 		name: string,
 		patterns: string[],
 		mode: BranchMode,
-		autoPick?: (names: string[]) => string[],
+		autoPick?: (names: string[]) => string[] | Promise<string[]>,
 	): Promise<RepoData> {
 		const refs = await this.graphql<{
 			repository: {
@@ -278,7 +278,7 @@ export class Github {
 		const tagNames = tags.map((t) => t.name);
 		const releaseTags =
 			!patterns.length && autoPick
-				? autoPick(releaseTagNames(tagNames, []))
+				? await autoPick(releaseTagNames(tagNames, []))
 				: releaseTagNames(tagNames, patterns);
 		const shownTags = [...new Set([...releaseTags, ...shownTagNames(tagNames, patterns)])];
 		const main = allBranches.find((b) => b.name === defaultBranch)!;
