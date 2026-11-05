@@ -31,11 +31,19 @@ export class Auth {
 	readonly signedIn = computed(() => !!this.token());
 	readonly deviceFlow = signal<boolean | null>(null);
 	readonly webFlow = signal<{ clientId: string; scope: string } | null>(null);
+	readonly clientId = signal<string | null>(null);
+	readonly grantUrl = computed(() => {
+		const id = this.clientId();
+		return id && this.token()?.startsWith("gho_")
+			? `https://github.com/settings/connections/applications/${id}`
+			: null;
+	});
 
 	constructor() {
 		fetch("api/auth", { cache: "no-store" })
 			.then((r) => (r.ok ? r.json() : { deviceFlow: false }))
 			.then((r: { deviceFlow: boolean; webFlow?: boolean; clientId?: string; scope?: string }) => {
+				if (r.clientId) this.clientId.set(r.clientId);
 				if (r.webFlow && r.clientId) this.webFlow.set({ clientId: r.clientId, scope: r.scope ?? "repo" });
 				this.deviceFlow.set(!!r.deviceFlow);
 			})

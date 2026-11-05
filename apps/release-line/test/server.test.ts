@@ -17,7 +17,11 @@ const json = (body: unknown, status = 200) =>
 
 test("reports whether device flow is available", async () => {
 	const on = await buildApp({ clientId: "abc", basePath: "/release-line/" });
-	assert.deepEqual((await on.inject({ url: "/release-line/api/auth" })).json(), { deviceFlow: true, webFlow: false });
+	assert.deepEqual((await on.inject({ url: "/release-line/api/auth" })).json(), {
+		deviceFlow: true,
+		webFlow: false,
+		clientId: "abc",
+	});
 	const off = await buildApp({ clientId: "" });
 	assert.deepEqual((await off.inject({ url: "/api/auth" })).json(), { deviceFlow: false, webFlow: false });
 	assert.equal((await off.inject({ method: "POST", url: "/api/device/code" })).statusCode, 404);
