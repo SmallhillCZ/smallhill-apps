@@ -228,7 +228,7 @@ const cs: Texts = {
 	behind: (n: number) => `o ${n} ${czech(n, "commit", "commity", "commitů")} pozadu`,
 	atNewest: "na nejnovějším commitu",
 	notInView: "mimo zobrazený rozsah",
-	pending: "Vydávám…",
+	pending: "Releasuju…",
 	viewRun: "Zobrazit běh",
 	openOnGithub: "Otevřít na GitHubu",
 	releaseHere: "Vydat sem",
