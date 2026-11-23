@@ -116,8 +116,8 @@ export const APPS: AppInfo[] = [
 		name: { en: "Memes", cs: "Memy" },
 		tagline: { en: "Your own meme library", cs: "Vaše vlastní knihovna memů" },
 		description: {
-			en: "Save the memes you like, from other apps through Share or from your files, and tag them so you find the right one in a second. Send a meme to any chat app with one tap, or copy it and paste it into the chat. Pictures, GIFs and videos stay on your device and you can back up the whole library to one file.",
-			cs: "Ukládejte si memy, které se vám líbí, z jiných aplikací přes Sdílet nebo ze souborů, a označte je štítky, ať ten pravý najdete za vteřinu. Jedním klepnutím mem pošlete do jakékoli chatovací aplikace, nebo ho zkopírujte a vložte do chatu. Obrázky, GIFy a videa zůstávají ve vašem zařízení a celou knihovnu můžete zálohovat do jednoho souboru.",
+			en: "Save the memes you like, from other apps through Share or from your files, and tag them so you find the right one in a second. Send a meme to any chat app with one tap, or copy it and paste it into the chat. Pictures, GIFs and videos stay on your device, and you can keep them the same on your phone and computer through your own OneDrive.",
+			cs: "Ukládejte si memy, které se vám líbí, z jiných aplikací přes Sdílet nebo ze souborů, a označte je štítky, ať ten pravý najdete za vteřinu. Jedním klepnutím mem pošlete do jakékoli chatovací aplikace, nebo ho zkopírujte a vložte do chatu. Obrázky, GIFy a videa zůstávají ve vašem zařízení a přes váš vlastní OneDrive je můžete mít stejné v telefonu i v počítači.",
 		},
 		color: "#e03131",
 		icon: "apps/memes/icon.svg",

@@ -54,6 +54,7 @@ async function receiveShare(request) {
 				added: now + memes.length,
 				used: 0,
 				uses: 0,
+				updated: now,
 			});
 		}
 		if (!memes.length) return Response.redirect(`${scope}?shared=none`, 303);

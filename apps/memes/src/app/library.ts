@@ -7,6 +7,7 @@ export interface MemeMeta {
 	added: number;
 	used: number;
 	uses: number;
+	updated?: number;
 }
 
 export interface Meme extends MemeMeta {

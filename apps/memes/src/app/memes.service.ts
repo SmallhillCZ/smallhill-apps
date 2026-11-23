@@ -11,6 +11,7 @@ export interface MemeView extends Meme {
 export type ActionResult = "shared" | "cancelled" | "downloaded" | "copied" | "copiedStill" | "failed" | "video";
 
 const BACKUP_INDEX = "memes.json";
+const DELETED_KEY = "memes.deleted";
 
 @Injectable({ providedIn: "root" })
 export class Memes {
@@ -19,6 +20,7 @@ export class Memes {
 	readonly loaded = signal(false);
 	readonly memes = computed(() => sortMemes(this.all()));
 	readonly tags = computed(() => tagCounts(this.all()));
+	readonly changes = signal(0);
 
 	async load(): Promise<void> {
 		const memes = await db.getAll();
@@ -47,6 +49,7 @@ export class Memes {
 				added: now + memes.length,
 				used: 0,
 				uses: 0,
+				updated: now,
 			});
 		}
 		if (!memes.length) return [];
@@ -54,30 +57,57 @@ export class Memes {
 		this.persist();
 		const views = memes.map((m) => this.view(m));
 		this.all.update((all) => [...all, ...views]);
+		this.changed();
 		return views;
 	}
 
 	async update(id: string, changes: Partial<Pick<Meme, "title" | "tags" | "used" | "uses">>): Promise<void> {
 		const current = this.find(id);
 		if (!current) return;
-		const next = { ...current, ...changes };
+		const next = { ...current, ...changes, updated: Date.now() };
 		const { url, video, ...meme } = next;
 		await db.putAll([meme]);
 		this.all.update((all) => all.map((m) => (m.id === id ? next : m)));
+		this.changed();
 	}
 
 	async remove(id: string): Promise<MemeView | undefined> {
 		const meme = this.find(id);
 		if (!meme) return;
 		await db.remove(id);
+		this.setDeleted({ ...this.deleted(), [id]: Date.now() });
 		this.all.update((all) => all.filter((m) => m.id !== id));
+		this.changed();
 		return meme;
 	}
 
 	async restore(meme: MemeView): Promise<void> {
-		const { url, video, ...stored } = meme;
+		const restored = { ...meme, updated: Date.now() };
+		const { url, video, ...stored } = restored;
 		await db.putAll([stored]);
-		this.all.update((all) => [...all.filter((m) => m.id !== meme.id), meme]);
+		const { [meme.id]: _, ...deleted } = this.deleted();
+		this.setDeleted(deleted);
+		this.all.update((all) => [...all.filter((m) => m.id !== meme.id), restored]);
+		this.changed();
+	}
+
+	deleted(): Record<string, number> {
+		try {
+			const value = JSON.parse(localStorage.getItem(DELETED_KEY) ?? "{}");
+			return value && typeof value === "object" ? value : {};
+		} catch {
+			return {};
+		}
+	}
+
+	private setDeleted(deleted: Record<string, number>) {
+		try {
+			localStorage.setItem(DELETED_KEY, JSON.stringify(deleted));
+		} catch {}
+	}
+
+	private changed() {
+		this.changes.update((n) => n + 1);
 	}
 
 	async share(meme: MemeView): Promise<ActionResult> {
@@ -169,9 +199,18 @@ export class Memes {
 			}
 		}
 		if (!memes.length) throw new Error("empty backup");
+		const deleted = this.deleted();
+		const now = Date.now();
+		for (const meme of memes) {
+			if (deleted[meme.id] === undefined) continue;
+			meme.updated = now;
+			delete deleted[meme.id];
+		}
+		this.setDeleted(deleted);
 		await db.putAll(memes);
 		this.persist();
 		await this.load();
+		this.changed();
 		return memes.length;
 	}
 
