@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, effect, inject, signal, viewChild } fr
 import { I18n, LANGS } from "./i18n";
 import { UNTAGGED, addTags, matches, parseTags } from "./library";
 import { type ActionResult, type MemeView, Memes } from "./memes.service";
+import { Sync } from "./sync.service";
 import { THEMES, type Theme, applyTheme, loadTheme } from "./theme";
 
 interface Toast {
@@ -73,6 +74,44 @@ interface Toast {
 							<option [value]="option" [selected]="option === theme()">{{ t().themes[option] }}</option>
 						}
 					</select>
+				</div>
+				<div class="menu-sync">
+					@switch (sync.drive.status()) {
+						@case ("signedIn") {
+							<div class="sync-head">
+								<span>OneDrive</span>
+								<span class="muted small account">{{ sync.drive.account()?.username }}</span>
+							</div>
+							<div class="sync-row">
+								<span class="small" [class.sync-error]="sync.state() === 'error'">{{
+									syncText()
+								}}</span>
+								<button
+									type="button"
+									class="link small"
+									(click)="sync.sync()"
+									[disabled]="sync.state() === 'syncing'"
+								>
+									{{ t().syncNow }}
+								</button>
+							</div>
+							<button type="button" class="link flush small" (click)="sync.signOut()">
+								{{ t().syncOff }}
+							</button>
+						}
+						@case ("loading") {
+							<span class="muted small">{{ t().syncing }}</span>
+						}
+						@default {
+							<button type="button" class="link flush" (click)="sync.drive.signIn()">
+								<svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="cloudIcon" /></svg>
+								{{ t().syncOn }}
+							</button>
+							<p class="muted small">
+								{{ sync.drive.status() === "error" ? t().syncSignInFailed : t().syncHint }}
+							</p>
+						}
+					}
 				</div>
 				<div class="menu-row">
 					<button type="button" class="link flush" (click)="backup()" [disabled]="!store.memes().length">
@@ -295,6 +334,25 @@ interface Toast {
 export class App {
 	protected readonly i18n = inject(I18n);
 	protected readonly store = inject(Memes);
+	protected readonly sync = inject(Sync);
+	protected readonly cloudIcon =
+		"M6.5 19a4.5 4.5 0 0 1-.7-8.95A6 6 0 0 1 17.4 8.6 5.2 5.2 0 0 1 17.5 19zm0-2h11a3.2 3.2 0 0 0 0-6.4h-1.6l-.2-1.3a4 4 0 0 0-7.8-.5l-.3 1.1-1.2.1A2.5 2.5 0 0 0 6.5 17z";
+	protected readonly syncText = computed(() => {
+		const t = this.t();
+		const last = this.sync.last();
+		switch (this.sync.state()) {
+			case "syncing":
+				return t.syncing;
+			case "error":
+				return t.syncError;
+			default:
+				return last
+					? t.synced(
+							new Date(last).toLocaleTimeString(this.i18n.lang(), { hour: "numeric", minute: "2-digit" }),
+						)
+					: t.syncing;
+		}
+	});
 	protected readonly t = this.i18n.t;
 	protected readonly langs = LANGS;
 	protected readonly themes = THEMES;

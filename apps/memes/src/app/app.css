@@ -55,6 +55,41 @@ header {
 .menu-row + .menu-row {
 	border-top: 1px solid var(--border);
 }
+.menu-sync {
+	display: grid;
+	gap: 0.15rem;
+	padding: 0.6rem 0;
+	border-top: 1px solid var(--border);
+	border-bottom: 1px solid var(--border);
+	max-width: 300px;
+}
+.menu-sync + .menu-row {
+	border-top: 0;
+}
+.menu-sync > button {
+	justify-self: start;
+}
+.menu-sync p {
+	margin: 0.2rem 0 0;
+}
+.sync-head,
+.sync-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+.sync-head span:first-child {
+	font-weight: 600;
+}
+.account {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.sync-error {
+	color: var(--danger);
+}
 .menu-row > span {
 	font-weight: 600;
 }
