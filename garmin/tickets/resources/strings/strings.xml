@@ -1,0 +1,12 @@
+<strings>
+    <string id="AppName">Tickets</string>
+    <string id="SignIn">Sign in to GoOut</string>
+    <string id="SignInHint">Continue on your phone</string>
+    <string id="NoTickets">No upcoming tickets</string>
+    <string id="Refresh">Refresh</string>
+    <string id="SignOut">Sign out</string>
+    <string id="Syncing">Updating…</string>
+    <string id="Updated">Updated</string>
+    <string id="Offline">Phone not reachable</string>
+    <string id="NoCode">Open this ticket on your phone</string>
+</strings>

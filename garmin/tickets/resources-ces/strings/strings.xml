@@ -1,0 +1,12 @@
+<strings>
+    <string id="AppName">Lístky</string>
+    <string id="SignIn">Přihlásit do GoOut</string>
+    <string id="SignInHint">Pokračujte v telefonu</string>
+    <string id="NoTickets">Žádné nadcházející lístky</string>
+    <string id="Refresh">Obnovit</string>
+    <string id="SignOut">Odhlásit</string>
+    <string id="Syncing">Aktualizuji…</string>
+    <string id="Updated">Aktualizováno</string>
+    <string id="Offline">Telefon není v dosahu</string>
+    <string id="NoCode">Lístek otevřete v telefonu</string>
+</strings>
