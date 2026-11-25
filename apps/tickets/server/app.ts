@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import fastifyStatic from "@fastify/static";
+import { qrMatrix, watchLanguage, watchLoginPage } from "./watch.ts";
 
 export interface AppOptions {
 	basePath?: string;
@@ -26,6 +27,7 @@ export interface Ticket {
 type Cookies = Record<string, string>;
 
 const SESSION_HEADER = "x-goout-session";
+const WATCH_LIMIT = 20;
 const USER_AGENT =
 	"Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36";
 
@@ -156,6 +158,25 @@ export async function buildApp({
 			},
 		});
 
+	async function follow(target: URL, cookies: Cookies): Promise<Response | null> {
+		let res = await call(target.pathname + target.search, cookies);
+		for (let i = 0; i < 5 && res.status >= 300 && res.status < 400 && res.headers.get("location"); i++) {
+			const next = new URL(res.headers.get("location")!, target);
+			if (next.origin !== goout.origin) return null;
+			res = await call(next.pathname + next.search, cookies);
+		}
+		return res;
+	}
+
+	async function watchCodes(mobile: string | null, cookies: Cookies) {
+		if (!mobile) return [];
+		const target = new URL(mobile);
+		if (target.origin !== goout.origin) return [];
+		const res = await follow(target, cookies).catch(() => null);
+		if (!res?.ok || !(res.headers.get("content-type") ?? "").includes("text/html")) return [];
+		return parseMobileTicket(await res.text()).map(({ image, code }) => ({ code, ...qrMatrix(image) }));
+	}
+
 	function session(req: FastifyRequest, reply: FastifyReply): Cookies | null {
 		const cookies = decodeSession(req.headers[SESSION_HEADER]);
 		if (!cookies) reply.code(401).send({ error: "login" });
@@ -228,12 +249,8 @@ export async function buildApp({
 			return reply.code(400).send({ error: "url" });
 		}
 		if (target.origin !== goout.origin) return reply.code(400).send({ error: "url" });
-		let res = await call(target.pathname + target.search, cookies);
-		for (let i = 0; i < 5 && res.status >= 300 && res.status < 400 && res.headers.get("location"); i++) {
-			const next = new URL(res.headers.get("location")!, target);
-			if (next.origin !== goout.origin) return reply.code(502).send({ error: "redirect" });
-			res = await call(next.pathname + next.search, cookies);
-		}
+		const res = await follow(target, cookies);
+		if (!res) return reply.code(502).send({ error: "redirect" });
 		refresh(reply, cookies, res);
 		if (res.status === 401 || res.status === 403) return reply.code(401).send({ error: "login" });
 		if (!res.ok) return reply.code(502).send({ error: "goout", status: res.status });
@@ -245,6 +262,38 @@ export async function buildApp({
 		}
 		reply.header("cache-control", "no-store");
 		return reply.type(type).send(Buffer.from(await res.arrayBuffer()));
+	});
+
+	app.get(`${api}/watch/login`, (req, reply) =>
+		reply
+			.type("text/html; charset=utf-8")
+			.header("cache-control", "no-store")
+			.send(watchLoginPage(watchLanguage(req.headers["accept-language"]))),
+	);
+
+	app.get(`${api}/watch/tickets`, async (req, reply) => {
+		let cookies = session(req, reply);
+		if (!cookies) return;
+		const res = await call("/services/saleform/purchase/v2/list?current=true", cookies);
+		if (res.status === 401 || res.status === 403) return reply.code(401).send({ error: "login" });
+		if (!res.ok) return reply.code(502).send({ error: "goout", status: res.status });
+		const merged = mergeSetCookies(cookies, res);
+		cookies = merged.cookies;
+		const tickets = toTickets((await res.json()) as PurchaseList, goout.origin).slice(0, WATCH_LIMIT);
+		const result = [];
+		for (const t of tickets) {
+			result.push({
+				id: t.id,
+				name: t.name,
+				venue: t.venue,
+				start: t.start,
+				hasTime: t.hasTime,
+				count: t.count,
+				codes: await watchCodes(t.mobile, cookies),
+			});
+		}
+		reply.header("cache-control", "no-store");
+		return { tickets: result, ...(merged.changed ? { session: encodeSession(cookies) } : {}) };
 	});
 
 	const serveWeb = !!webRoot && existsSync(webRoot);
