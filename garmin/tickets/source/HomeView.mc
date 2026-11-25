@@ -91,6 +91,10 @@ class HomeDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
+    function onTap(event as WatchUi.ClickEvent) as Boolean {
+        return onSelect();
+    }
+
     function onNextPage() as Boolean {
         if (view.index + 1 < Store.tickets().size()) {
             view.index += 1;

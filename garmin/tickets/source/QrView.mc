@@ -85,6 +85,10 @@ class QrDelegate extends WatchUi.BehaviorDelegate {
         view = v;
     }
 
+    function onTap(event as WatchUi.ClickEvent) as Boolean {
+        return onSelect();
+    }
+
     function onNextPage() as Boolean {
         if (view.index + 1 < view.codes.size()) {
             view.index += 1;
