@@ -12,7 +12,7 @@ class TicketsApp extends Application.AppBase {
     }
 
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
-        var view = new HomeView();
-        return [view, new HomeDelegate(view)];
+        var view = new PagesView();
+        return [view, new PagesDelegate(view)];
     }
 }

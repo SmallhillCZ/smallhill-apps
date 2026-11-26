@@ -3,7 +3,7 @@
 Connect IQ watch app showing GoOut ticket QR codes from [Tickets](../../apps/tickets/) on a Garmin Venu 2S. Only for personal use, sideloaded, not in the Connect IQ Store.
 
 - Sign in: the watch opens `https://apps.smallhill.cz/tickets/api/watch/login` on the phone (`makeOAuthRequest`) and keeps the GoOut session.
-- Tickets are downloaded only when the app is opened (or via Menu → Refresh), through Garmin Connect on the phone, and stored on the watch, so the QR shows without the phone.
+- Tickets are downloaded only when the app is opened (or from the Refresh page at the end), through Garmin Connect on the phone, and stored on the watch, so the QR shows without the phone.
 - QR comes from the server as a module matrix and is drawn on a white screen with full backlight.
 - Texts CS + EN, chosen by the watch language.
 
